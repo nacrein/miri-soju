@@ -1,0 +1,26 @@
+[project]
+name = "bot"
+version = "0.1.0"
+description = "A modular Discord bot."
+requires-python = ">=3.11"
+dependencies = [
+    "discord.py>=2.7",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.29",
+    "alembic>=1.13",
+    "pydantic-settings>=2.0",
+    "jishaku>=2.7",
+]
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest", "pytest-asyncio", "aiosqlite"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
