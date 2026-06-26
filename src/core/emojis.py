@@ -57,6 +57,8 @@ class Emojis:
     CARD = "🃏"
     WIN = "🎉"
     LOSE = "💀"
+    LADDER = "🪜"
+    CRASH = "📈"
 
     # ── activity / leveling ─────────────────────────────────────────────────
     XP = "⭐"
@@ -64,6 +66,8 @@ class Emojis:
     VOICE = "🎙️"
     MESSAGE = "💬"
     TROPHY = "🏆"
+    MEDAL_SILVER = "🥈"
+    MEDAL_BRONZE = "🥉"
     RANK = "📊"
     FIRE = "🔥"
 

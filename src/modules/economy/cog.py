@@ -255,7 +255,7 @@ class Economy(commands.Cog):
         for i, (uid, worth) in enumerate(rows, 1):
             member = ctx.guild.get_member(uid)
             name = member.display_name if member else f"User {uid}"
-            medal = {1: Emojis.TROPHY, 2: "🥈", 3: "🥉"}.get(i, f"`{i}.`")
+            medal = {1: Emojis.TROPHY, 2: Emojis.MEDAL_SILVER, 3: Emojis.MEDAL_BRONZE}.get(i, f"`{i}.`")
             lines.append(f"{medal} **{name}** — {Emojis.BITS} {_fmt(worth)}")
         await ctx.send(embed=embeds.info("\n".join(lines), f"{Emojis.TROPHY} Richest Players"))
 
@@ -267,8 +267,8 @@ class Economy(commands.Cog):
     @commands.guild_only()
     async def ladder(self, ctx: commands.Context, amount: int) -> None:
         """Climb the ladder for rising multipliers. Cash out before you bust."""
-        await service.escrow_stake(ctx.author.id, amount)
-        view = LadderView(ctx.author.id, amount)
+        session_id = await service.escrow_stake(ctx.author.id, amount)
+        view = LadderView(ctx.author.id, amount, session_id)
         view.message = await ctx.send(embed=view.embed(), view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
@@ -276,8 +276,8 @@ class Economy(commands.Cog):
     @commands.guild_only()
     async def crash(self, ctx: commands.Context, amount: int) -> None:
         """Watch the multiplier climb and cash out before it crashes."""
-        await service.escrow_stake(ctx.author.id, amount)
-        view = CrashView(ctx.author.id, amount)
+        session_id = await service.escrow_stake(ctx.author.id, amount)
+        view = CrashView(ctx.author.id, amount, session_id)
         view.message = await ctx.send(embed=view.embed(), view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
@@ -285,16 +285,19 @@ class Economy(commands.Cog):
     @commands.guild_only()
     async def blackjack(self, ctx: commands.Context, amount: int) -> None:
         """Play blackjack against the dealer."""
-        await service.escrow_stake(ctx.author.id, amount)
-        view = BlackjackView(ctx.author.id, amount)
+        session_id = await service.escrow_stake(ctx.author.id, amount)
+        view = BlackjackView(ctx.author.id, amount, session_id)
         # natural blackjack settles immediately
         if view._game.result() == "natural":
             from src.modules.economy import config
             payout = int(amount * config.BLACKJACK_NATURAL_PAYOUT)
-            wallet = await service.payout_winnings(ctx.author.id, payout)
+            wallet = await service.payout_winnings(ctx.author.id, payout, session_id)
             for child in view.children:
                 child.disabled = True
             e = view.embed(reveal_dealer=True, status=f"{Emojis.WIN} Natural blackjack! Paid 3:2.\nWallet: {wallet:,}")
+            # Mark resolved + stop so on_timeout doesn't log a false forfeit ~90s later.
+            view._resolved = True
+            view.stop()
             await ctx.send(embed=e, view=view)
             return
         view.message = await ctx.send(embed=view.embed(), view=view)

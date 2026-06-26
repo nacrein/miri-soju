@@ -1,15 +1,13 @@
-"""Moderation logic: target safety checks, duration parsing, action embeds.
+"""Moderation logic: duration parsing and warning records.
 
-No Discord side effects here; the cog performs the actual ban/kick/timeout.
+No discord here — the cog performs the ban/kick/timeout, the target hierarchy
+check, and all embed rendering. This module only raises errors and returns values.
 """
 
 from __future__ import annotations
 
 from datetime import timedelta
 
-import discord
-
-from src.core.emojis import Emojis
 from src.core.errors import BotError
 from src.database.models.infraction import Infraction
 from src.database.session import get_session
@@ -38,52 +36,6 @@ def parse_duration(text: str) -> timedelta:
     if delta > _MAX_TIMEOUT:
         raise ModerationError("Timeout can't exceed 28 days.")
     return delta
-
-
-def check_target(
-    ctx: "discord.ext.commands.Context",
-    target: discord.Member,
-    *,
-    require_bot_higher: bool = True,
-) -> None:
-    """Raise ModerationError if the moderator (or bot) can't action this member.
-
-    require_bot_higher=False for actions the bot doesn't enact on Discord (e.g. warn).
-    """
-    if target == ctx.author:
-        raise ModerationError("You can't target yourself.")
-    if target == ctx.guild.me:
-        raise ModerationError("I can't target myself.")
-    if target.id == ctx.guild.owner_id:
-        raise ModerationError("You can't target the server owner.")
-    # Moderator hierarchy (the guild owner bypasses this).
-    if ctx.author.id != ctx.guild.owner_id and target.top_role >= ctx.author.top_role:
-        raise ModerationError("That member is equal to or above you in the role hierarchy.")
-    # Bot hierarchy: the bot's top role must be above the target's.
-    if require_bot_higher and target.top_role >= ctx.guild.me.top_role:
-        raise ModerationError("That member is above me in the role hierarchy.")
-
-
-_ACTION_ICONS = {
-    "Ban": Emojis.BAN, "Unban": Emojis.UNBAN, "Kick": Emojis.KICK,
-    "Timeout": Emojis.TIMEOUT, "Untimeout": Emojis.UNTIMEOUT, "Purge": Emojis.PURGE,
-}
-
-
-def action_embed(
-    action: str,
-    moderator: discord.abc.User,
-    target: discord.abc.User,
-    reason: str,
-) -> discord.Embed:
-    """Build the mod-action embed posted to the audit channel."""
-    icon = _ACTION_ICONS.get(action.split()[0], Emojis.SHIELD)
-    e = discord.Embed(title=f"{icon} {action}", color=discord.Color.dark_red())
-    e.add_field(name="Member", value=f"{target} (`{target.id}`)", inline=False)
-    e.add_field(name="Moderator", value=str(moderator), inline=False)
-    e.add_field(name="Reason", value=reason, inline=False)
-    e.timestamp = discord.utils.utcnow()
-    return e
 
 
 # ── warnings (per-guild, recorded for mods to act on manually) ──────────────

@@ -76,7 +76,7 @@ class _CategorySelect(discord.ui.Select):
         name = self.values[0]
         cmds = self._categories[name]
         lines = [
-            f"{Emojis.BULLET} `{PREFIX}{c.qualified_name}` — {(c.help or '').splitlines()[0]}"
+            f"{Emojis.BULLET} `{PREFIX}{c.qualified_name}` — {next(iter((c.help or '').splitlines()), 'No description.')}"
             for c in cmds
         ]
         e = embeds.info("\n".join(lines), f"{name} Commands")

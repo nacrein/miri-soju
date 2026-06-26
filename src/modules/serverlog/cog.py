@@ -8,9 +8,70 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.emojis import Emojis
 from src.modules.serverlog import service
 
 log = logging.getLogger(__name__)
+
+
+# ── event embed builders ────────────────────────────────────────────────────
+
+def _truncate(text: str, limit: int = 1000) -> str:
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def join_embed(member: discord.Member) -> discord.Embed:
+    e = discord.Embed(
+        description=f"{Emojis.JOIN} {member.mention} joined", color=discord.Color.green()
+    )
+    e.set_author(name=str(member), icon_url=member.display_avatar.url)
+    e.add_field(name="Account created", value=discord.utils.format_dt(member.created_at, "R"))
+    e.set_footer(text=f"ID: {member.id}")
+    e.timestamp = discord.utils.utcnow()
+    return e
+
+
+def leave_embed(member: discord.Member) -> discord.Embed:
+    e = discord.Embed(
+        description=f"{Emojis.LEAVE} {member.mention} left", color=discord.Color.red()
+    )
+    e.set_author(name=str(member), icon_url=member.display_avatar.url)
+    e.set_footer(text=f"ID: {member.id}")
+    e.timestamp = discord.utils.utcnow()
+    return e
+
+
+def message_delete_embed(message: discord.Message) -> discord.Embed:
+    e = discord.Embed(
+        description=(
+            f"{Emojis.MESSAGE_DELETE} Message by {message.author.mention} "
+            f"deleted in {message.channel.mention}"
+        ),
+        color=discord.Color.orange(),
+    )
+    if message.content:
+        e.add_field(name="Content", value=_truncate(message.content), inline=False)
+    e.set_footer(text=f"Author ID: {message.author.id}")
+    e.timestamp = discord.utils.utcnow()
+    return e
+
+
+def message_edit_embed(before: discord.Message, after: discord.Message) -> discord.Embed:
+    # Tighter cap on edits: two fields plus the jump link must stay well under
+    # Discord's 6000-char total embed limit.
+    e = discord.Embed(
+        description=(
+            f"{Emojis.MESSAGE_EDIT} Message by {before.author.mention} "
+            f"edited in {before.channel.mention}"
+        ),
+        color=discord.Color.blue(),
+    )
+    e.add_field(name="Before", value=_truncate(before.content, 900) or "—", inline=False)
+    e.add_field(name="After", value=_truncate(after.content, 900) or "—", inline=False)
+    e.add_field(name="Jump", value=f"[link]({after.jump_url})", inline=False)
+    e.set_footer(text=f"Author ID: {before.author.id}")
+    e.timestamp = discord.utils.utcnow()
+    return e
 
 
 class ServerLog(commands.Cog):
@@ -60,18 +121,18 @@ class ServerLog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
-        await service.log_event(self.bot, member.guild.id, service.join_embed(member), "join")
+        await service.log_event(self.bot, member.guild.id, join_embed(member), "join")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
-        await service.log_event(self.bot, member.guild.id, service.leave_embed(member), "leave")
+        await service.log_event(self.bot, member.guild.id, leave_embed(member), "leave")
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message) -> None:
         if message.guild is None or message.author.bot:
             return
         await service.log_event(
-            self.bot, message.guild.id, service.message_delete_embed(message), "msg_delete"
+            self.bot, message.guild.id, message_delete_embed(message), "msg_delete"
         )
 
     @commands.Cog.listener()
@@ -81,7 +142,7 @@ class ServerLog(commands.Cog):
         if before.content == after.content:
             return  # ignore embed-unfurl edits with no content change
         await service.log_event(
-            self.bot, before.guild.id, service.message_edit_embed(before, after), "msg_edit"
+            self.bot, before.guild.id, message_edit_embed(before, after), "msg_edit"
         )
 
 

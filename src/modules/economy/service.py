@@ -12,6 +12,7 @@ Security model:
 from __future__ import annotations
 
 import random
+import uuid
 from datetime import datetime, timezone
 
 from src.core.errors import BotError
@@ -44,9 +45,13 @@ def apply_multiplier(player, base_amount: int) -> int:
 
 
 def _record(session, player, kind: str, amount: int,
-            counterparty_id: int | None = None, note: str | None = None) -> None:
+            counterparty_id: int | None = None, note: str | None = None,
+            game_session_id: str | None = None) -> None:
     """Append a ledger row using the ACTIVE session, so it commits atomically
-    with the balance change it describes. amount is signed (+gain / -loss)."""
+    with the balance change it describes. amount is signed (+gain / -loss).
+
+    game_session_id is set only for interactive-game rows so a stake and its
+    resolution can be paired exactly; it stays None for every other kind."""
     session.add(Transaction(
         discord_id=player.discord_id,
         kind=kind,
@@ -54,6 +59,7 @@ def _record(session, player, kind: str, amount: int,
         balance_after=player.wallet,
         counterparty_id=counterparty_id,
         note=note,
+        game_session_id=game_session_id,
     ))
 
 
@@ -521,34 +527,40 @@ async def leaderboard(limit: int = 10) -> list[tuple[int, int]]:
 # ── interactive games ───────────────────────────────────────────────────────
 
 
-async def escrow_stake(discord_id: int, amount: int) -> None:
+async def escrow_stake(discord_id: int, amount: int) -> str:
     """Deduct the stake at game start (locked). Raises if funds are short.
 
     Once escrowed the bits have left the wallet, so abandoning the game forfeits
     them — only payout_winnings() can return value, and only for a real win.
+
+    Returns a per-game session id; the game's resolution (payout/forfeit) must
+    carry the same id so reconciliation can pair them exactly.
     """
     validate_bet(amount)
+    session_id = uuid.uuid4().hex  # 32 chars, fits Transaction.game_session_id
     async with get_session() as session:
         repo = EconomyRepository(session)
         player = await repo.get_or_create_for_update(discord_id)
         if player.wallet < amount:
             raise EconomyError("You don't have that many bits in your wallet.")
         player.wallet -= amount
-        _record(session, player, "game_stake", -amount)
+        _record(session, player, "game_stake", -amount, game_session_id=session_id)
+    return session_id
 
 
-async def payout_winnings(discord_id: int, amount: int) -> int:
-    """Credit winnings at game end (locked). Returns new wallet balance."""
-    if amount <= 0:
-        async with get_session() as session:
-            repo = EconomyRepository(session)
-            player = await repo.get_or_create(discord_id)
-            return player.wallet
+async def payout_winnings(discord_id: int, amount: int, session_id: str | None = None) -> int:
+    """Credit winnings at game end (locked). Returns new wallet balance.
+
+    Always writes a game_payout row tagged with the game's session id — even on a
+    loss (amount 0) — so the session is marked resolved and reconciliation won't
+    mistake a finished game for a stranded one. The wallet only moves on a win.
+    """
     async with get_session() as session:
         repo = EconomyRepository(session)
         player = await repo.get_or_create_for_update(discord_id)
-        player.wallet += amount
-        _record(session, player, "game_payout", amount)
+        if amount > 0:
+            player.wallet += amount
+        _record(session, player, "game_payout", amount, game_session_id=session_id)
         return player.wallet
 
 
@@ -563,11 +575,13 @@ async def get_history(discord_id: int, limit: int = 15, offset: int = 0):
         return rows, total
 
 
-async def log_forfeit(discord_id: int, amount: int, game: str) -> None:
+async def log_forfeit(discord_id: int, amount: int, game: str,
+                      session_id: str | None = None) -> None:
     """Record that an abandoned interactive game forfeited its escrowed stake.
 
     The bits already left at escrow; this writes the closing ledger entry so the
-    audit trail shows the resolution instead of bits silently vanishing.
+    audit trail shows the resolution instead of bits silently vanishing. It
+    carries the game's session id so reconciliation sees the session as resolved.
     """
     async with get_session() as session:
         repo = EconomyRepository(session)
@@ -578,6 +592,7 @@ async def log_forfeit(discord_id: int, amount: int, game: str) -> None:
             amount=0,  # no balance change now; the loss was the earlier game_stake
             balance_after=player.wallet,
             note=f"{game} abandoned; stake forfeited",
+            game_session_id=session_id,
         ))
 
 
@@ -619,47 +634,52 @@ async def get_stats(discord_id: int) -> dict:
 # ── startup reconciliation (refund escrows stranded by a restart) ───────────
 
 async def reconcile_stranded_escrows() -> int:
-    """Refund stakes escrowed by interactive games that never resolved.
+    """Refund stakes whose game never wrote a resolution (mid-game restart).
 
-    A game writes `game_stake` on start and exactly one `game_payout` /
-    `game_forfeit` on finish. If the bot restarted mid-game, the stake left the
-    wallet but no resolution was written, so the bits are stranded. Run at
-    startup (when no game can legitimately be in-flight): for each player, if
-    their stakes outnumber their resolutions, refund the difference and log it.
+    A game writes `game_stake` on start (tagged with a session id) and exactly
+    one resolution — `game_payout` / `game_forfeit` — on finish, carrying the
+    same id. If the bot restarted mid-game the stake left the wallet but no
+    resolution was written, so the bits are stranded. Run at startup (when no
+    game can legitimately be in-flight): refund every stake whose session has no
+    resolution row, each by its own amount.
 
-    Returns the number of players refunded.
+    Idempotent: the `game_refund` we write is itself a resolution, so a second
+    run skips that session. Legacy rows with a NULL session id are ignored (they
+    predate session tracking and have nothing to pair against). The query is
+    bounded to unresolved sessions rather than scanning the whole ledger.
+
+    Returns the number of stranded sessions refunded.
     """
-    from collections import defaultdict
-
-    from sqlalchemy import select
+    from sqlalchemy import exists, select
+    from sqlalchemy.orm import aliased
 
     refunded = 0
     async with get_session() as session:
+        resolution = aliased(Transaction)
         stmt = (
             select(Transaction)
-            .where(Transaction.kind.in_(
-                ("game_stake", "game_payout", "game_forfeit", "game_refund")
-            ))
+            .where(
+                Transaction.kind == "game_stake",
+                Transaction.game_session_id.is_not(None),
+                ~exists(
+                    select(resolution.id).where(
+                        resolution.game_session_id == Transaction.game_session_id,
+                        resolution.kind.in_(
+                            ("game_payout", "game_forfeit", "game_refund")
+                        ),
+                    )
+                ),
+            )
             .order_by(Transaction.created_at.asc(), Transaction.id.asc())
         )
-        rows = (await session.execute(stmt)).scalars().all()
+        stranded = (await session.execute(stmt)).scalars().all()
 
-        open_stakes: dict[int, list[int]] = defaultdict(list)
-        for t in rows:
-            if t.kind == "game_stake":
-                open_stakes[t.discord_id].append(-t.amount)  # stake stored negative
-            elif open_stakes[t.discord_id]:
-                # payout, forfeit, OR a prior refund all close the oldest open stake
-                open_stakes[t.discord_id].pop(0)
-
-        for discord_id, stakes in open_stakes.items():
-            if not stakes:
-                continue
-            total = sum(stakes)
-            repo = EconomyRepository(session)
-            player = await repo.get_or_create_for_update(discord_id)
-            player.wallet += total
-            _record(session, player, "game_refund", total,
+        repo = EconomyRepository(session)
+        for stake in stranded:
+            player = await repo.get_or_create_for_update(stake.discord_id)
+            player.wallet += -stake.amount  # stake stored negative → positive refund
+            _record(session, player, "game_refund", -stake.amount,
+                    game_session_id=stake.game_session_id,
                     note="stranded escrow refunded on startup")
             refunded += 1
 

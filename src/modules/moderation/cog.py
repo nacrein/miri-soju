@@ -8,12 +8,58 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.emojis import Emojis
 from src.modules.moderation import service
 from src.modules.serverlog.service import log_event
 
 log = logging.getLogger(__name__)
 
 _DEFAULT_REASON = "No reason provided"
+
+_ACTION_ICONS = {
+    "Ban": Emojis.BAN, "Unban": Emojis.UNBAN, "Kick": Emojis.KICK,
+    "Timeout": Emojis.TIMEOUT, "Untimeout": Emojis.UNTIMEOUT, "Purge": Emojis.PURGE,
+}
+
+
+def check_target(
+    ctx: commands.Context,
+    target: discord.Member,
+    *,
+    require_bot_higher: bool = True,
+) -> None:
+    """Raise ModerationError if the moderator (or bot) can't action this member.
+
+    require_bot_higher=False for actions the bot doesn't enact on Discord (e.g. warn).
+    """
+    if target == ctx.author:
+        raise service.ModerationError("You can't target yourself.")
+    if target == ctx.guild.me:
+        raise service.ModerationError("I can't target myself.")
+    if target.id == ctx.guild.owner_id:
+        raise service.ModerationError("You can't target the server owner.")
+    # Moderator hierarchy (the guild owner bypasses this).
+    if ctx.author.id != ctx.guild.owner_id and target.top_role >= ctx.author.top_role:
+        raise service.ModerationError("That member is equal to or above you in the role hierarchy.")
+    # Bot hierarchy: the bot's top role must be above the target's.
+    if require_bot_higher and target.top_role >= ctx.guild.me.top_role:
+        raise service.ModerationError("That member is above me in the role hierarchy.")
+
+
+def action_embed(
+    action: str,
+    moderator: discord.abc.User,
+    target: discord.abc.User,
+    reason: str,
+) -> discord.Embed:
+    """Build the mod-action embed posted to the audit channel."""
+    icon = _ACTION_ICONS.get(action.split()[0], Emojis.SHIELD)
+    e = discord.Embed(title=f"{icon} {action}", color=discord.Color.dark_red())
+    e.add_field(name="Member", value=f"{target} (`{target.id}`)", inline=False)
+    e.add_field(name="Moderator", value=str(moderator), inline=False)
+    e.add_field(name="Reason", value=reason, inline=False)
+    e.timestamp = discord.utils.utcnow()
+    return e
 
 
 class Moderation(commands.Cog):
@@ -33,10 +79,10 @@ class Moderation(commands.Cog):
         """Ban a user by mention or ID (works even if they aren't in the server)."""
         member = ctx.guild.get_member(user.id)
         if member is not None:
-            service.check_target(ctx, member)
+            check_target(ctx, member)
         await ctx.guild.ban(user, reason=f"{ctx.author}: {reason}", delete_message_days=0)
         await ctx.send(embed=embeds.success(f"Banned **{user}**."))
-        await self._log(ctx.guild.id, service.action_embed("Ban", ctx.author, user, reason))
+        await self._log(ctx.guild.id, action_embed("Ban", ctx.author, user, reason))
 
     @commands.hybrid_command(name="unban", extras={"example": "unban 123456789012345678"})
     @commands.has_permissions(ban_members=True)
@@ -51,7 +97,7 @@ class Moderation(commands.Cog):
         except discord.NotFound:
             raise service.ModerationError("That user isn't banned.")
         await ctx.send(embed=embeds.success(f"Unbanned **{user}**."))
-        await self._log(ctx.guild.id, service.action_embed("Unban", ctx.author, user, reason))
+        await self._log(ctx.guild.id, action_embed("Unban", ctx.author, user, reason))
 
     @commands.hybrid_command(name="kick", extras={"example": "kick @user breaking rules"})
     @commands.has_permissions(kick_members=True)
@@ -61,10 +107,10 @@ class Moderation(commands.Cog):
         self, ctx: commands.Context, member: discord.Member, *, reason: str = _DEFAULT_REASON
     ) -> None:
         """Kick a member from the server."""
-        service.check_target(ctx, member)
+        check_target(ctx, member)
         await member.kick(reason=f"{ctx.author}: {reason}")
         await ctx.send(embed=embeds.success(f"Kicked **{member}**."))
-        await self._log(ctx.guild.id, service.action_embed("Kick", ctx.author, member, reason))
+        await self._log(ctx.guild.id, action_embed("Kick", ctx.author, member, reason))
 
     @commands.hybrid_command(name="timeout", extras={"example": "timeout @user 10m spam"})
     @commands.has_permissions(moderate_members=True)
@@ -79,13 +125,13 @@ class Moderation(commands.Cog):
         reason: str = _DEFAULT_REASON,
     ) -> None:
         """Timeout a member for a duration like 10m, 2h, 1d."""
-        service.check_target(ctx, member)
+        check_target(ctx, member)
         delta = service.parse_duration(duration)
         await member.timeout(delta, reason=f"{ctx.author}: {reason}")
         await ctx.send(embed=embeds.success(f"Timed out **{member}** for {duration}."))
         await self._log(
             ctx.guild.id,
-            service.action_embed(f"Timeout ({duration})", ctx.author, member, reason),
+            action_embed(f"Timeout ({duration})", ctx.author, member, reason),
         )
 
     @commands.hybrid_command(name="untimeout", extras={"example": "untimeout @user"})
@@ -98,7 +144,7 @@ class Moderation(commands.Cog):
         """Remove a member's timeout."""
         await member.timeout(None, reason=f"{ctx.author}: {reason}")
         await ctx.send(embed=embeds.success(f"Removed timeout from **{member}**."))
-        await self._log(ctx.guild.id, service.action_embed("Untimeout", ctx.author, member, reason))
+        await self._log(ctx.guild.id, action_embed("Untimeout", ctx.author, member, reason))
 
     @commands.hybrid_command(name="purge", extras={"example": "purge 50"})
     @commands.has_permissions(manage_messages=True)
@@ -111,7 +157,7 @@ class Moderation(commands.Cog):
         await ctx.defer(ephemeral=True)
         deleted = await ctx.channel.purge(limit=amount)
         await ctx.send(embed=embeds.success(f"Deleted {len(deleted)} message(s)."), ephemeral=True)
-        embed = service.action_embed(
+        embed = action_embed(
             "Purge", ctx.author, ctx.author, f"{len(deleted)} messages in #{ctx.channel}"
         )
         await self._log(ctx.guild.id, embed)
@@ -126,13 +172,13 @@ class Moderation(commands.Cog):
         self, ctx: commands.Context, member: discord.Member, *, reason: str = _DEFAULT_REASON
     ) -> None:
         """Warn a member. The warning is recorded for this server."""
-        service.check_target(ctx, member, require_bot_higher=False)
+        check_target(ctx, member, require_bot_higher=False)
         warning_id = await service.add_warning(ctx.guild.id, member.id, ctx.author.id, reason)
         count = len(await service.list_warnings(ctx.guild.id, member.id))
         await ctx.send(embed=embeds.success(
             f"Warned **{member}** (warning #{warning_id}). They now have **{count}** warning(s)."
         ))
-        embed = service.action_embed(f"Warning #{warning_id}", ctx.author, member, reason)
+        embed = action_embed(f"Warning #{warning_id}", ctx.author, member, reason)
         await self._log(ctx.guild.id, embed)
 
     @commands.hybrid_command(name="warnings", aliases=["warns"], extras={"example": "warnings @user"})
@@ -185,7 +231,7 @@ class Moderation(commands.Cog):
             ctx.guild.default_role, overwrite=overwrite, reason=f"{ctx.author}: {reason}"
         )
         await ctx.send(embed=embeds.success(f"{Emojis.LOCK} Channel locked."))
-        await self._log(ctx.guild.id, service.action_embed("Lock", ctx.author, ctx.author, f"#{ctx.channel}"))
+        await self._log(ctx.guild.id, action_embed("Lock", ctx.author, ctx.author, f"#{ctx.channel}"))
 
     @commands.hybrid_command(name="unlock")
     @commands.has_permissions(manage_channels=True)
@@ -199,7 +245,7 @@ class Moderation(commands.Cog):
             ctx.guild.default_role, overwrite=overwrite, reason=f"Unlocked by {ctx.author}"
         )
         await ctx.send(embed=embeds.success(f"{Emojis.UNLOCK} Channel unlocked."))
-        await self._log(ctx.guild.id, service.action_embed("Unlock", ctx.author, ctx.author, f"#{ctx.channel}"))
+        await self._log(ctx.guild.id, action_embed("Unlock", ctx.author, ctx.author, f"#{ctx.channel}"))
 
     @commands.hybrid_command(name="slowmode", aliases=["slow"], extras={"example": "slowmode 10"})
     @commands.has_permissions(manage_channels=True)

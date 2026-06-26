@@ -1,9 +1,9 @@
-"""Server-log logic: config management, log dispatch, event embeds.
+"""Server-log logic: config management and log dispatch.
 
 Guild config is cached (read-through with a TTL) since it's read on every logged
 event but changes rarely. Config writes invalidate the cache so changes take
 effect immediately. Audit data stays in each server's own channel and is never
-centrally stored.
+centrally stored. The cog builds the event embeds; this module only routes them.
 """
 
 from __future__ import annotations
@@ -13,7 +13,6 @@ import logging
 import discord
 
 from src.core.cache import TTLCache
-from src.core.emojis import Emojis
 from src.database.models.guild import GuildConfig
 from src.database.session import get_session
 from src.modules.serverlog.repository import GuildConfigRepository
@@ -89,63 +88,3 @@ async def log_event(
         await channel.send(embed=embed)
     except discord.HTTPException:
         pass
-
-
-# ── event embed builders ────────────────────────────────────────────────────
-
-def _truncate(text: str, limit: int = 1000) -> str:
-    return text if len(text) <= limit else text[: limit - 1] + "…"
-
-
-def join_embed(member: discord.Member) -> discord.Embed:
-    e = discord.Embed(
-        description=f"{Emojis.JOIN} {member.mention} joined", color=discord.Color.green()
-    )
-    e.set_author(name=str(member), icon_url=member.display_avatar.url)
-    e.add_field(name="Account created", value=discord.utils.format_dt(member.created_at, "R"))
-    e.set_footer(text=f"ID: {member.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e
-
-
-def leave_embed(member: discord.Member) -> discord.Embed:
-    e = discord.Embed(
-        description=f"{Emojis.LEAVE} {member.mention} left", color=discord.Color.red()
-    )
-    e.set_author(name=str(member), icon_url=member.display_avatar.url)
-    e.set_footer(text=f"ID: {member.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e
-
-
-def message_delete_embed(message: discord.Message) -> discord.Embed:
-    e = discord.Embed(
-        description=(
-            f"{Emojis.MESSAGE_DELETE} Message by {message.author.mention} "
-            f"deleted in {message.channel.mention}"
-        ),
-        color=discord.Color.orange(),
-    )
-    if message.content:
-        e.add_field(name="Content", value=_truncate(message.content), inline=False)
-    e.set_footer(text=f"Author ID: {message.author.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e
-
-
-def message_edit_embed(before: discord.Message, after: discord.Message) -> discord.Embed:
-    # Tighter cap on edits: two fields plus the jump link must stay well under
-    # Discord's 6000-char total embed limit.
-    e = discord.Embed(
-        description=(
-            f"{Emojis.MESSAGE_EDIT} Message by {before.author.mention} "
-            f"edited in {before.channel.mention}"
-        ),
-        color=discord.Color.blue(),
-    )
-    e.add_field(name="Before", value=_truncate(before.content, 900) or "—", inline=False)
-    e.add_field(name="After", value=_truncate(after.content, 900) or "—", inline=False)
-    e.add_field(name="Jump", value=f"[link]({after.jump_url})", inline=False)
-    e.set_footer(text=f"Author ID: {before.author.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e

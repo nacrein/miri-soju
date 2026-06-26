@@ -23,6 +23,8 @@ class Transaction(Base, IdMixin, TimestampMixin):
         # History lookups are "this user, newest first".
         Index("ix_transactions_user_time", "discord_id", "created_at"),
         Index("ix_transactions_type", "kind"),
+        # Reconciliation pairs a game's stake to its resolution by this id.
+        Index("ix_transactions_game_session", "game_session_id"),
     )
 
     discord_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -31,3 +33,6 @@ class Transaction(Base, IdMixin, TimestampMixin):
     balance_after: Mapped[int] = mapped_column(BigInteger, nullable=False)
     counterparty_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    # Set only on interactive-game rows (stake + its resolution share one id);
+    # NULL for every other transaction kind.
+    game_session_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)

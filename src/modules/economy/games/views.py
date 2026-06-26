@@ -21,10 +21,11 @@ def _fmt(n: int) -> str:
 class _GameView(discord.ui.View):
     game_name = "game"
 
-    def __init__(self, player_id: int, stake: int = 0) -> None:
+    def __init__(self, player_id: int, stake: int = 0, session_id: str | None = None) -> None:
         super().__init__(timeout=90)
         self._player_id = player_id
         self._stake = stake
+        self._session_id = session_id  # pairs this game's stake to its resolution
         self._resolved = False  # set True once the game pays out or settles
         self.message: discord.Message | None = None
 
@@ -39,7 +40,7 @@ class _GameView(discord.ui.View):
             child.disabled = True
         # Abandoned mid-game: the escrowed stake is forfeit. Log the resolution.
         if not self._resolved and self._stake > 0:
-            await service.log_forfeit(self._player_id, self._stake, self.game_name)
+            await service.log_forfeit(self._player_id, self._stake, self.game_name, self._session_id)
         if self.message:
             try:
                 await self.message.edit(view=self)
@@ -51,9 +52,8 @@ class _GameView(discord.ui.View):
 
 class LadderView(_GameView):
     game_name = "ladder"
-    def __init__(self, player_id: int, stake: int) -> None:
-        super().__init__(player_id)
-        self._stake = stake
+    def __init__(self, player_id: int, stake: int, session_id: str | None = None) -> None:
+        super().__init__(player_id, stake, session_id=session_id)
         self._rung = -1  # -1 = before the first rung
         self._rungs = config.LADDER_RUNGS
 
@@ -63,7 +63,7 @@ class LadderView(_GameView):
     def embed(self, *, status: str | None = None) -> discord.Embed:
         mult = self._current_mult()
         banked = int(self._stake * mult)
-        e = embeds.info("", f"🪜 Ladder")
+        e = embeds.info("", f"{Emojis.LADDER} Ladder")
         e.add_field(name="Stake", value=f"{Emojis.BITS} {_fmt(self._stake)}")
         e.add_field(name="Rung", value=f"{self._rung + 1} / {len(self._rungs)}")
         e.add_field(name="Cash-out value", value=f"{Emojis.BITS} {_fmt(banked)} ({mult:.2f}x)")
@@ -79,7 +79,7 @@ class LadderView(_GameView):
         return e
 
     async def _finish(self, interaction: discord.Interaction, payout: int, text: str) -> None:
-        new_wallet = await service.payout_winnings(self._player_id, payout)
+        new_wallet = await service.payout_winnings(self._player_id, payout, self._session_id)
         for child in self.children:
             child.disabled = True
         e = self.embed(status=f"{text}\nWallet: {_fmt(new_wallet)}")
@@ -113,14 +113,13 @@ class LadderView(_GameView):
 
 class CrashView(_GameView):
     game_name = "crash"
-    def __init__(self, player_id: int, stake: int) -> None:
-        super().__init__(player_id)
-        self._stake = stake
+    def __init__(self, player_id: int, stake: int, session_id: str | None = None) -> None:
+        super().__init__(player_id, stake, session_id=session_id)
         self._mult = config.CRASH_START_MULT
         self._crashed = False
 
     def embed(self, *, status: str | None = None) -> discord.Embed:
-        e = embeds.info("", "📈 Crash")
+        e = embeds.info("", f"{Emojis.CRASH} Crash")
         e.add_field(name="Stake", value=f"{Emojis.BITS} {_fmt(self._stake)}")
         e.add_field(name="Multiplier", value=f"**{self._mult:.2f}x**")
         e.add_field(name="Cash-out value", value=f"{Emojis.BITS} {_fmt(int(self._stake*self._mult))}")
@@ -136,7 +135,7 @@ class CrashView(_GameView):
             self._crashed = True
             for child in self.children:
                 child.disabled = True
-            await service.payout_winnings(self._player_id, 0)
+            await service.payout_winnings(self._player_id, 0, self._session_id)
             e = self.embed(status=f"{Emojis.LOSE} Crashed at {self._mult:.2f}x! Stake lost.")
             await interaction.response.edit_message(embed=e, view=self)
             self.stop()
@@ -147,7 +146,7 @@ class CrashView(_GameView):
     @discord.ui.button(label="Cash out", style=discord.ButtonStyle.primary)
     async def cash_out(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
         payout = int(self._stake * self._mult)
-        new_wallet = await service.payout_winnings(self._player_id, payout)
+        new_wallet = await service.payout_winnings(self._player_id, payout, self._session_id)
         for child in self.children:
             child.disabled = True
         e = self.embed(status=f"{Emojis.WIN} Cashed out at {self._mult:.2f}x!\nWallet: {_fmt(new_wallet)}")
@@ -164,9 +163,8 @@ def _show(cards: list[tuple[str, str]]) -> str:
 
 class BlackjackView(_GameView):
     game_name = "blackjack"
-    def __init__(self, player_id: int, stake: int) -> None:
-        super().__init__(player_id)
-        self._stake = stake
+    def __init__(self, player_id: int, stake: int, session_id: str | None = None) -> None:
+        super().__init__(player_id, stake, session_id=session_id)
         self._game = logic.BlackjackGame()
 
     def embed(self, *, reveal_dealer: bool = False, status: str | None = None) -> discord.Embed:
@@ -196,7 +194,7 @@ class BlackjackView(_GameView):
         else:  # lose or bust
             payout = 0
             text = f"{Emojis.LOSE} You {'busted' if result == 'bust' else 'lose'}."
-        new_wallet = await service.payout_winnings(self._player_id, payout)
+        new_wallet = await service.payout_winnings(self._player_id, payout, self._session_id)
         for child in self.children:
             child.disabled = True
         e = self.embed(reveal_dealer=True, status=f"{text}\nWallet: {_fmt(new_wallet)}")
