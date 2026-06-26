@@ -84,3 +84,29 @@ def ladder_climb_busts(rung_index: int, rungs: list[tuple[float, float]]) -> boo
 def crash_tick(crash_chance: float) -> bool:
     """True if the multiplier crashes this tick."""
     return random.random() < crash_chance
+
+
+# ── hi-lo ────────────────────────────────────────────────────────────────────
+
+_HILO_FACES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+
+
+def hilo_draw() -> int:
+    """A card rank as a value 1 (low, '2') .. 13 (high, 'A'). Drawn with replacement."""
+    return random.randint(1, 13)
+
+
+def hilo_face(value: int) -> str:
+    return _HILO_FACES[value - 1]
+
+
+def hilo_multipliers(current: int, house_edge: float) -> tuple[float, float]:
+    """(higher_or_same, lower_or_same) total-return multipliers for the current card.
+
+    P(next >= current) = (14 - current)/13 and P(next <= current) = current/13; the two
+    overlap on a tie so an extreme card always has a winning side. Each pays inverse
+    probability shaved by the edge, so EV per pick is 1 - house_edge.
+    """
+    p_higher = (14 - current) / 13
+    p_lower = current / 13
+    return (1 - house_edge) / p_higher, (1 - house_edge) / p_lower

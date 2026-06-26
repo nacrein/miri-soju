@@ -99,6 +99,61 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embeds.success(f"Unbanned **{user}**."))
         await self._log(ctx.guild.id, action_embed("Unban", ctx.author, user, reason))
 
+    @commands.hybrid_command(name="softban", extras={"example": "softban @user clearing spam"})
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.guild_only()
+    async def softban(
+        self, ctx: commands.Context, member: discord.Member, *, reason: str = _DEFAULT_REASON
+    ) -> None:
+        """Ban then immediately unban to clear a member's recent messages."""
+        check_target(ctx, member)
+        await ctx.guild.ban(
+            member, reason=f"{ctx.author} (softban): {reason}", delete_message_days=1
+        )
+        await ctx.guild.unban(member, reason=f"{ctx.author}: softban cleanup")
+        await ctx.send(embed=embeds.success(f"Softbanned **{member}** (recent messages cleared)."))
+        await self._log(ctx.guild.id, action_embed("Softban", ctx.author, member, reason))
+
+    @commands.command(name="massban", extras={"example": "massban 123 456 789"})
+    @commands.has_permissions(ban_members=True)
+    @commands.bot_has_permissions(ban_members=True)
+    @commands.guild_only()
+    async def massban(self, ctx: commands.Context, *user_ids: int) -> None:
+        """Ban many users by ID at once (asks for confirmation)."""
+        if not user_ids:
+            raise service.ModerationError("Give one or more user IDs to ban.")
+        if len(user_ids) > 50:
+            raise service.ModerationError("Limit massban to 50 IDs at a time.")
+        prompt = await ctx.send(embed=embeds.warning(
+            f"Ban **{len(user_ids)}** user(s) by ID? Reply `yes` to confirm."
+        ))
+
+        def check(m: discord.Message) -> bool:
+            return (
+                m.author == ctx.author
+                and m.channel == ctx.channel
+                and m.content.lower() == "yes"
+            )
+
+        try:
+            await self.bot.wait_for("message", check=check, timeout=30)
+        except TimeoutError:
+            await prompt.edit(embed=embeds.info("Cancelled."))
+            return
+
+        banned = 0
+        for uid in user_ids:
+            try:
+                await ctx.guild.ban(discord.Object(id=uid), reason=f"{ctx.author}: massban")
+                banned += 1
+            except discord.HTTPException:
+                continue
+        await ctx.send(embed=embeds.success(f"Banned **{banned}** of {len(user_ids)} user(s)."))
+        await self._log(
+            ctx.guild.id, action_embed("Massban", ctx.author, ctx.author, f"{banned} users")
+        )
+
     @commands.hybrid_command(name="kick", extras={"example": "kick @user breaking rules"})
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)

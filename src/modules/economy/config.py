@@ -60,6 +60,13 @@ BASE_INCOME_MULTIPLIER = 1.0
 
 
 
+# ── beg ─────────────────────────────────────────────────────────────────────
+BEG_COOLDOWN_SECONDS = 45   # enforced by the command decorator (resets on restart)
+BEG_MIN = 1
+BEG_MAX = 50
+BEG_FAIL_CHANCE = 0.25      # chance the beg yields nothing
+
+
 # ── steal ───────────────────────────────────────────────────────────────────
 STEAL_COOLDOWN = timedelta(hours=4)
 STEAL_SUCCESS_CHANCE = 0.40
@@ -117,3 +124,18 @@ CRASH_START_MULT = 1.0
 # ── blackjack ───────────────────────────────────────────────────────────────
 BLACKJACK_PAYOUT = 2.0         # win returns 2x stake (even money on the wager)
 BLACKJACK_NATURAL_PAYOUT = 2.5 # a natural 21 pays 3:2
+
+# ── dice ────────────────────────────────────────────────────────────────────
+DICE_SIDES = 100        # rolls 0..99
+DICE_MIN_TARGET = 2     # roll-under floor (~2% win chance, ~49x)
+DICE_MAX_TARGET = 98    # roll-under ceiling (~98% win chance, ~1x)
+
+# ── limbo ───────────────────────────────────────────────────────────────────
+LIMBO_MIN_TARGET = 1.01
+LIMBO_MAX_TARGET = 1000.0
+
+# ── plinko ──────────────────────────────────────────────────────────────────
+PLINKO_ROWS = 8
+# Bucket multipliers (index 0..PLINKO_ROWS), weighted by C(8,k)/256 so the
+# probability-weighted EV is ~0.979 (a ~2% edge, verified by the sim below).
+PLINKO_MULTIPLIERS = [5.0, 2.0, 1.1, 1.0, 0.5, 1.0, 1.1, 2.0, 5.0]

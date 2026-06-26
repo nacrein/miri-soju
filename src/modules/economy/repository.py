@@ -76,6 +76,38 @@ class EconomyRepository:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def top_by_wallet(self, limit: int = 10) -> list[Player]:
+        stmt = select(Player).order_by(Player.wallet.desc()).limit(limit)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def top_by_generator(self, limit: int = 10) -> list[Player]:
+        stmt = (
+            select(Player)
+            .where(Player.generator_tier > 0)
+            .order_by(Player.generator_tier.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def economy_totals(self) -> dict:
+        """Server-wide aggregate for staff: circulation, holdings, player count."""
+        from sqlalchemy import func
+
+        stmt = select(
+            func.count(Player.discord_id),
+            func.coalesce(func.sum(Player.wallet), 0),
+            func.coalesce(func.sum(Player.vault), 0),
+        )
+        count, wallet_sum, vault_sum = (await self.session.execute(stmt)).one()
+        return {
+            "players": int(count),
+            "wallet_total": int(wallet_sum),
+            "vault_total": int(vault_sum),
+            "circulation": int(wallet_sum) + int(vault_sum),
+        }
+
 
     async def recent_transactions(self, discord_id: int, limit: int = 15, offset: int = 0):
         from src.database.models.transaction import Transaction

@@ -117,6 +117,28 @@ class ServerLog(commands.Cog):
         await service.set_event_flag(ctx.guild.id, flag, on)
         await ctx.send(embed=embeds.success(f"`{event}` logging set to `{on}`."))
 
+    @serverlog.command(name="status")
+    async def status(self, ctx: commands.Context) -> None:
+        """Show this server's logging configuration."""
+        s = await service.get_config_summary(ctx.guild.id)
+        if not s["enabled"]:
+            await ctx.send(embed=embeds.info(
+                "Audit logging is off. Use `,serverlog channel #channel` to enable."
+            ))
+            return
+
+        def onoff(v: bool) -> str:
+            return "on" if v else "off"
+
+        e = embeds.info("", "Server Log Settings")
+        e.add_field(name="Channel", value=f"<#{s['channel_id']}>", inline=False)
+        e.add_field(name="Joins", value=onoff(s["joins"]))
+        e.add_field(name="Leaves", value=onoff(s["leaves"]))
+        e.add_field(name="Deletes", value=onoff(s["deletes"]))
+        e.add_field(name="Edits", value=onoff(s["edits"]))
+        e.add_field(name="Mod actions", value=onoff(s["mod"]))
+        await ctx.send(embed=e)
+
     # ── passive event listeners ─────────────────────────────────────────────
 
     @commands.Cog.listener()

@@ -7,8 +7,8 @@ from discord.ext import commands
 
 from src.core import embeds
 from src.core.emojis import Emojis
-from src.modules.economy import service
-from src.modules.economy.games.views import BlackjackView, CrashView, LadderView
+from src.modules.economy import config, service
+from src.modules.economy.games.views import BlackjackView, CrashView, HiLoView, LadderView
 
 
 def _fmt(n: int) -> str:
@@ -61,6 +61,19 @@ class Economy(commands.Cog):
         else:
             msg = f"You received {Emojis.BITS} **{_fmt(amount)}**."
         await ctx.send(embed=embeds.success(msg))
+
+    @commands.cooldown(rate=1, per=config.BEG_COOLDOWN_SECONDS, type=commands.BucketType.user)
+    @commands.command(name="beg")
+    @commands.guild_only()
+    async def beg(self, ctx: commands.Context) -> None:
+        """Beg for a few bits. Sometimes you get nothing."""
+        amount, ok = await service.beg(ctx.author.id)
+        if ok:
+            await ctx.send(
+                embed=embeds.success(f"Someone tossed you {Emojis.BITS} **{_fmt(amount)}**.")
+            )
+        else:
+            await ctx.send(embed=embeds.info("Nobody spared you any bits. Try again later."))
 
     @commands.hybrid_command(name="give", extras={"example": "give @user 500"})
     @commands.guild_only()
@@ -241,6 +254,54 @@ class Economy(commands.Cog):
         )
         await ctx.send(embed=e)
 
+    @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
+    @commands.hybrid_command(name="dice", extras={"example": "dice 500 50"})
+    @commands.guild_only()
+    async def dice(self, ctx: commands.Context, amount: int, target: int) -> None:
+        """Roll under your target (2-98). Lower target, higher payout."""
+        won, roll, target, net, wallet = await service.dice(ctx.author.id, amount, target)
+        e = (embeds.success if won else embeds.error)(
+            f"{Emojis.DICE} Rolled **{roll}** vs target **{target}**.\n"
+            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
+               else f"You lost {Emojis.BITS} **{_fmt(amount)}**.")
+            + f"\nWallet: {_fmt(wallet)}"
+        )
+        await ctx.send(embed=e)
+
+    @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
+    @commands.hybrid_command(name="limbo", extras={"example": "limbo 500 2.5"})
+    @commands.guild_only()
+    async def limbo(self, ctx: commands.Context, amount: int, target: float) -> None:
+        """Set a target multiplier. Win if the round reaches it."""
+        won, outcome, target, net, wallet = await service.limbo(ctx.author.id, amount, target)
+        e = (embeds.success if won else embeds.error)(
+            f"{Emojis.DICE} Round hit **{outcome:.2f}x** (target **{target:.2f}x**).\n"
+            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
+               else f"You lost {Emojis.BITS} **{_fmt(amount)}**.")
+            + f"\nWallet: {_fmt(wallet)}"
+        )
+        await ctx.send(embed=e)
+
+    @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
+    @commands.hybrid_command(name="plinko", extras={"example": "plinko 500"})
+    @commands.guild_only()
+    async def plinko(self, ctx: commands.Context, amount: int) -> None:
+        """Drop a ball down the pegs into a multiplier bucket."""
+        bucket, path, mult, net, wallet = await service.plinko(ctx.author.id, amount)
+        won = net > 0
+        row = " ".join(
+            f"[{m:g}]" if i == bucket else f"{m:g}"
+            for i, m in enumerate(config.PLINKO_MULTIPLIERS)
+        )
+        e = (embeds.success if won else embeds.error)(
+            f"{Emojis.SLOTS} {row}\n"
+            f"Path: {' '.join(path)} → **{mult:.2f}x**\n"
+            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
+               else f"You lost {Emojis.BITS} **{_fmt(amount)}**.")
+            + f"\nWallet: {_fmt(wallet)}"
+        )
+        await ctx.send(embed=e)
+
     # ── leaderboard ─────────────────────────────────────────────────────────
 
     @commands.hybrid_command(name="leaderboard", aliases=["lb", "rich"])
@@ -289,7 +350,6 @@ class Economy(commands.Cog):
         view = BlackjackView(ctx.author.id, amount, session_id)
         # natural blackjack settles immediately
         if view._game.result() == "natural":
-            from src.modules.economy import config
             payout = int(amount * config.BLACKJACK_NATURAL_PAYOUT)
             wallet = await service.payout_winnings(ctx.author.id, payout, session_id)
             for child in view.children:
@@ -300,6 +360,15 @@ class Economy(commands.Cog):
             view.stop()
             await ctx.send(embed=e, view=view)
             return
+        view.message = await ctx.send(embed=view.embed(), view=view)
+
+    @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
+    @commands.hybrid_command(name="hilo", extras={"example": "hilo 500"})
+    @commands.guild_only()
+    async def hilo(self, ctx: commands.Context, amount: int) -> None:
+        """Guess higher or lower. Each call climbs the multiplier; cash out before you miss."""
+        session_id = await service.escrow_stake(ctx.author.id, amount)
+        view = HiLoView(ctx.author.id, amount, session_id)
         view.message = await ctx.send(embed=view.embed(), view=view)
 
 
@@ -327,6 +396,30 @@ class Economy(commands.Cog):
         e.add_field(name="Vault", value=f"{Emojis.BANK} {_fmt(s['vault'])} / {_fmt(s['vault_capacity'])}")
         if s["generator_tier"] > 0:
             e.add_field(name="Generator", value=f"T{s['generator_tier']} · {_fmt(s['generator_rate'])}/hr")
+        await ctx.send(embed=e)
+
+    @commands.command(name="profile", aliases=["p"])
+    @commands.guild_only()
+    async def profile(self, ctx: commands.Context, user: discord.User | None = None) -> None:
+        """Your full economy card: balances, rank, streak, generator, cooldowns."""
+        target = user or ctx.author
+        p = await service.get_profile(target.id)
+        rank = f"#{p['rank']}" if p["rank"] else "—"
+        e = embeds.info("", f"{Emojis.RANK} {target.display_name}'s Profile")
+        e.add_field(name="Net Worth", value=f"{Emojis.BITS} {_fmt(p['net_worth'])}")
+        e.add_field(name="Rank", value=rank)
+        e.add_field(name="Daily Streak", value=f"{Emojis.FIRE} {p['daily_streak']}")
+        e.add_field(name="Wallet", value=f"{Emojis.BITS} {_fmt(p['wallet'])}")
+        vault = f"{Emojis.BANK} {_fmt(p['vault'])} / {_fmt(p['vault_capacity'])}"
+        e.add_field(name="Vault", value=vault)
+        if p["generator_tier"] > 0:
+            e.add_field(
+                name="Generator",
+                value=f"T{p['generator_tier']} · {_fmt(p['generator_rate'])}/hr "
+                      f"(+{_fmt(p['generator_pending'])} pending)",
+            )
+        cd = " · ".join(f"{label}: {status}" for label, status in p["cooldowns"])
+        e.add_field(name="Cooldowns", value=cd, inline=False)
         await ctx.send(embed=e)
 
 

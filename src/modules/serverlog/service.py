@@ -43,6 +43,22 @@ async def _load_config(guild_id: int) -> GuildConfig | None:
     return config
 
 
+async def get_config_summary(guild_id: int) -> dict:
+    """Current logging config for display. Uses the read-through cache."""
+    config = await _load_config(guild_id)
+    if config is None or config.log_channel_id is None:
+        return {"enabled": False}
+    return {
+        "enabled": True,
+        "channel_id": config.log_channel_id,
+        "joins": config.log_joins,
+        "leaves": config.log_leaves,
+        "deletes": config.log_message_delete,
+        "edits": config.log_message_edit,
+        "mod": config.log_mod_actions,
+    }
+
+
 # ── config operations ───────────────────────────────────────────────────────
 
 async def set_log_channel(guild_id: int, channel_id: int) -> None:

@@ -214,3 +214,75 @@ class BlackjackView(_GameView):
     async def stand(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
         self._game.dealer_play()
         await self._settle(interaction)
+
+
+# ── hi-lo ────────────────────────────────────────────────────────────────────
+
+class HiLoView(_GameView):
+    game_name = "hilo"
+
+    def __init__(self, player_id: int, stake: int, session_id: str | None = None) -> None:
+        super().__init__(player_id, stake, session_id=session_id)
+        self._card = logic.hilo_draw()
+        self._mult = 1.0
+        self._sync_labels()
+
+    def _sync_labels(self) -> None:
+        higher, lower = logic.hilo_multipliers(self._card, config.HOUSE_EDGE)
+        self.higher.label = f"Higher or same ({higher:.2f}x)"
+        self.lower.label = f"Lower or same ({lower:.2f}x)"
+
+    def embed(self, *, status: str | None = None) -> discord.Embed:
+        e = embeds.info("", f"{Emojis.CARD} Hi-Lo")
+        e.add_field(name="Card", value=f"**{logic.hilo_face(self._card)}**")
+        e.add_field(name="Stake", value=f"{Emojis.BITS} {_fmt(self._stake)}")
+        e.add_field(
+            name="Cash-out value",
+            value=f"{Emojis.BITS} {_fmt(int(self._stake * self._mult))} ({self._mult:.2f}x)",
+        )
+        e.description = status or "Will the next card be higher or lower? Cash out anytime."
+        return e
+
+    async def _guess(self, interaction: discord.Interaction, higher: bool) -> None:
+        higher_mult, lower_mult = logic.hilo_multipliers(self._card, config.HOUSE_EDGE)
+        nxt = logic.hilo_draw()
+        won = nxt >= self._card if higher else nxt <= self._card
+        self._card = nxt
+        if not won:
+            for child in self.children:
+                child.disabled = True
+            wallet = await service.payout_winnings(self._player_id, 0, self._session_id)
+            self._resolved = True
+            e = self.embed(
+                status=f"{Emojis.LOSE} It was **{logic.hilo_face(nxt)}**. Busted, stake lost.\n"
+                       f"Wallet: {_fmt(wallet)}"
+            )
+            await interaction.response.edit_message(embed=e, view=self)
+            self.stop()
+            return
+        self._mult *= higher_mult if higher else lower_mult
+        self._sync_labels()
+        face = logic.hilo_face(nxt)
+        e = self.embed(status=f"{Emojis.WIN} **{face}** — you're at {self._mult:.2f}x.")
+        await interaction.response.edit_message(embed=e, view=self)
+
+    @discord.ui.button(label="Higher or same", style=discord.ButtonStyle.success)
+    async def higher(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        await self._guess(interaction, True)
+
+    @discord.ui.button(label="Lower or same", style=discord.ButtonStyle.success)
+    async def lower(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        await self._guess(interaction, False)
+
+    @discord.ui.button(label="Cash out", style=discord.ButtonStyle.primary)
+    async def cash_out(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        payout = int(self._stake * self._mult)
+        new_wallet = await service.payout_winnings(self._player_id, payout, self._session_id)
+        for child in self.children:
+            child.disabled = True
+        self._resolved = True
+        e = self.embed(
+            status=f"{Emojis.WIN} Cashed out at {self._mult:.2f}x!\nWallet: {_fmt(new_wallet)}"
+        )
+        await interaction.response.edit_message(embed=e, view=self)
+        self.stop()

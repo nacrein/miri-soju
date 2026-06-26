@@ -175,6 +175,26 @@ async def pray(discord_id: int) -> tuple[int, bool]:
         return amount, blessing
 
 
+# ── beg ─────────────────────────────────────────────────────────────────────
+
+async def beg(discord_id: int) -> tuple[int, bool]:
+    """Low-tier trickle faucet. Returns (amount, succeeded).
+
+    The cooldown is enforced at the command layer (an in-memory decorator), so
+    there is no `last_beg_at` column and no migration. A failed beg is a valid
+    outcome, not an error, so it still consumes the cooldown.
+    """
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        player = await repo.get_or_create_for_update(discord_id)
+        if random.random() < config.BEG_FAIL_CHANCE:
+            return 0, False
+        amount = apply_multiplier(player, random.randint(config.BEG_MIN, config.BEG_MAX))
+        player.wallet += amount
+        _record(session, player, "beg", amount)
+        return amount, True
+
+
 # ── transfer ────────────────────────────────────────────────────────────────
 
 async def give(sender_id: int, receiver_id: int, amount: int) -> None:
@@ -514,6 +534,56 @@ async def roulette(discord_id: int, amount: int, bet: str) -> tuple[int, str, in
     return result, color, net, wallet
 
 
+# ── dice ────────────────────────────────────────────────────────────────────
+
+async def dice(discord_id: int, amount: int, target: int) -> tuple[bool, int, int, int, int]:
+    """Roll 0..99; win if the roll is under `target`. Returns (won, roll, target, net, wallet)."""
+    if not (config.DICE_MIN_TARGET <= target <= config.DICE_MAX_TARGET):
+        raise EconomyError(
+            f"Target must be between {config.DICE_MIN_TARGET} and {config.DICE_MAX_TARGET}."
+        )
+    roll = random.randint(0, config.DICE_SIDES - 1)
+    won = roll < target
+    multiplier = (config.DICE_SIDES / target) * (1 - config.HOUSE_EDGE) if won else 0.0
+    net, wallet = await settle_bet(discord_id, amount, multiplier)
+    return won, roll, target, net, wallet
+
+
+# ── limbo ───────────────────────────────────────────────────────────────────
+
+async def limbo(discord_id: int, amount: int, target: float) -> tuple[bool, float, float, int, int]:
+    """Win if the round multiplier hits `target`. Returns (won, outcome, target, net, wallet)."""
+    if not (config.LIMBO_MIN_TARGET <= target <= config.LIMBO_MAX_TARGET):
+        raise EconomyError(
+            f"Target must be between {config.LIMBO_MIN_TARGET} and {config.LIMBO_MAX_TARGET}."
+        )
+    # 1.0 - random() lands in (0, 1], so the division never hits zero.
+    outcome = (1 - config.HOUSE_EDGE) / (1.0 - random.random())
+    won = outcome >= target
+    net, wallet = await settle_bet(discord_id, amount, target if won else 0.0)
+    return won, outcome, target, net, wallet
+
+
+# ── plinko ──────────────────────────────────────────────────────────────────
+
+def _plinko_drop() -> tuple[int, list[str]]:
+    """Drop a ball through PLINKO_ROWS pegs. Returns (bucket_index, L/R path).
+
+    The bucket is the count of right-hops, which is B(PLINKO_ROWS, 0.5); the
+    physics is cosmetic, the bucket is the only thing that pays.
+    """
+    path = ["R" if random.random() < 0.5 else "L" for _ in range(config.PLINKO_ROWS)]
+    return path.count("R"), path
+
+
+async def plinko(discord_id: int, amount: int) -> tuple[int, list[str], float, int, int]:
+    """Drop into a multiplier bucket. Returns (bucket, path, multiplier, net, wallet)."""
+    bucket, path = _plinko_drop()
+    multiplier = config.PLINKO_MULTIPLIERS[bucket]
+    net, wallet = await settle_bet(discord_id, amount, multiplier)
+    return bucket, path, multiplier, net, wallet
+
+
 # ── leaderboard ─────────────────────────────────────────────────────────────
 
 async def leaderboard(limit: int = 10) -> list[tuple[int, int]]:
@@ -522,6 +592,66 @@ async def leaderboard(limit: int = 10) -> list[tuple[int, int]]:
         repo = EconomyRepository(session)
         players = await repo.top_by_net_worth(limit)
         return [(p.discord_id, p.wallet + p.vault) for p in players]
+
+
+# ── extra leaderboards ──────────────────────────────────────────────────────
+
+async def leaderboard_wallet(limit: int = 10) -> list[tuple[int, int]]:
+    """Top players by liquid wallet. Returns [(discord_id, wallet), ...]."""
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        players = await repo.top_by_wallet(limit)
+        return [(p.discord_id, p.wallet) for p in players]
+
+
+async def leaderboard_generator(limit: int = 10) -> list[tuple[int, int, int]]:
+    """Top players by generator tier. Returns [(discord_id, tier, rate), ...]."""
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        players = await repo.top_by_generator(limit)
+        return [
+            (p.discord_id, p.generator_tier,
+             config.GENERATOR_TIERS.get(p.generator_tier, (0, 0))[0])
+            for p in players
+        ]
+
+
+# ── merged profile ──────────────────────────────────────────────────────────
+
+async def get_profile(discord_id: int) -> dict:
+    """Everything for the profile card, fetched in one session."""
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        player = await repo.get_or_create(discord_id)
+        rank = await repo.net_worth_rank(discord_id)
+        tier, rate, pending = generator_status(player)
+        cooldowns = [
+            ("Daily", _cooldown_remaining(player.last_daily_at, config.DAILY_COOLDOWN)),
+            ("Work", _cooldown_remaining(player.last_work_at, config.WORK_COOLDOWN)),
+            ("Pray", _cooldown_remaining(player.last_pray_at, config.PRAY_COOLDOWN)),
+            ("Steal", _cooldown_remaining(player.last_steal_at, config.STEAL_COOLDOWN)),
+        ]
+        return {
+            "wallet": player.wallet,
+            "vault": player.vault,
+            "vault_capacity": player.vault_capacity,
+            "net_worth": player.wallet + player.vault,
+            "rank": rank,
+            "daily_streak": player.daily_streak,
+            "generator_tier": tier,
+            "generator_rate": rate,
+            "generator_pending": pending,
+            "cooldowns": [(label, _fmt_remaining(secs)) for label, secs in cooldowns],
+        }
+
+
+# ── staff aggregate ─────────────────────────────────────────────────────────
+
+async def economy_totals() -> dict:
+    """Server-wide economy totals (staff view)."""
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        return await repo.economy_totals()
 
 
 # ── interactive games ───────────────────────────────────────────────────────
