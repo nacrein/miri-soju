@@ -44,14 +44,14 @@ class Economy(commands.Cog):
             )
         )
 
-    @commands.hybrid_command(name="work")
+    @commands.command(name="work")
     @commands.guild_only()
     async def work(self, ctx: commands.Context) -> None:
         """Work for some bits."""
         amount = await service.work(ctx.author.id)
         await ctx.send(embed=embeds.success(f"You earned {Emojis.BITS} **{_fmt(amount)}** working."))
 
-    @commands.hybrid_command(name="pray")
+    @commands.command(name="pray")
     @commands.guild_only()
     async def pray(self, ctx: commands.Context) -> None:
         """Pray for bits. Sometimes the heavens are generous."""
@@ -75,7 +75,7 @@ class Economy(commands.Cog):
         else:
             await ctx.send(embed=embeds.info("Nobody spared you any bits. Try again later."))
 
-    @commands.hybrid_command(name="give", extras={"example": "give @user 500"})
+    @commands.command(name="give", extras={"example": "give @user 500"})
     @commands.guild_only()
     async def give(self, ctx: commands.Context, user: discord.User, amount: int) -> None:
         """Give bits from your wallet to another player."""
@@ -84,7 +84,7 @@ class Economy(commands.Cog):
             embed=embeds.success(f"You gave {Emojis.BITS} **{_fmt(amount)}** to {user.mention}.")
         )
 
-    @commands.hybrid_command(name="deposit", aliases=["dep"], extras={"example": "deposit 1000"})
+    @commands.command(name="deposit", aliases=["dep"], extras={"example": "deposit 1000"})
     @commands.guild_only()
     async def deposit(self, ctx: commands.Context, amount: int) -> None:
         """Move bits from your wallet into your safe vault."""
@@ -93,7 +93,7 @@ class Economy(commands.Cog):
             embed=embeds.success(f"Deposited {Emojis.BANK} **{_fmt(moved)}** into your vault.")
         )
 
-    @commands.hybrid_command(name="withdraw", aliases=["with"], extras={"example": "withdraw 1000"})
+    @commands.command(name="withdraw", aliases=["with"], extras={"example": "withdraw 1000"})
     @commands.guild_only()
     async def withdraw(self, ctx: commands.Context, amount: int) -> None:
         """Move bits from your vault back into your wallet."""
@@ -105,7 +105,7 @@ class Economy(commands.Cog):
 
     # ── vault upgrades ──────────────────────────────────────────────────────
 
-    @commands.hybrid_group(name="vault")
+    @commands.group(name="vault")
     @commands.guild_only()
     async def vault(self, ctx: commands.Context) -> None:
         """View your vault and upgrade its capacity."""
@@ -139,7 +139,7 @@ class Economy(commands.Cog):
 
     # ── generator ───────────────────────────────────────────────────────────
 
-    @commands.hybrid_group(name="generator", aliases=["gen"])
+    @commands.group(name="generator", aliases=["gen"])
     @commands.guild_only()
     async def generator(self, ctx: commands.Context) -> None:
         """View, claim, and upgrade your passive bit generator."""
@@ -194,7 +194,7 @@ class Economy(commands.Cog):
 
     # ── steal ───────────────────────────────────────────────────────────────
 
-    @commands.hybrid_command(name="steal", extras={"example": "steal @user"})
+    @commands.command(name="steal", extras={"example": "steal @user"})
     @commands.guild_only()
     async def steal(self, ctx: commands.Context, user: discord.User) -> None:
         """Attempt to steal bits from someone's wallet. Risky."""
@@ -211,7 +211,7 @@ class Economy(commands.Cog):
     # ── gambling ────────────────────────────────────────────────────────────
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="coinflip", aliases=["cf"], extras={"example": "coinflip 500 heads"})
+    @commands.command(name="coinflip", aliases=["cf"], extras={"example": "coinflip 500 heads"})
     @commands.guild_only()
     async def coinflip(self, ctx: commands.Context, amount: int, call: str) -> None:
         """Bet on a coin flip. Call heads or tails."""
@@ -224,7 +224,7 @@ class Economy(commands.Cog):
         await ctx.send(embed=e)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="slots", extras={"example": "slots 500"})
+    @commands.command(name="slots", extras={"example": "slots 500"})
     @commands.guild_only()
     async def slots(self, ctx: commands.Context, amount: int) -> None:
         """Spin the slot machine."""
@@ -240,7 +240,7 @@ class Economy(commands.Cog):
         await ctx.send(embed=e)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="roulette", aliases=["roul"], extras={"example": "roulette 500 red"})
+    @commands.command(name="roulette", aliases=["roul"], extras={"example": "roulette 500 red"})
     @commands.guild_only()
     async def roulette(self, ctx: commands.Context, amount: int, bet: str) -> None:
         """Bet on roulette: red, black, a dozen (1/2/3), or a number (0-36)."""
@@ -255,7 +255,7 @@ class Economy(commands.Cog):
         await ctx.send(embed=e)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="dice", extras={"example": "dice 500 50"})
+    @commands.command(name="dice", extras={"example": "dice 500 50"})
     @commands.guild_only()
     async def dice(self, ctx: commands.Context, amount: int, target: int) -> None:
         """Roll under your target (2-98). Lower target, higher payout."""
@@ -269,7 +269,7 @@ class Economy(commands.Cog):
         await ctx.send(embed=e)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="limbo", extras={"example": "limbo 500 2.5"})
+    @commands.command(name="limbo", extras={"example": "limbo 500 2.5"})
     @commands.guild_only()
     async def limbo(self, ctx: commands.Context, amount: int, target: float) -> None:
         """Set a target multiplier. Win if the round reaches it."""
@@ -283,7 +283,7 @@ class Economy(commands.Cog):
         await ctx.send(embed=e)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="plinko", extras={"example": "plinko 500"})
+    @commands.command(name="plinko", extras={"example": "plinko 500"})
     @commands.guild_only()
     async def plinko(self, ctx: commands.Context, amount: int) -> None:
         """Drop a ball down the pegs into a multiplier bucket."""
@@ -304,7 +304,7 @@ class Economy(commands.Cog):
 
     # ── leaderboard ─────────────────────────────────────────────────────────
 
-    @commands.hybrid_command(name="leaderboard", aliases=["lb", "rich"])
+    @commands.command(name="leaderboard", aliases=["lb", "rich"])
     @commands.guild_only()
     async def leaderboard(self, ctx: commands.Context) -> None:
         """Show the richest players by net worth."""
@@ -324,7 +324,7 @@ class Economy(commands.Cog):
     # ── interactive games ───────────────────────────────────────────────────
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="ladder", extras={"example": "ladder 500"})
+    @commands.command(name="ladder", extras={"example": "ladder 500"})
     @commands.guild_only()
     async def ladder(self, ctx: commands.Context, amount: int) -> None:
         """Climb the ladder for rising multipliers. Cash out before you bust."""
@@ -333,7 +333,7 @@ class Economy(commands.Cog):
         view.message = await ctx.send(embed=view.embed(), view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="crash", extras={"example": "crash 500"})
+    @commands.command(name="crash", extras={"example": "crash 500"})
     @commands.guild_only()
     async def crash(self, ctx: commands.Context, amount: int) -> None:
         """Watch the multiplier climb and cash out before it crashes."""
@@ -342,7 +342,7 @@ class Economy(commands.Cog):
         view.message = await ctx.send(embed=view.embed(), view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="blackjack", aliases=["bj"], extras={"example": "blackjack 500"})
+    @commands.command(name="blackjack", aliases=["bj"], extras={"example": "blackjack 500"})
     @commands.guild_only()
     async def blackjack(self, ctx: commands.Context, amount: int) -> None:
         """Play blackjack against the dealer."""
@@ -363,7 +363,7 @@ class Economy(commands.Cog):
         view.message = await ctx.send(embed=view.embed(), view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.hybrid_command(name="hilo", extras={"example": "hilo 500"})
+    @commands.command(name="hilo", extras={"example": "hilo 500"})
     @commands.guild_only()
     async def hilo(self, ctx: commands.Context, amount: int) -> None:
         """Guess higher or lower. Each call climbs the multiplier; cash out before you miss."""
@@ -374,7 +374,7 @@ class Economy(commands.Cog):
 
     # ── summaries ───────────────────────────────────────────────────────────
 
-    @commands.hybrid_command(name="cooldowns", aliases=["cd"])
+    @commands.command(name="cooldowns", aliases=["cd"])
     @commands.guild_only()
     async def cooldowns(self, ctx: commands.Context) -> None:
         """Show all your cooldowns at a glance."""
@@ -382,7 +382,7 @@ class Economy(commands.Cog):
         lines = [f"{Emojis.CLOCK} **{label}** — {status}" for label, status in pairs]
         await ctx.send(embed=embeds.info("\n".join(lines), "Your Cooldowns"))
 
-    @commands.hybrid_command(name="stats")
+    @commands.command(name="stats")
     @commands.guild_only()
     async def stats(self, ctx: commands.Context) -> None:
         """Show your economy stats."""
