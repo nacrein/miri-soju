@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 
 import discord
 from discord.ext import commands
@@ -201,21 +202,141 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embeds.success(f"Removed timeout from **{member}**."))
         await self._log(ctx.guild.id, action_embed("Untimeout", ctx.author, member, reason))
 
-    @commands.hybrid_command(name="purge", extras={"example": "purge 50"})
+    @commands.group(name="purge", aliases=["clear", "prune"], invoke_without_command=True)
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.guild_only()
-    async def purge(self, ctx: commands.Context, amount: int) -> None:
-        """Bulk-delete the last N messages (1-100) in this channel."""
-        if amount < 1 or amount > 100:
-            raise service.ModerationError("Amount must be between 1 and 100.")
-        await ctx.defer(ephemeral=True)
-        deleted = await ctx.channel.purge(limit=amount)
-        await ctx.send(embed=embeds.success(f"Deleted {len(deleted)} message(s)."), ephemeral=True)
-        embed = action_embed(
-            "Purge", ctx.author, ctx.author, f"{len(deleted)} messages in #{ctx.channel}"
+    async def purge(self, ctx, amount: int | None = None) -> None:
+        """Delete the last n messages. Subcommands filter by type."""
+        if amount is None:
+            await ctx.send(embed=embeds.info(
+                "`,purge <n>` or a filter: bots · humans · links · images · files · embeds · "
+                "mentions · invites · contains · startswith · endswith · user · "
+                "before · after · between"
+            ))
+            return
+        await self._purge(ctx, amount)
+
+    @purge.command(name="bots")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_bots(self, ctx, amount: int = 100) -> None:
+        """Messages from bots."""
+        await self._purge(ctx, amount, check=lambda m: m.author.bot)
+
+    @purge.command(name="humans")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_humans(self, ctx, amount: int = 100) -> None:
+        """Messages not from bots."""
+        await self._purge(ctx, amount, check=lambda m: not m.author.bot)
+
+    @purge.command(name="links")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_links(self, ctx, amount: int = 100) -> None:
+        """Messages containing links."""
+        await self._purge(ctx, amount, check=lambda m: bool(re.search(r"https?://", m.content)))
+
+    @purge.command(name="images")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_images(self, ctx, amount: int = 100) -> None:
+        """Messages with image attachments."""
+        await self._purge(
+            ctx, amount,
+            check=lambda m: any(
+                a.content_type and a.content_type.startswith("image") for a in m.attachments
+            ),
         )
-        await self._log(ctx.guild.id, embed)
+
+    @purge.command(name="files")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_files(self, ctx, amount: int = 100) -> None:
+        """Messages with any attachment."""
+        await self._purge(ctx, amount, check=lambda m: bool(m.attachments))
+
+    @purge.command(name="embeds")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_embeds(self, ctx, amount: int = 100) -> None:
+        """Messages with embeds."""
+        await self._purge(ctx, amount, check=lambda m: bool(m.embeds))
+
+    @purge.command(name="mentions")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_mentions(self, ctx, amount: int = 100) -> None:
+        """Messages with mentions."""
+        await self._purge(ctx, amount, check=lambda m: bool(m.mentions or m.role_mentions))
+
+    @purge.command(name="invites")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_invites(self, ctx, amount: int = 100) -> None:
+        """Messages with server invites."""
+        await self._purge(
+            ctx, amount,
+            check=lambda m: bool(re.search(r"discord(?:\.gg|(?:app)?\.com/invite)/", m.content)),
+        )
+
+    @purge.command(name="contains")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_contains(self, ctx, *, text: str) -> None:
+        """Messages containing a substring (min 3 chars)."""
+        if len(text) < 3:
+            raise service.ModerationError("Give at least 3 characters.")
+        await self._purge(ctx, 100, check=lambda m: text.lower() in m.content.lower())
+
+    @purge.command(name="startswith", aliases=["prefix"])
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_startswith(self, ctx, *, text: str) -> None:
+        """Messages starting with a substring (min 3 chars)."""
+        if len(text) < 3:
+            raise service.ModerationError("Give at least 3 characters.")
+        await self._purge(ctx, 100, check=lambda m: m.content.lower().startswith(text.lower()))
+
+    @purge.command(name="endswith", aliases=["suffix"])
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_endswith(self, ctx, *, text: str) -> None:
+        """Messages ending with a substring (min 3 chars)."""
+        if len(text) < 3:
+            raise service.ModerationError("Give at least 3 characters.")
+        await self._purge(ctx, 100, check=lambda m: m.content.lower().endswith(text.lower()))
+
+    @purge.command(name="user", aliases=["member"])
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_user(self, ctx, user: discord.User, amount: int = 100) -> None:
+        """Messages from one member."""
+        await self._purge(ctx, amount, check=lambda m: m.author.id == user.id)
+
+    @purge.command(name="before")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_before(self, ctx, message: discord.Message, amount: int = 100) -> None:
+        """Messages before a target message."""
+        await self._purge(ctx, amount, before=message)
+
+    @purge.command(name="after")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_after(self, ctx, message: discord.Message, amount: int = 100) -> None:
+        """Messages after a target message."""
+        await self._purge(ctx, amount, after=message)
+
+    @purge.command(name="between")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    async def purge_between(
+        self, ctx, start: discord.Message, end: discord.Message, amount: int = 100
+    ) -> None:
+        """Messages between two target messages."""
+        await self._purge(ctx, amount, after=start, before=end)
 
 
     # ── warnings ────────────────────────────────────────────────────────────
@@ -315,6 +436,484 @@ class Moderation(commands.Cog):
             await ctx.send(embed=embeds.success("Slowmode disabled."))
         else:
             await ctx.send(embed=embeds.success(f"Slowmode set to **{seconds}s**."))
+
+    # ── role helpers ────────────────────────────────────────────────────────────
+
+    def _check_role(self, ctx: commands.Context, role: discord.Role) -> None:
+        if role >= ctx.guild.me.top_role:
+            raise service.ModerationError("That role is above my highest role.")
+        if ctx.author.id != ctx.guild.owner_id and role >= ctx.author.top_role:
+            raise service.ModerationError("That role is above your highest role.")
+        if role.managed:
+            raise service.ModerationError("That role is managed by an integration.")
+
+    async def _confirm(self, ctx: commands.Context, prompt: str) -> bool:
+        msg = await ctx.send(embed=embeds.warning(f"{prompt} Reply `yes` to confirm."))
+
+        def check(m: discord.Message) -> bool:
+            return (
+                m.author == ctx.author
+                and m.channel == ctx.channel
+                and m.content.lower() == "yes"
+            )
+
+        try:
+            await self.bot.wait_for("message", check=check, timeout=30)
+            return True
+        except TimeoutError:
+            await msg.edit(embed=embeds.info("Cancelled."))
+            return False
+
+    async def _purge(self, ctx, amount, *, check=lambda m: True, before=None, after=None) -> None:
+        if amount < 1 or amount > 1000:
+            raise service.ModerationError("Amount must be between 1 and 1000.")
+        try:
+            await ctx.message.delete()
+        except discord.HTTPException:
+            pass
+        deleted = await ctx.channel.purge(limit=amount, check=check, before=before, after=after)
+        note = await ctx.send(embed=embeds.success(f"Deleted {len(deleted)} message(s)."))
+        await note.delete(delay=5)
+
+    # ── role ────────────────────────────────────────────────────────────────────
+
+    @commands.group(name="role", invoke_without_command=True)
+    @commands.guild_only()
+    async def role(self, ctx: commands.Context) -> None:
+        """Role management. Bare command lists the subcommands."""
+        e = embeds.info(
+            "give · take · create · delete · rename · color · hoist · mentionable · info\n"
+            "everyone · humans · bots · has · strip",
+            f"{Emojis.ROLE} Role Commands",
+        )
+        e.set_footer(text="e.g. ,role give @user @role")
+        await ctx.send(embed=e)
+
+    @role.command(name="give", aliases=["add"])
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_give(self, ctx, member: discord.Member, *, role: discord.Role) -> None:
+        """Add a role to a member."""
+        self._check_role(ctx, role)
+        if role in member.roles:
+            raise service.ModerationError(f"{member} already has {role.mention}.")
+        await member.add_roles(role, reason=f"role give by {ctx.author}")
+        await ctx.send(embed=embeds.success(f"Gave {role.mention} to {member.mention}."))
+
+    @role.command(name="take")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_take(self, ctx, member: discord.Member, *, role: discord.Role) -> None:
+        """Remove a role from a member."""
+        self._check_role(ctx, role)
+        if role not in member.roles:
+            raise service.ModerationError(f"{member} doesn't have {role.mention}.")
+        await member.remove_roles(role, reason=f"role take by {ctx.author}")
+        await ctx.send(embed=embeds.success(f"Took {role.mention} from {member.mention}."))
+
+    @role.command(name="create", aliases=["make"])
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_create(self, ctx, name: str, color: str | None = None) -> None:
+        """Create a role. Quote multi-word names."""
+        kwargs = {"name": name, "reason": f"role create by {ctx.author}"}
+        if color:
+            try:
+                kwargs["color"] = discord.Color.from_str(color)
+            except ValueError:
+                raise service.ModerationError("Color must be a hex like `#5865f2`.") from None
+        new = await ctx.guild.create_role(**kwargs)
+        await ctx.send(embed=embeds.success(f"Created {new.mention}."))
+
+    @role.command(name="delete", aliases=["del"])
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_delete(self, ctx, *, role: discord.Role) -> None:
+        """Delete a role."""
+        self._check_role(ctx, role)
+        name = role.name
+        await role.delete(reason=f"role delete by {ctx.author}")
+        await ctx.send(embed=embeds.success(f"Deleted the role **{name}**."))
+
+    @role.command(name="rename", aliases=["name"])
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_rename(self, ctx, role: discord.Role, *, name: str) -> None:
+        """Rename a role."""
+        self._check_role(ctx, role)
+        await role.edit(name=name, reason=f"role rename by {ctx.author}")
+        await ctx.send(embed=embeds.success(f"Renamed the role to **{name}**."))
+
+    @role.command(name="color", aliases=["colour"])
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_color(self, ctx, role: discord.Role, color: str) -> None:
+        """Change a role's color (hex)."""
+        self._check_role(ctx, role)
+        try:
+            c = discord.Color.from_str(color)
+        except ValueError:
+            raise service.ModerationError("Color must be a hex like `#5865f2`.") from None
+        await role.edit(color=c, reason=f"role color by {ctx.author}")
+        await ctx.send(embed=embeds.success(f"Recolored {role.mention}."))
+
+    @role.command(name="hoist")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_hoist(self, ctx, *, role: discord.Role) -> None:
+        """Toggle whether a role shows in the sidebar."""
+        self._check_role(ctx, role)
+        new = not role.hoist
+        await role.edit(hoist=new, reason=f"role hoist by {ctx.author}")
+        await ctx.send(embed=embeds.success(
+            f"{role.mention} is {'now shown' if new else 'no longer shown'} in the sidebar."
+        ))
+
+    @role.command(name="mentionable", aliases=["mention"])
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_mentionable(self, ctx, *, role: discord.Role) -> None:
+        """Toggle whether a role can be pinged."""
+        self._check_role(ctx, role)
+        new = not role.mentionable
+        await role.edit(mentionable=new, reason=f"role mentionable by {ctx.author}")
+        await ctx.send(embed=embeds.success(
+            f"{role.mention} is {'now' if new else 'no longer'} mentionable."
+        ))
+
+    @role.command(name="info")
+    async def role_info(self, ctx, *, role: discord.Role) -> None:
+        """Show details about a role. (No permission required.)"""
+        e = embeds.info("", role.name)
+        e.add_field(name="ID", value=str(role.id))
+        e.add_field(name="Color", value=str(role.color))
+        e.add_field(name="Members", value=str(len(role.members)))
+        e.add_field(name="Hoisted", value="yes" if role.hoist else "no")
+        e.add_field(name="Mentionable", value="yes" if role.mentionable else "no")
+        e.add_field(name="Created", value=discord.utils.format_dt(role.created_at, "R"))
+        await ctx.send(embed=e)
+
+    @role.command(name="everyone")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_everyone(self, ctx, *, role: discord.Role) -> None:
+        """Add a role to every member."""
+        self._check_role(ctx, role)
+        prompt = f"Add {role.mention} to **every** member? This can take a while."
+        if not await self._confirm(ctx, prompt):
+            return
+        added = 0
+        for m in ctx.guild.members:
+            if role not in m.roles:
+                try:
+                    await m.add_roles(role, reason=f"role everyone by {ctx.author}")
+                    added += 1
+                except discord.HTTPException:
+                    continue
+        await ctx.send(embed=embeds.success(f"Added {role.mention} to {added} member(s)."))
+
+    @role.command(name="humans")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_humans(self, ctx, *, role: discord.Role) -> None:
+        """Add a role to every non-bot member."""
+        self._check_role(ctx, role)
+        prompt = f"Add {role.mention} to all humans? This can take a while."
+        if not await self._confirm(ctx, prompt):
+            return
+        added = 0
+        for m in ctx.guild.members:
+            if not m.bot and role not in m.roles:
+                try:
+                    await m.add_roles(role, reason=f"role humans by {ctx.author}")
+                    added += 1
+                except discord.HTTPException:
+                    continue
+        await ctx.send(embed=embeds.success(f"Added {role.mention} to {added} member(s)."))
+
+    @role.command(name="bots")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_bots(self, ctx, *, role: discord.Role) -> None:
+        """Add a role to every bot."""
+        self._check_role(ctx, role)
+        if not await self._confirm(ctx, f"Add {role.mention} to all bots?"):
+            return
+        added = 0
+        for m in ctx.guild.members:
+            if m.bot and role not in m.roles:
+                try:
+                    await m.add_roles(role, reason=f"role bots by {ctx.author}")
+                    added += 1
+                except discord.HTTPException:
+                    continue
+        await ctx.send(embed=embeds.success(f"Added {role.mention} to {added} bot(s)."))
+
+    @role.command(name="has")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_has(self, ctx, source: discord.Role, *, target: discord.Role) -> None:
+        """Give everyone who has one role another role."""
+        self._check_role(ctx, target)
+        holders = list(source.members)
+        prompt = f"Add {target.mention} to all {len(holders)} members with {source.mention}?"
+        if not await self._confirm(ctx, prompt):
+            return
+        added = 0
+        for m in holders:
+            if target not in m.roles:
+                try:
+                    await m.add_roles(target, reason=f"role has by {ctx.author}")
+                    added += 1
+                except discord.HTTPException:
+                    continue
+        await ctx.send(embed=embeds.success(f"Added {target.mention} to {added} member(s)."))
+
+    @role.command(name="strip")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def role_strip(self, ctx, *, role: discord.Role) -> None:
+        """Remove a role from everyone who has it."""
+        self._check_role(ctx, role)
+        holders = list(role.members)
+        prompt = f"Remove {role.mention} from all {len(holders)} members who have it?"
+        if not await self._confirm(ctx, prompt):
+            return
+        removed = 0
+        for m in holders:
+            try:
+                await m.remove_roles(role, reason=f"role strip by {ctx.author}")
+                removed += 1
+            except discord.HTTPException:
+                continue
+        await ctx.send(embed=embeds.success(f"Removed {role.mention} from {removed} member(s)."))
+
+    # ── nickname / cleanup / pins / newusers ────────────────────────────────────
+
+    @commands.group(name="nickname", aliases=["nick"], invoke_without_command=True)
+    @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
+    @commands.guild_only()
+    async def nickname(
+        self, ctx, member: discord.Member | None = None, *, name: str | None = None
+    ) -> None:
+        """Set a member's nickname, or omit the name to reset it."""
+        if member is None:
+            await ctx.send(embed=embeds.info("`,nickname @user <name>` · `,nickname remove @user`"))
+            return
+        check_target(ctx, member)
+        await member.edit(nick=name, reason=f"nickname by {ctx.author}")
+        if name:
+            await ctx.send(embed=embeds.success(f"Set {member.mention}'s nickname to **{name}**."))
+        else:
+            await ctx.send(embed=embeds.success(f"Reset {member.mention}'s nickname."))
+
+    @nickname.command(name="remove", aliases=["reset", "clear"])
+    @commands.has_permissions(manage_nicknames=True)
+    @commands.bot_has_permissions(manage_nicknames=True)
+    async def nickname_remove(self, ctx, member: discord.Member) -> None:
+        """Reset a member's nickname."""
+        check_target(ctx, member)
+        await member.edit(nick=None, reason=f"nickname reset by {ctx.author}")
+        await ctx.send(embed=embeds.success(f"Reset {member.mention}'s nickname."))
+
+    @commands.command(name="cleanup")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.guild_only()
+    async def cleanup(self, ctx, amount: int = 100) -> None:
+        """Remove recent bot messages and command invocations."""
+        await self._purge(ctx, amount, check=lambda m: m.author.bot or m.content.startswith(","))
+
+    @commands.command(name="pin")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.guild_only()
+    async def pin(self, ctx, message: discord.Message | None = None) -> None:
+        """Pin a message: reply to it, or give its ID or link."""
+        if message is None and ctx.message.reference:
+            ref = ctx.message.reference
+            message = ref.resolved if isinstance(ref.resolved, discord.Message) else \
+                await ctx.channel.fetch_message(ref.message_id)
+        if message is None:
+            raise service.ModerationError("Reply to a message or give its ID to pin.")
+        await message.pin(reason=f"Pinned by {ctx.author}")
+        await ctx.send(embed=embeds.success("Pinned the message."))
+
+    @commands.command(name="unpin")
+    @commands.has_permissions(manage_messages=True)
+    @commands.bot_has_permissions(manage_messages=True)
+    @commands.guild_only()
+    async def unpin(self, ctx, message: discord.Message | None = None) -> None:
+        """Unpin a message: reply to it, or give its ID or link."""
+        if message is None and ctx.message.reference:
+            ref = ctx.message.reference
+            message = ref.resolved if isinstance(ref.resolved, discord.Message) else \
+                await ctx.channel.fetch_message(ref.message_id)
+        if message is None:
+            raise service.ModerationError("Reply to a message or give its ID to unpin.")
+        await message.unpin(reason=f"Unpinned by {ctx.author}")
+        await ctx.send(embed=embeds.success("Unpinned the message."))
+
+    @commands.command(name="newusers", aliases=["newmembers"])
+    @commands.has_permissions(manage_guild=True)
+    @commands.guild_only()
+    async def newusers(self, ctx, amount: int = 10) -> None:
+        """List the newest members (raid / suspicious check). Max 100."""
+        amount = max(1, min(amount, 100))
+        members = sorted(
+            (m for m in ctx.guild.members if m.joined_at),
+            key=lambda m: m.joined_at, reverse=True,
+        )[:amount]
+        lines = [
+            f"{m.mention} · joined {discord.utils.format_dt(m.joined_at, 'R')} · "
+            f"created {discord.utils.format_dt(m.created_at, 'R')}"
+            for m in members
+        ]
+        e = embeds.info("\n".join(lines)[:4000], f"Newest {len(members)} Members")
+        await ctx.send(embed=e)
+
+    # ── jail ────────────────────────────────────────────────────────────────────
+
+    @commands.group(name="jail", invoke_without_command=True)
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    @commands.guild_only()
+    async def jail(
+        self, ctx, member: discord.Member | None = None, *, reason: str = _DEFAULT_REASON
+    ) -> None:
+        """Jail a member: strip their roles and apply the jail role."""
+        if member is None:
+            await ctx.send(embed=embeds.info(
+                "`,jail @user [reason]` · `,jail role <role>` · `,jail list`"
+            ))
+            return
+        check_target(ctx, member)
+        role_id = await service.get_jail_role(ctx.guild.id)
+        if role_id is None:
+            raise service.ModerationError("No jail role set. Use `,jail role <role>` first.")
+        jail_role = ctx.guild.get_role(role_id)
+        if jail_role is None:
+            raise service.ModerationError(
+                "The jail role no longer exists. Set it again with `,jail role <role>`."
+            )
+        removed = [
+            r for r in member.roles
+            if r != ctx.guild.default_role and not r.managed and r < ctx.guild.me.top_role
+        ]
+        keep = [r for r in member.roles if r not in removed and r != ctx.guild.default_role]
+        await member.edit(roles=keep + [jail_role], reason=f"{ctx.author} (jail): {reason}")
+        await service.store_jailed(ctx.guild.id, member.id, [r.id for r in removed])
+        await ctx.send(embed=embeds.success(f"Jailed **{member}**."))
+        await self._log(ctx.guild.id, action_embed("Jail", ctx.author, member, reason))
+
+    @jail.command(name="role")
+    @commands.has_permissions(manage_roles=True)
+    async def jail_role(self, ctx, role: discord.Role) -> None:
+        """Set the role used for jailing. Configure its channel permissions yourself."""
+        await service.set_jail_role(ctx.guild.id, role.id)
+        await ctx.send(embed=embeds.success(
+            f"Jail role set to {role.mention}. Deny it from viewing "
+            "channels except your jail channel."
+        ))
+
+    @jail.command(name="list")
+    @commands.has_permissions(manage_roles=True)
+    async def jail_list(self, ctx) -> None:
+        """List currently jailed members."""
+        ids = await service.jailed_members(ctx.guild.id)
+        if not ids:
+            await ctx.send(embed=embeds.info("No one is jailed."))
+            return
+        await ctx.send(embed=embeds.info(
+            "\n".join(f"<@{uid}>" for uid in ids), f"Jailed ({len(ids)})"
+        ))
+
+    @commands.command(name="unjail")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    @commands.guild_only()
+    async def unjail(self, ctx, member: discord.Member, *, reason: str = _DEFAULT_REASON) -> None:
+        """Release a jailed member and restore their roles."""
+        prior = await service.release_jailed(ctx.guild.id, member.id)
+        if prior is None:
+            raise service.ModerationError("That member isn't jailed.")
+        role_id = await service.get_jail_role(ctx.guild.id)
+        jail_role = ctx.guild.get_role(role_id) if role_id else None
+        restore = [
+            r for r in (ctx.guild.get_role(rid) for rid in prior)
+            if r and not r.managed and r < ctx.guild.me.top_role
+        ]
+        new_roles = [
+            r for r in member.roles if r != jail_role and r != ctx.guild.default_role
+        ] + restore
+        await member.edit(
+            roles=list(dict.fromkeys(new_roles)), reason=f"{ctx.author} (unjail): {reason}"
+        )
+        await ctx.send(embed=embeds.success(f"Released **{member}**."))
+        await self._log(ctx.guild.id, action_embed("Unjail", ctx.author, member, reason))
+
+    # ── lockdown ────────────────────────────────────────────────────────────────
+
+    @commands.group(name="lockdown", invoke_without_command=True)
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    @commands.guild_only()
+    async def lockdown(self, ctx) -> None:
+        """Lock or unlock every channel at once."""
+        await ctx.send(embed=embeds.info(
+            "`,lockdown all` locks every channel · `,lockdown end` lifts it."
+        ))
+
+    @lockdown.command(name="all")
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    async def lockdown_all(self, ctx) -> None:
+        """Stop @everyone sending in every text channel."""
+        if not await self._confirm(ctx, "Lock **every** channel? This can take a while."):
+            return
+        locked = 0
+        for channel in ctx.guild.text_channels:
+            ow = channel.overwrites_for(ctx.guild.default_role)
+            if ow.send_messages is False:
+                continue
+            ow.send_messages = False
+            try:
+                await channel.set_permissions(
+                    ctx.guild.default_role, overwrite=ow, reason=f"lockdown by {ctx.author}"
+                )
+                locked += 1
+            except discord.HTTPException:
+                continue
+        await ctx.send(embed=embeds.success(f"{Emojis.LOCK} Locked {locked} channel(s)."))
+        await self._log(
+            ctx.guild.id, action_embed("Lockdown", ctx.author, ctx.author, "all channels")
+        )
+
+    @lockdown.command(name="end", aliases=["lift"])
+    @commands.has_permissions(manage_channels=True)
+    @commands.bot_has_permissions(manage_channels=True)
+    async def lockdown_end(self, ctx) -> None:
+        """Lift the lockdown across every text channel."""
+        if not await self._confirm(ctx, "Unlock **every** channel?"):
+            return
+        unlocked = 0
+        for channel in ctx.guild.text_channels:
+            ow = channel.overwrites_for(ctx.guild.default_role)
+            if ow.send_messages is not False:
+                continue
+            ow.send_messages = None
+            try:
+                await channel.set_permissions(
+                    ctx.guild.default_role, overwrite=ow, reason=f"lockdown end by {ctx.author}"
+                )
+                unlocked += 1
+            except discord.HTTPException:
+                continue
+        await ctx.send(embed=embeds.success(f"{Emojis.UNLOCK} Unlocked {unlocked} channel(s)."))
+        await self._log(
+            ctx.guild.id, action_embed("Unlockdown", ctx.author, ctx.author, "all channels")
+        )
 
 
 async def setup(bot: commands.Bot) -> None:

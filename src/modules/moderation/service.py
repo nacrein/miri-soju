@@ -74,3 +74,30 @@ async def clear_warnings(guild_id: int, user_id: int) -> int:
     async with get_session() as session:
         repo = ModerationRepository(session)
         return await repo.delete_for_user(guild_id, user_id)
+
+
+# ── jail storage ────────────────────────────────────────────────────────────
+
+async def set_jail_role(guild_id: int, role_id: int) -> None:
+    async with get_session() as session:
+        await ModerationRepository(session).set_jail_role(guild_id, role_id)
+
+
+async def get_jail_role(guild_id: int) -> int | None:
+    async with get_session() as session:
+        return await ModerationRepository(session).get_jail_role(guild_id)
+
+
+async def store_jailed(guild_id: int, user_id: int, prior_roles: list[int]) -> None:
+    async with get_session() as session:
+        await ModerationRepository(session).add_jailed(guild_id, user_id, prior_roles)
+
+
+async def release_jailed(guild_id: int, user_id: int) -> list[int] | None:
+    async with get_session() as session:
+        return await ModerationRepository(session).pop_jailed(guild_id, user_id)
+
+
+async def jailed_members(guild_id: int) -> list[int]:
+    async with get_session() as session:
+        return await ModerationRepository(session).list_jailed(guild_id)
