@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from src.core import embeds
 from src.core.emojis import Emojis
+from src.core.paginator import send_command_browser
 from src.modules.serverlog import service
 
 log = logging.getLogger(__name__)
@@ -66,8 +67,8 @@ def message_edit_embed(before: discord.Message, after: discord.Message) -> disco
         ),
         color=discord.Color.blue(),
     )
-    e.add_field(name="Before", value=_truncate(before.content, 900) or "—", inline=False)
-    e.add_field(name="After", value=_truncate(after.content, 900) or "—", inline=False)
+    e.add_field(name="Before", value=_truncate(before.content, 900) or "(empty)", inline=False)
+    e.add_field(name="After", value=_truncate(after.content, 900) or "(empty)", inline=False)
     e.add_field(name="Jump", value=f"[link]({after.jump_url})", inline=False)
     e.set_footer(text=f"Author ID: {before.author.id}")
     e.timestamp = discord.utils.utcnow()
@@ -86,7 +87,7 @@ class ServerLog(commands.Cog):
     async def serverlog(self, ctx: commands.Context) -> None:
         """Configure audit logging for this server."""
         if ctx.invoked_subcommand is None:
-            await ctx.send(embed=embeds.info("Use `serverlog channel #channel` to set the log channel."))
+            await send_command_browser(ctx, ctx.command)
 
     @serverlog.command(name="channel")
     async def set_channel(self, ctx: commands.Context, channel: discord.TextChannel) -> None:

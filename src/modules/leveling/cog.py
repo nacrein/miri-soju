@@ -7,6 +7,7 @@ from discord.ext import commands, tasks
 
 from src.core import embeds
 from src.core.emojis import Emojis
+from src.core.paginator import send_command_browser
 from src.modules.leveling import service
 
 
@@ -77,7 +78,7 @@ class Leveling(commands.Cog):
         p = await service.get_progress(ctx.guild.id, target.id)
         e = embeds.info("", f"{Emojis.RANK} {target.display_name}")
         e.add_field(name="Level", value=str(p["level"]))
-        e.add_field(name="Rank", value=f"#{p['rank']}" if p["rank"] else "—")
+        e.add_field(name="Rank", value=f"#{p['rank']}" if p["rank"] else "Unranked")
         e.add_field(name="XP", value=f"{p['into']:,} / {p['needed']:,}")
         e.add_field(name="Progress", value=self._bar(p["into"], p["needed"]), inline=False)
         if p["voice_minutes"]:
@@ -98,6 +99,12 @@ class Leveling(commands.Cog):
     @commands.guild_only()
     async def levels(self, ctx) -> None:
         """Leveling settings for this server."""
+        await send_command_browser(ctx, ctx.command)
+
+    @levels.command(name="settings", aliases=["config"])
+    @commands.has_permissions(manage_guild=True)
+    async def levels_settings(self, ctx) -> None:
+        """Show this server's current leveling configuration."""
         cfg = await service.get_config(ctx.guild.id)
         if cfg is None or not cfg.enabled:
             await ctx.send(embed=embeds.info("Leveling is off. `,levels enable` to start."))
@@ -110,9 +117,10 @@ class Leveling(commands.Cog):
         e.add_field(name="Cooldown", value=f"{cfg.message_cooldown}s")
         e.add_field(name="Announce", value=where, inline=False)
         e.add_field(name="Message", value=cfg.level_up_message, inline=False)
-        e.add_field(name="Rewards", value=str(len(await service.list_rewards(ctx.guild.id))))
-        e.add_field(name="Multipliers", value=str(len(await service.list_multipliers(ctx.guild.id))))
-        e.set_footer(text="enable · disable · rate · cooldown · channel · message · setlevel · reset · resetall · reward · multiplier")
+        rewards = await service.list_rewards(ctx.guild.id)
+        multipliers = await service.list_multipliers(ctx.guild.id)
+        e.add_field(name="Rewards", value=str(len(rewards)))
+        e.add_field(name="Multipliers", value=str(len(multipliers)))
         await ctx.send(embed=e)
 
     @levels.command(name="enable")
@@ -223,12 +231,6 @@ class Leveling(commands.Cog):
             raise commands.BadArgument("No reward at that level.")
         await ctx.send(embed=embeds.success(f"Removed the level {level} reward."))
 
-    @levels_reward.command(name="list")
-    @commands.has_permissions(manage_guild=True)
-    async def reward_list(self, ctx) -> None:
-        """List level rewards."""
-        await self._show_rewards(ctx)
-
     async def _show_rewards(self, ctx) -> None:
         rows = await service.list_rewards(ctx.guild.id)
         if not rows:
@@ -261,12 +263,6 @@ class Leveling(commands.Cog):
         if not await service.remove_multiplier(ctx.guild.id, channel.id):
             raise commands.BadArgument("That channel has no multiplier.")
         await ctx.send(embed=embeds.success(f"Removed {channel.mention}'s multiplier."))
-
-    @levels_multiplier.command(name="list")
-    @commands.has_permissions(manage_guild=True)
-    async def mult_list(self, ctx) -> None:
-        """List channel multipliers."""
-        await self._show_multipliers(ctx)
 
     async def _show_multipliers(self, ctx) -> None:
         rows = await service.list_multipliers(ctx.guild.id)

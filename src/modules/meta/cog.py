@@ -8,9 +8,13 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
-from src.core.emojis import Emojis
 
-# Permissions the invite link requests — the union of what this bot's features need.
+# Links shown as buttons on ,botinfo. Leave a value blank to omit its button
+# (Discord rejects empty-url buttons, so a blank link simply doesn't appear).
+SUPPORT_URL = ""
+WEBSITE_URL = ""
+
+# Permissions the invite link requests: the union of what this bot's features need.
 _INVITE_PERMS = discord.Permissions(
     manage_roles=True,
     manage_channels=True,
@@ -32,10 +36,37 @@ _INVITE_PERMS = discord.Permissions(
 )
 
 
+class _LinkButtons(discord.ui.View):
+    """Plain link buttons for ,botinfo: Invite on its own row, then Support and
+    Website. Link buttons never fire interactions, so the view needs no timeout
+    and a configured-but-blank link is just left off."""
+
+    def __init__(self, invite_url: str, support_url: str, website_url: str) -> None:
+        super().__init__(timeout=None)
+        self.add_item(discord.ui.Button(
+            style=discord.ButtonStyle.link, label="Invite", url=invite_url, row=0,
+        ))
+        if support_url:
+            self.add_item(discord.ui.Button(
+                style=discord.ButtonStyle.link, label="Support", url=support_url, row=1,
+            ))
+        if website_url:
+            self.add_item(discord.ui.Button(
+                style=discord.ButtonStyle.link, label="Website", url=website_url, row=1,
+            ))
+
+
 class Meta(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self._start = discord.utils.utcnow()
+
+    def _invite_url(self) -> str:
+        """The OAuth invite link requesting this bot's permissions."""
+        return discord.utils.oauth_url(
+            self.bot.user.id,
+            permissions=_INVITE_PERMS,
+            scopes=("bot", "applications.commands"),
+        )
 
     @commands.hybrid_command(name="ping")
     async def ping(self, ctx: commands.Context) -> None:
@@ -44,34 +75,38 @@ class Meta(commands.Cog):
         start = time.perf_counter()
         msg = await ctx.send(embed=embeds.info("Pinging..."))
         rtt = (time.perf_counter() - start) * 1000
+        # This is a msg.edit (not ctx.send), so the author row is set explicitly.
         await msg.edit(
-            embed=embeds.info(f"Gateway: `{gateway:.0f}ms` · Round-trip: `{rtt:.0f}ms`", "Pong")
+            embed=embeds.info(
+                f"> Gateway `{gateway:.0f}ms` · Round-trip `{rtt:.0f}ms`",
+                "Pong",
+                author=ctx.author,
+            )
         )
 
     @commands.hybrid_command(name="botinfo", aliases=["about"])
     async def botinfo(self, ctx: commands.Context) -> None:
-        """Show bot stats: servers, members, uptime, and latency."""
+        """Show bot stats: commands, servers, and users."""
         members = sum(g.member_count or 0 for g in self.bot.guilds)
         command_count = sum(1 for _ in self.bot.walk_commands())
-        e = embeds.info("", f"{Emojis.INFO} {self.bot.user.name}")
-        e.set_thumbnail(url=self.bot.user.display_avatar.url)
-        e.add_field(name="Servers", value=str(len(self.bot.guilds)))
-        e.add_field(name="Members", value=f"{members:,}")
-        e.add_field(name="Commands", value=str(command_count))
-        e.add_field(name="Latency", value=f"{self.bot.latency * 1000:.0f}ms")
-        e.add_field(name="Uptime", value=discord.utils.format_dt(self._start, "R"))
-        e.add_field(name="Library", value=f"discord.py {discord.__version__}")
-        await ctx.send(embed=e)
+        e = discord.Embed(
+            title=self.bot.user.name,
+            description=(
+                f"Commands: `{command_count}`\n"
+                f"Servers: `{len(self.bot.guilds)}`\n"
+                f"Users: `{members:,}`"
+            ),
+            color=embeds.COLOR_DUSK,
+        )
+        view = _LinkButtons(self._invite_url(), SUPPORT_URL, WEBSITE_URL)
+        await ctx.send(embed=e, view=view)
 
     @commands.hybrid_command(name="invite")
     async def invite(self, ctx: commands.Context) -> None:
         """Get a link to add me to another server."""
-        url = discord.utils.oauth_url(
-            self.bot.user.id,
-            permissions=_INVITE_PERMS,
-            scopes=("bot", "applications.commands"),
+        await ctx.send(
+            embed=embeds.info(f"> [Click here to invite me]({self._invite_url()})", "Invite")
         )
-        await ctx.send(embed=embeds.info(f"[Click here to invite me]({url})", "Invite"))
 
 
 async def setup(bot: commands.Bot) -> None:

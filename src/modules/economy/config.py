@@ -29,6 +29,11 @@ PRAY_BLESSING_MAX = 1200
 # ── give ────────────────────────────────────────────────────────────────────
 GIVE_MIN = 1
 
+# ── staff ───────────────────────────────────────────────────────────────────
+# Ceiling on a single staff mint (,staff give). Guards a fat-finger (e.g. a
+# pasted 17-19 digit user ID) from minting an unbounded, irreversible amount.
+STAFF_GRANT_MAX = 1_000_000_000
+
 # ── vault ───────────────────────────────────────────────────────────────────
 # (capacity, total cost to have unlocked up to this capacity)
 VAULT_TIERS = [
@@ -80,8 +85,7 @@ STEAL_MIN_FINE = 100           # minimum fine so failure always stings a little
 # house has an edge. payout_multiplier_on_win = 2.0 * (1 - HOUSE_EDGE).
 HOUSE_EDGE = 0.02
 
-GAMBLE_MIN_BET = 10
-GAMBLE_MAX_BET = 1_000_000     # cap a single wager to bound risk/abuse
+GAMBLE_MIN_BET = 10  # no upper cap; a wager is limited only by the player's wallet
 
 # slots: symbol -> (weight, three-of-a-kind multiplier)
 # Symbol -> (weight, three-of-a-kind multiplier). Tuned so the machine's

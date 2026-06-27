@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.paginator import send_command_browser
 from src.modules.stickymessage import service
 
 _REPOST_COOLDOWN = 5.0  # seconds; avoids hammering a busy channel
@@ -23,9 +24,7 @@ class StickyMessageCog(commands.Cog, name="StickyMessage"):
     @commands.guild_only()
     async def stickymessage(self, ctx) -> None:
         """A message pinned to the bottom of a channel by reposting."""
-        await ctx.send(embed=embeds.info(
-            "`,stickymessage add <channel> <content>` · `remove <channel>` · `view <channel>` · `list`"
-        ))
+        await send_command_browser(ctx, ctx.command)
 
     @stickymessage.command(name="add")
     @commands.has_permissions(manage_messages=True)

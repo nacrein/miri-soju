@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands, tasks
 
 from src.core import embeds
+from src.core.paginator import send_command_browser
 from src.core.timeparse import parse_duration
 from src.modules.timer import service
 
@@ -25,9 +26,7 @@ class TimerCog(commands.Cog, name="Timer"):
     @commands.guild_only()
     async def timer(self, ctx) -> None:
         """Send a message to a channel on an interval."""
-        await ctx.send(embed=embeds.info(
-            "`,timer add <channel> <interval> <message>` · `view <channel>` · `remove <channel>` · `list`"
-        ))
+        await send_command_browser(ctx, ctx.command)
 
     @timer.command(name="add")
     @commands.has_permissions(manage_messages=True)

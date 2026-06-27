@@ -1,4 +1,4 @@
-"""Button roles: add, remove, removeall, reset, list, with persistent buttons."""
+"""Button roles: add, remove, removeall, wipe, list, with persistent buttons."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.paginator import send_command_browser
 from src.modules.buttonrole import service
 
 _STYLES = {
@@ -66,10 +67,7 @@ class ButtonRoleCog(commands.Cog, name="ButtonRole"):
     @commands.guild_only()
     async def buttonrole(self, ctx) -> None:
         """Roles granted by buttons on a bot message."""
-        await ctx.send(embed=embeds.info(
-            "`,buttonrole add <message_link> <role> [style] [emoji] [label]` · "
-            "`remove <message_link> <index>` · `removeall <message_link>` · `list` · `reset`"
-        ))
+        await send_command_browser(ctx, ctx.command)
 
     @buttonrole.command(name="add")
     @commands.has_permissions(manage_roles=True)
@@ -125,12 +123,34 @@ class ButtonRoleCog(commands.Cog, name="ButtonRole"):
         lines = [f"`#{i}` <@&{r.role_id}> · {r.label or r.emoji or 'button'}" for i, r in enumerate(rows, 1)]
         await ctx.send(embed=embeds.info("\n".join(lines)[:4000], f"Button Roles ({len(rows)})"))
 
-    @buttonrole.command(name="reset")
+    @buttonrole.command(name="wipe", aliases=["reset"])
     @commands.has_permissions(manage_roles=True)
-    async def br_reset(self, ctx) -> None:
-        """Remove all button roles in this server (records only)."""
+    async def br_wipe(self, ctx) -> None:
+        """Remove ALL button roles in this server (records only). Asks to confirm."""
+        rows = await service.all_for(ctx.guild.id)
+        if not rows:
+            await ctx.send(embed=embeds.info("No button roles to clear."))
+            return
+        prompt = await ctx.send(embed=embeds.warning(
+            f"Clear **all {len(rows)}** button role(s) in this server? Reply `yes` to confirm."
+        ))
+
+        def check(m):
+            return (
+                m.author == ctx.author
+                and m.channel == ctx.channel
+                and m.content.lower() == "yes"
+            )
+
+        try:
+            await self.bot.wait_for("message", check=check, timeout=30)
+        except TimeoutError:
+            await prompt.edit(embed=embeds.info("Cancelled."))
+            return
         count = await service.clear(ctx.guild.id)
-        await ctx.send(embed=embeds.success(f"Cleared {count} button role(s). Old messages keep their buttons until edited."))
+        await ctx.send(embed=embeds.success(
+            f"Cleared {count} button role(s). Old messages keep their buttons until edited."
+        ))
 
 
 async def setup(bot: commands.Bot) -> None:

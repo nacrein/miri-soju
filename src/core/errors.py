@@ -75,7 +75,7 @@ def setup_error_handling(bot: commands.Bot) -> None:
             return
         if isinstance(exc, commands.CommandOnCooldown):
             secs = round(exc.retry_after, 1)
-            await ctx.send(embed=embeds.error(f"Slow down — try again in {secs}s."))
+            await ctx.send(embed=embeds.error(f"Slow down · try again in {secs}s."))
             return
         if isinstance(exc, commands.MissingRequiredArgument) and ctx.command:
             await ctx.send(embed=usage_embed(ctx.command, ctx.clean_prefix))

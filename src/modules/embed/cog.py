@@ -1,4 +1,4 @@
-"""createembed and copyembed: build an embed from a JSON script, and the inverse."""
+"""createembed and embedcopy: build an embed from a JSON script, and the inverse."""
 
 from __future__ import annotations
 
@@ -92,10 +92,10 @@ class EmbedBuilder(commands.Cog, name="Embed"):
             raise commands.BadArgument(str(exc))
         await ctx.send(embed=built)
 
-    @commands.command(name="copyembed", aliases=["ec"])
+    @commands.command(name="embedcopy", aliases=["ec"])
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
-    async def copyembed(self, ctx, message: discord.Message) -> None:
+    async def embedcopy(self, ctx, message: discord.Message) -> None:
         """Copy a message's first embed as a JSON script."""
         if not message.embeds:
             raise commands.BadArgument("That message has no embed.")

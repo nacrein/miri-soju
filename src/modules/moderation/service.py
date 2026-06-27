@@ -1,6 +1,6 @@
 """Moderation logic: duration parsing, case records, immune list, and temp roles.
 
-No discord here — the cog performs the ban/kick/timeout, the target hierarchy
+No discord here: the cog performs the ban/kick/timeout, the target hierarchy
 check, and all embed rendering. This module only raises errors and returns values.
 """
 

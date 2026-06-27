@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+import logging
+
 import discord
 from discord.ext import commands
 
 from src.core import embeds
 from src.core.emojis import Emojis
 from src.modules.economy import config, service
+from src.modules.economy.converters import VaultAmount, WalletAmount
 from src.modules.economy.games.views import BlackjackView, CrashView, HiLoView, LadderView
+
+log = logging.getLogger(__name__)
 
 
 def _fmt(n: int) -> str:
@@ -19,7 +24,19 @@ class Economy(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.hybrid_command(name="wallet", extras={"example": "wallet @user"})
+    async def cog_load(self) -> None:
+        """Refund game stakes stranded by a previous restart. Non-fatal; runs
+        once when the cog loads: the DB is ready and no gateway is needed."""
+        try:
+            count = await service.reconcile_stranded_escrows()
+            if count:
+                log.info("Reconciled %d stranded game escrow(s) on startup", count)
+        except Exception:
+            log.exception("Economy escrow reconciliation failed (continuing)")
+
+    @commands.hybrid_command(
+        name="wallet", aliases=["bal", "balance"], extras={"example": "wallet @user"}
+    )
     @commands.guild_only()
     async def wallet(self, ctx: commands.Context, user: discord.User | None = None) -> None:
         """Show your bits, or someone else's."""
@@ -75,28 +92,28 @@ class Economy(commands.Cog):
         else:
             await ctx.send(embed=embeds.info("Nobody spared you any bits. Try again later."))
 
-    @commands.hybrid_command(name="give", extras={"example": "give @user 500"})
+    @commands.hybrid_command(name="give", extras={"example": "give @user all"})
     @commands.guild_only()
-    async def give(self, ctx: commands.Context, user: discord.User, amount: int) -> None:
-        """Give bits from your wallet to another player."""
+    async def give(self, ctx: commands.Context, user: discord.User, amount: WalletAmount) -> None:
+        """Give bits from your wallet to another player. Use `all` to give everything."""
         await service.give(ctx.author.id, user.id, amount)
         await ctx.send(
             embed=embeds.success(f"You gave {Emojis.BITS} **{_fmt(amount)}** to {user.mention}.")
         )
 
-    @commands.hybrid_command(name="deposit", aliases=["dep"], extras={"example": "deposit 1000"})
+    @commands.hybrid_command(name="deposit", aliases=["dep"], extras={"example": "deposit all"})
     @commands.guild_only()
-    async def deposit(self, ctx: commands.Context, amount: int) -> None:
-        """Move bits from your wallet into your safe vault."""
+    async def deposit(self, ctx: commands.Context, amount: WalletAmount) -> None:
+        """Move bits from your wallet into your safe vault. Use `all` to deposit everything."""
         moved = await service.deposit(ctx.author.id, amount)
         await ctx.send(
             embed=embeds.success(f"Deposited {Emojis.BANK} **{_fmt(moved)}** into your vault.")
         )
 
-    @commands.hybrid_command(name="withdraw", aliases=["with"], extras={"example": "withdraw 1000"})
+    @commands.hybrid_command(name="withdraw", aliases=["with"], extras={"example": "withdraw all"})
     @commands.guild_only()
-    async def withdraw(self, ctx: commands.Context, amount: int) -> None:
-        """Move bits from your vault back into your wallet."""
+    async def withdraw(self, ctx: commands.Context, amount: VaultAmount) -> None:
+        """Move bits from your vault back into your wallet. Use `all` to withdraw everything."""
         moved = await service.withdraw(ctx.author.id, amount)
         await ctx.send(
             embed=embeds.success(f"Withdrew {Emojis.BITS} **{_fmt(moved)}** to your wallet.")
@@ -212,10 +229,10 @@ class Economy(commands.Cog):
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(
-        name="coinflip", aliases=["cf"], extras={"example": "coinflip 500 heads"}
+        name="coinflip", aliases=["cf"], extras={"example": "coinflip all heads"}
     )
     @commands.guild_only()
-    async def coinflip(self, ctx: commands.Context, amount: int, call: str) -> None:
+    async def coinflip(self, ctx: commands.Context, amount: WalletAmount, call: str) -> None:
         """Bet on a coin flip. Call heads or tails."""
         won, result, net, wallet = await service.coinflip(ctx.author.id, amount, call)
         verb = "won" if won else "lost"
@@ -228,7 +245,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="slots", extras={"example": "slots 500"})
     @commands.guild_only()
-    async def slots(self, ctx: commands.Context, amount: int) -> None:
+    async def slots(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Spin the slot machine."""
         reels, net, wallet = await service.slots(ctx.author.id, amount)
         won = net > 0
@@ -246,7 +263,7 @@ class Economy(commands.Cog):
         name="roulette", aliases=["roul"], extras={"example": "roulette 500 red"}
     )
     @commands.guild_only()
-    async def roulette(self, ctx: commands.Context, amount: int, bet: str) -> None:
+    async def roulette(self, ctx: commands.Context, amount: WalletAmount, bet: str) -> None:
         """Bet on roulette: red, black, a dozen (1/2/3), or a number (0-36)."""
         result, color, net, wallet = await service.roulette(ctx.author.id, amount, bet)
         won = net > 0
@@ -261,7 +278,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="dice", extras={"example": "dice 500 50"})
     @commands.guild_only()
-    async def dice(self, ctx: commands.Context, amount: int, target: int) -> None:
+    async def dice(self, ctx: commands.Context, amount: WalletAmount, target: int) -> None:
         """Roll under your target (2-98). Lower target, higher payout."""
         won, roll, target, net, wallet = await service.dice(ctx.author.id, amount, target)
         e = (embeds.success if won else embeds.error)(
@@ -275,7 +292,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="limbo", extras={"example": "limbo 500 2.5"})
     @commands.guild_only()
-    async def limbo(self, ctx: commands.Context, amount: int, target: float) -> None:
+    async def limbo(self, ctx: commands.Context, amount: WalletAmount, target: float) -> None:
         """Set a target multiplier. Win if the round reaches it."""
         won, outcome, target, net, wallet = await service.limbo(ctx.author.id, amount, target)
         e = (embeds.success if won else embeds.error)(
@@ -289,7 +306,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="plinko", extras={"example": "plinko 500"})
     @commands.guild_only()
-    async def plinko(self, ctx: commands.Context, amount: int) -> None:
+    async def plinko(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Drop a ball down the pegs into a multiplier bucket."""
         bucket, path, mult, net, wallet = await service.plinko(ctx.author.id, amount)
         won = net > 0
@@ -311,7 +328,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="ladder", extras={"example": "ladder 500"})
     @commands.guild_only()
-    async def ladder(self, ctx: commands.Context, amount: int) -> None:
+    async def ladder(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Climb the ladder for rising multipliers. Cash out before you bust."""
         session_id = await service.escrow_stake(ctx.author.id, amount)
         view = LadderView(ctx.author.id, amount, session_id)
@@ -320,7 +337,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="crash", extras={"example": "crash 500"})
     @commands.guild_only()
-    async def crash(self, ctx: commands.Context, amount: int) -> None:
+    async def crash(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Watch the multiplier climb and cash out before it crashes."""
         session_id = await service.escrow_stake(ctx.author.id, amount)
         view = CrashView(ctx.author.id, amount, session_id)
@@ -329,7 +346,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="blackjack", aliases=["bj"], extras={"example": "blackjack 500"})
     @commands.guild_only()
-    async def blackjack(self, ctx: commands.Context, amount: int) -> None:
+    async def blackjack(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Play blackjack against the dealer."""
         session_id = await service.escrow_stake(ctx.author.id, amount)
         view = BlackjackView(ctx.author.id, amount, session_id)
@@ -350,7 +367,7 @@ class Economy(commands.Cog):
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.hybrid_command(name="hilo", extras={"example": "hilo 500"})
     @commands.guild_only()
-    async def hilo(self, ctx: commands.Context, amount: int) -> None:
+    async def hilo(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Guess higher or lower. Each call climbs the multiplier; cash out before you miss."""
         session_id = await service.escrow_stake(ctx.author.id, amount)
         view = HiLoView(ctx.author.id, amount, session_id)
@@ -364,35 +381,19 @@ class Economy(commands.Cog):
     async def cooldowns(self, ctx: commands.Context) -> None:
         """Show all your cooldowns at a glance."""
         pairs = await service.get_cooldowns(ctx.author.id)
-        lines = [f"{Emojis.CLOCK} **{label}** — {status}" for label, status in pairs]
+        lines = [f"{Emojis.CLOCK} **{label}** · {status}" for label, status in pairs]
         await ctx.send(embed=embeds.info("\n".join(lines), "Your Cooldowns"))
-
-    @commands.hybrid_command(name="stats")
-    @commands.guild_only()
-    async def stats(self, ctx: commands.Context) -> None:
-        """Show your economy stats."""
-        s = await service.get_stats(ctx.author.id)
-        rank = f"#{s['rank']}" if s["rank"] else "—"
-        e = embeds.info("", f"{Emojis.RANK} {ctx.author.display_name}'s Stats")
-        e.add_field(name="Net Worth", value=f"{Emojis.BITS} {_fmt(s['net_worth'])}")
-        e.add_field(name="Rank", value=rank)
-        e.add_field(name="Daily Streak", value=f"{Emojis.FIRE} {s['daily_streak']}")
-        e.add_field(name="Wallet", value=f"{Emojis.BITS} {_fmt(s['wallet'])}")
-        e.add_field(name="Vault", value=f"{Emojis.BANK} {_fmt(s['vault'])} / {_fmt(s['vault_capacity'])}")
-        if s["generator_tier"] > 0:
-            e.add_field(name="Generator", value=f"T{s['generator_tier']} · {_fmt(s['generator_rate'])}/hr")
-        await ctx.send(embed=e)
 
     @commands.hybrid_command(name="profile", aliases=["p"])
     @commands.guild_only()
     async def profile(self, ctx: commands.Context, user: discord.User | None = None) -> None:
-        """Your full economy card: balances, rank, streak, generator, cooldowns."""
+        """Your full economy card: balances, wealth rank, streak, generator, cooldowns."""
         target = user or ctx.author
         p = await service.get_profile(target.id)
-        rank = f"#{p['rank']}" if p["rank"] else "—"
+        rank = f"#{p['rank']}" if p["rank"] else "Unranked"
         e = embeds.info("", f"{Emojis.RANK} {target.display_name}'s Profile")
         e.add_field(name="Net Worth", value=f"{Emojis.BITS} {_fmt(p['net_worth'])}")
-        e.add_field(name="Rank", value=rank)
+        e.add_field(name="Wealth Rank", value=rank)
         e.add_field(name="Daily Streak", value=f"{Emojis.FIRE} {p['daily_streak']}")
         e.add_field(name="Wallet", value=f"{Emojis.BITS} {_fmt(p['wallet'])}")
         vault = f"{Emojis.BANK} {_fmt(p['vault'])} / {_fmt(p['vault_capacity'])}"

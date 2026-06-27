@@ -190,7 +190,7 @@ class BlackjackView(_GameView):
             text = f"{Emojis.WIN} You win!"
         elif result == "push":
             payout = self._stake  # stake returned
-            text = "Push — your stake is returned."
+            text = "Push · your stake is returned."
         else:  # lose or bust
             payout = 0
             text = f"{Emojis.LOSE} You {'busted' if result == 'bust' else 'lose'}."
@@ -263,7 +263,7 @@ class HiLoView(_GameView):
         self._mult *= higher_mult if higher else lower_mult
         self._sync_labels()
         face = logic.hilo_face(nxt)
-        e = self.embed(status=f"{Emojis.WIN} **{face}** — you're at {self._mult:.2f}x.")
+        e = self.embed(status=f"{Emojis.WIN} **{face}** · you're at {self._mult:.2f}x.")
         await interaction.response.edit_message(embed=e, view=self)
 
     @discord.ui.button(label="Higher or same", style=discord.ButtonStyle.success)

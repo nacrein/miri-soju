@@ -1,4 +1,4 @@
-"""Pure game logic for the interactive games. No Discord, no DB — testable."""
+"""Pure game logic for the interactive games. No Discord, no DB; testable."""
 
 from __future__ import annotations
 

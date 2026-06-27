@@ -5,7 +5,7 @@ Security model:
   * Every mutation runs in one transaction over a row-locked player, so
     concurrent commands queue instead of racing a stale balance.
   * The wallet/vault check constraints are the final backstop.
-  * All income flows through apply_multiplier() — the seam where future
+  * All income flows through apply_multiplier(), the seam where future
     membership / card bonuses attach without touching any faucet.
 """
 
@@ -221,6 +221,42 @@ async def give(sender_id: int, receiver_id: int, amount: int) -> None:
         _record(session, receiver, "give_received", amount, counterparty_id=sender_id)
 
 
+# ── staff faucet / sink (mint or remove bits; every move hits the ledger) ────
+
+async def staff_grant(discord_id: int, amount: int, staff_id: int) -> int:
+    """Staff faucet: add `amount` bits to a user's wallet. Returns the new wallet."""
+    validate_amount(amount)
+    if amount > config.STAFF_GRANT_MAX:
+        raise EconomyError(f"That's more than the grant limit of {config.STAFF_GRANT_MAX:,}.")
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        player = await repo.get_or_create_for_update(discord_id)
+        player.wallet += amount
+        _record(session, player, "staff_grant", amount, counterparty_id=staff_id)
+        return player.wallet
+
+
+async def staff_deduct(discord_id: int, amount: int, staff_id: int) -> tuple[int, int]:
+    """Staff sink: remove up to `amount` bits, wallet first then vault, so it can't
+    be dodged by stashing bits. Both pools stay >= 0 (the check constraints are the
+    backstop). Returns (taken_from_wallet, taken_from_vault)."""
+    validate_amount(amount)
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        player = await repo.get_or_create_for_update(discord_id)
+        from_wallet = min(amount, player.wallet)
+        from_vault = min(amount - from_wallet, player.vault)
+        if from_wallet + from_vault <= 0:
+            raise EconomyError("That user has no bits to take.")
+        if from_wallet:
+            player.wallet -= from_wallet
+            _record(session, player, "staff_take", -from_wallet, counterparty_id=staff_id)
+        if from_vault:
+            player.vault -= from_vault
+            _record(session, player, "staff_take_vault", -from_vault, counterparty_id=staff_id)
+        return from_wallet, from_vault
+
+
 # ── vault ───────────────────────────────────────────────────────────────────
 
 async def deposit(discord_id: int, amount: int) -> int:
@@ -382,12 +418,11 @@ async def upgrade_generator(discord_id: int) -> tuple[int, int, int]:
 
 
 def validate_bet(amount: int) -> int:
-    """Validate a wager: positive int within the configured bet bounds."""
+    """Validate a wager: a positive int of at least the minimum. There's no upper
+    cap; the player's wallet is the only ceiling (enforced when the stake is taken)."""
     validate_amount(amount)
     if amount < config.GAMBLE_MIN_BET:
         raise EconomyError(f"Minimum bet is {config.GAMBLE_MIN_BET:,} bits.")
-    if amount > config.GAMBLE_MAX_BET:
-        raise EconomyError(f"Maximum bet is {config.GAMBLE_MAX_BET:,} bits.")
     return amount
 
 
@@ -661,7 +696,7 @@ async def escrow_stake(discord_id: int, amount: int) -> str:
     """Deduct the stake at game start (locked). Raises if funds are short.
 
     Once escrowed the bits have left the wallet, so abandoning the game forfeits
-    them — only payout_winnings() can return value, and only for a real win.
+    them; only payout_winnings() can return value, and only for a real win.
 
     Returns a per-game session id; the game's resolution (payout/forfeit) must
     carry the same id so reconciliation can pair them exactly.
@@ -681,8 +716,8 @@ async def escrow_stake(discord_id: int, amount: int) -> str:
 async def payout_winnings(discord_id: int, amount: int, session_id: str | None = None) -> int:
     """Credit winnings at game end (locked). Returns new wallet balance.
 
-    Always writes a game_payout row tagged with the game's session id — even on a
-    loss (amount 0) — so the session is marked resolved and reconciliation won't
+    Always writes a game_payout row tagged with the game's session id (even on a
+    loss, amount 0) so the session is marked resolved and reconciliation won't
     mistake a finished game for a stranded one. The wallet only moves on a win.
     """
     async with get_session() as session:
@@ -742,32 +777,13 @@ async def get_cooldowns(discord_id: int) -> list[tuple[str, str]]:
         return [(label, _fmt_remaining(secs)) for label, secs in pairs]
 
 
-async def get_stats(discord_id: int) -> dict:
-    """A player's own headline stats. No ledger detail, no other players' data."""
-    async with get_session() as session:
-        repo = EconomyRepository(session)
-        player = await repo.get_or_create(discord_id)
-        rank = await repo.net_worth_rank(discord_id)
-        gen_rate = config.GENERATOR_TIERS.get(player.generator_tier, (0, 0))[0]
-        return {
-            "wallet": player.wallet,
-            "vault": player.vault,
-            "vault_capacity": player.vault_capacity,
-            "net_worth": player.wallet + player.vault,
-            "rank": rank,
-            "daily_streak": player.daily_streak,
-            "generator_tier": player.generator_tier,
-            "generator_rate": gen_rate,
-        }
-
-
 # ── startup reconciliation (refund escrows stranded by a restart) ───────────
 
 async def reconcile_stranded_escrows() -> int:
     """Refund stakes whose game never wrote a resolution (mid-game restart).
 
     A game writes `game_stake` on start (tagged with a session id) and exactly
-    one resolution — `game_payout` / `game_forfeit` — on finish, carrying the
+    one resolution (`game_payout` / `game_forfeit`) on finish, carrying the
     same id. If the bot restarted mid-game the stake left the wallet but no
     resolution was written, so the bits are stranded. Run at startup (when no
     game can legitimately be in-flight): refund every stake whose session has no

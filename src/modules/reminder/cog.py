@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import discord
 from discord.ext import commands, tasks
 
 from src.core import embeds
+from src.core.paginator import send_command_browser
 from src.core.timeparse import parse_duration
 from src.modules.reminder import service
 
@@ -28,7 +29,7 @@ class ReminderCog(commands.Cog, name="Reminder"):
             delta = parse_duration(duration)
         except ValueError as exc:
             raise commands.BadArgument(str(exc))
-        remind_at = datetime.now(timezone.utc) + delta
+        remind_at = datetime.now(UTC) + delta
         await service.add(ctx.author.id, ctx.channel.id, ctx.guild.id, remind_at, message)
         await ctx.send(embed=embeds.success(f"I'll remind you {discord.utils.format_dt(remind_at, 'R')}."))
 
@@ -36,7 +37,7 @@ class ReminderCog(commands.Cog, name="Reminder"):
     @commands.guild_only()
     async def reminder(self, ctx) -> None:
         """Your reminders."""
-        await ctx.send(embed=embeds.info("`,remind <duration> <message>` · `,reminder list` · `,reminder remove <index>`"))
+        await send_command_browser(ctx, ctx.command)
 
     @reminder.command(name="list")
     async def reminder_list(self, ctx) -> None:

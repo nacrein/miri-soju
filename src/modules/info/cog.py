@@ -83,7 +83,7 @@ class Info(commands.Cog):
         g = ctx.guild
         humans = sum(1 for m in g.members if not m.bot)
         bots = (g.member_count or 0) - humans
-        e = embeds.info("", f"{g.name} — Members")
+        e = embeds.info("", f"{g.name} · Members")
         e.add_field(name="Total", value=str(g.member_count))
         e.add_field(name="Humans", value=str(humans))
         e.add_field(name="Bots", value=str(bots))
@@ -97,7 +97,7 @@ class Info(commands.Cog):
         if not roles:
             await ctx.send(embed=embeds.info("This server has no roles."))
             return
-        lines = [f"{r.mention} — {len(r.members)} member(s)" for r in roles]
+        lines = [f"{r.mention} · {len(r.members)} member(s)" for r in roles]
         pages = paginate_lines(lines, f"{Emojis.ROLE} Roles ({len(roles)})")
         await Paginator(ctx.author.id, pages).start(ctx)
 
@@ -110,7 +110,7 @@ class Info(commands.Cog):
             await ctx.send(embed=embeds.info(f"No members have {role.mention}."))
             return
         lines = [f"{m.mention} (`{m}`)" for m in members]
-        pages = paginate_lines(lines, f"{role.name} — {len(members)} member(s)")
+        pages = paginate_lines(lines, f"{role.name} · {len(members)} member(s)")
         await Paginator(ctx.author.id, pages).start(ctx)
 
     @commands.command(name="channelinfo", aliases=["ci"])
@@ -122,7 +122,7 @@ class Info(commands.Cog):
         e.add_field(name="ID", value=str(ch.id))
         e.add_field(name="Type", value=str(ch.type))
         e.add_field(name="Created", value=discord.utils.format_dt(ch.created_at, "R"))
-        e.add_field(name="Category", value=ch.category.name if ch.category else "—")
+        e.add_field(name="Category", value=ch.category.name if ch.category else "None")
         topic = getattr(ch, "topic", None)
         if topic:
             e.add_field(name="Topic", value=topic[:1000], inline=False)

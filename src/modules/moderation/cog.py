@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import discord
 from discord.ext import commands, tasks
 
 from src.core import embeds
 from src.core.emojis import Emojis
+from src.core.paginator import send_command_browser
 from src.modules.moderation import service
 from src.modules.serverlog.service import log_event
 
@@ -244,11 +245,7 @@ class Moderation(commands.Cog):
     async def purge(self, ctx, amount: int | None = None) -> None:
         """Delete the last n messages. Subcommands filter by type."""
         if amount is None:
-            await ctx.send(embed=embeds.info(
-                "`,purge <n>` or a filter: bots · humans · links · images · files · embeds · "
-                "mentions · invites · contains · startswith · endswith · user · "
-                "before · after · between"
-            ))
+            await send_command_browser(ctx, ctx.command)
             return
         await self._purge(ctx, amount)
 
@@ -403,18 +400,9 @@ class Moderation(commands.Cog):
         lines = []
         for w in rows:
             when = discord.utils.format_dt(w.created_at, "R")
-            lines.append(f"`#{w.id}` {w.reason or 'No reason'} — by <@{w.moderator_id}> · {when}")
+            lines.append(f"`#{w.id}` {w.reason or 'No reason'} · by <@{w.moderator_id}> · {when}")
         e = embeds.warning("\n".join(lines), f"{member.display_name}'s Warnings ({len(rows)})")
         await ctx.send(embed=e)
-
-    @commands.hybrid_command(name="delwarn", extras={"example": "delwarn 12"})
-    @commands.has_permissions(kick_members=True)
-    @commands.guild_only()
-    async def delwarn(self, ctx: commands.Context, case_id: int) -> None:
-        """Delete a single case by its id."""
-        if not await service.delete_case(ctx.guild.id, case_id):
-            raise service.ModerationError("No case with that id in this server.")
-        await ctx.send(embed=embeds.success(f"Deleted case #{case_id}."))
 
     @commands.hybrid_command(name="clearwarnings", aliases=["clearwarns"], extras={"example": "clearwarnings @user"})
     @commands.has_permissions(kick_members=True)
@@ -431,7 +419,7 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def note(self, ctx: commands.Context) -> None:
         """Staff notes on a member."""
-        await ctx.send(embed=embeds.info("`,note add @user <text>` · `,note list @user` · `,note remove <case_id>`"))
+        await send_command_browser(ctx, ctx.command)
 
     @note.command(name="add")
     @commands.has_permissions(kick_members=True)
@@ -449,7 +437,7 @@ class Moderation(commands.Cog):
             await ctx.send(embed=embeds.info(f"**{member}** has no notes."))
             return
         lines = [
-            f"`#{c.id}` {c.reason or '—'} — by <@{c.moderator_id}> · {discord.utils.format_dt(c.created_at, 'R')}"
+            f"`#{c.id}` {c.reason or 'No reason'} · by <@{c.moderator_id}> · {discord.utils.format_dt(c.created_at, 'R')}"
             for c in rows
         ]
         await ctx.send(embed=embeds.info("\n".join(lines), f"{member.display_name}'s Notes ({len(rows)})"))
@@ -474,7 +462,7 @@ class Moderation(commands.Cog):
             await ctx.send(embed=embeds.info(f"**{member}** has no moderation history."))
             return
         lines = [
-            f"`#{c.id}` **{c.kind}** — {c.reason or '—'} · by <@{c.moderator_id}> · "
+            f"`#{c.id}` **{c.kind}** · {c.reason or 'No reason'} · by <@{c.moderator_id}> · "
             f"{discord.utils.format_dt(c.created_at, 'R')}"
             for c in rows
         ]
@@ -499,7 +487,7 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def immune(self, ctx: commands.Context) -> None:
         """Protect a member or role from moderation actions."""
-        await ctx.send(embed=embeds.info("`,immune add <member|role>` · `,immune remove <member|role>` · `,immune list`"))
+        await send_command_browser(ctx, ctx.command)
 
     @immune.command(name="add")
     @commands.has_permissions(manage_guild=True)
@@ -618,13 +606,7 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def role(self, ctx: commands.Context) -> None:
         """Role management. Bare command lists the subcommands."""
-        e = embeds.info(
-            "give · take · create · delete · rename · color · hoist · mentionable · info\n"
-            "everyone · humans · bots · has · strip",
-            f"{Emojis.ROLE} Role Commands",
-        )
-        e.set_footer(text="e.g. ,role give @user @role")
-        await ctx.send(embed=e)
+        await send_command_browser(ctx, ctx.command)
 
     @role.command(name="give", aliases=["add"])
     @commands.has_permissions(manage_roles=True)
@@ -834,13 +816,13 @@ class Moderation(commands.Cog):
     async def temprole(self, ctx, member: discord.Member = None, role: discord.Role = None, duration: str = None) -> None:
         """Give a role that lifts itself after a duration (max 1 year)."""
         if member is None or role is None or duration is None:
-            await ctx.send(embed=embeds.info("`,temprole @user @role <duration>` · `,temprole list` · `,temprole remove @user @role`"))
+            await send_command_browser(ctx, ctx.command)
             return
         self._check_role(ctx, role)
         delta = service.parse_duration(duration, max_delta=timedelta(days=365))
         if role not in member.roles:
             await member.add_roles(role, reason=f"temprole by {ctx.author}")
-        expires = datetime.now(timezone.utc) + delta
+        expires = datetime.now(UTC) + delta
         await service.add_temprole(ctx.guild.id, member.id, role.id, expires)
         await ctx.send(embed=embeds.success(f"Gave {role.mention} to {member.mention} for {duration}."))
 
@@ -877,7 +859,7 @@ class Moderation(commands.Cog):
 
     # ── nickname / cleanup / pins / newusers ────────────────────────────────────
 
-    @commands.group(name="nickname", aliases=["nick"], invoke_without_command=True)
+    @commands.command(name="nickname", aliases=["nick"])
     @commands.has_permissions(manage_nicknames=True)
     @commands.bot_has_permissions(manage_nicknames=True)
     @commands.guild_only()
@@ -886,7 +868,7 @@ class Moderation(commands.Cog):
     ) -> None:
         """Set a member's nickname, or omit the name to reset it."""
         if member is None:
-            await ctx.send(embed=embeds.info("`,nickname @user <name>` · `,nickname remove @user`"))
+            await ctx.send(embed=embeds.info("`,nickname @user [name]` (omit the name to reset)"))
             return
         check_target(ctx, member)
         await member.edit(nick=name, reason=f"nickname by {ctx.author}")
@@ -894,15 +876,6 @@ class Moderation(commands.Cog):
             await ctx.send(embed=embeds.success(f"Set {member.mention}'s nickname to **{name}**."))
         else:
             await ctx.send(embed=embeds.success(f"Reset {member.mention}'s nickname."))
-
-    @nickname.command(name="remove", aliases=["reset", "clear"])
-    @commands.has_permissions(manage_nicknames=True)
-    @commands.bot_has_permissions(manage_nicknames=True)
-    async def nickname_remove(self, ctx, member: discord.Member) -> None:
-        """Reset a member's nickname."""
-        check_target(ctx, member)
-        await member.edit(nick=None, reason=f"nickname reset by {ctx.author}")
-        await ctx.send(embed=embeds.success(f"Reset {member.mention}'s nickname."))
 
     @commands.command(name="cleanup")
     @commands.has_permissions(manage_messages=True)
@@ -971,9 +944,7 @@ class Moderation(commands.Cog):
     ) -> None:
         """Jail a member: strip their roles and apply the jail role."""
         if member is None:
-            await ctx.send(embed=embeds.info(
-                "`,jail @user [reason]` · `,jail role <role>` · `,jail list`"
-            ))
+            await send_command_browser(ctx, ctx.command)
             return
         await self._guard(ctx, member)
         role_id = await service.get_jail_role(ctx.guild.id)
@@ -1050,9 +1021,7 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     async def lockdown(self, ctx) -> None:
         """Lock or unlock every channel at once."""
-        await ctx.send(embed=embeds.info(
-            "`,lockdown all` locks every channel · `,lockdown end` lifts it."
-        ))
+        await send_command_browser(ctx, ctx.command)
 
     @lockdown.command(name="all")
     @commands.has_permissions(manage_channels=True)

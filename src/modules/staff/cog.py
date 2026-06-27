@@ -8,6 +8,7 @@ from discord.ext import commands
 from src.core import embeds
 from src.core.checks import is_staff
 from src.core.emojis import Emojis
+from src.core.paginator import send_command_browser
 from src.modules.economy import service
 
 
@@ -24,13 +25,7 @@ class Staff(commands.Cog):
     @commands.guild_only()
     async def staff(self, ctx: commands.Context) -> None:
         """Staff tools."""
-        if ctx.invoked_subcommand is None:
-            e = embeds.info(
-                "`,staff history <user> [page]` — a user's transaction ledger\n"
-                "`,staff economy` — server-wide economy totals",
-                f"{Emojis.SHIELD} Staff",
-            )
-            await ctx.send(embed=e)
+        await send_command_browser(ctx, ctx.command)
 
     @staff.command(name="history")
     @is_staff()
@@ -55,6 +50,36 @@ class Staff(commands.Cog):
         e = embeds.info("\n".join(lines), f"{Emojis.RANK} {user.display_name}'s Ledger")
         e.set_footer(text=f"Page {page}/{pages} · {total} total transactions")
         await ctx.send(embed=e)
+
+    @staff.command(name="give", aliases=["grant", "add"])
+    @is_staff()
+    async def staff_give(self, ctx: commands.Context, user: discord.User, amount: int) -> None:
+        """Mint bits straight into a user's wallet (staff faucet)."""
+        if user.bot:
+            raise commands.BadArgument("Bots don't hold bits.")
+        new_balance = await service.staff_grant(user.id, amount, ctx.author.id)
+        await ctx.send(embed=embeds.success(
+            f"Gave {Emojis.BITS} **{_fmt(amount)}** to {user.mention}. "
+            f"Their wallet is now {Emojis.BITS} {_fmt(new_balance)}."
+        ))
+
+    @staff.command(name="take", aliases=["remove", "deduct"])
+    @is_staff()
+    async def staff_take(self, ctx: commands.Context, user: discord.User, amount: int) -> None:
+        """Remove bits from a user (staff sink; takes wallet first, then vault)."""
+        if user.bot:
+            raise commands.BadArgument("Bots don't hold bits.")
+        from_wallet, from_vault = await service.staff_deduct(user.id, amount, ctx.author.id)
+        total = from_wallet + from_vault
+        parts = []
+        if from_wallet:
+            parts.append(f"{_fmt(from_wallet)} wallet")
+        if from_vault:
+            parts.append(f"{_fmt(from_vault)} vault")
+        msg = f"Took {Emojis.BITS} **{_fmt(total)}** from {user.mention} ({' + '.join(parts)})."
+        if total < amount:
+            msg += " That was everything they had."
+        await ctx.send(embed=embeds.success(msg))
 
     @staff.command(name="economy", aliases=["eco"])
     @is_staff()

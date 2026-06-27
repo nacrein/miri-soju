@@ -93,8 +93,8 @@ class Snipe(commands.Cog):
             return
         e = embeds.info("", f"{Emojis.MESSAGE_EDIT} Edited message")
         e.set_author(name=snipe.author, icon_url=snipe.avatar)
-        e.add_field(name="Before", value=(snipe.before or "—")[:1000], inline=False)
-        e.add_field(name="After", value=(snipe.after or "—")[:1000], inline=False)
+        e.add_field(name="Before", value=(snipe.before or "(empty)")[:1000], inline=False)
+        e.add_field(name="After", value=(snipe.after or "(empty)")[:1000], inline=False)
         e.add_field(name="Jump", value=f"[link]({snipe.jump_url})", inline=False)
         e.timestamp = snipe.when
         await ctx.send(embed=e)

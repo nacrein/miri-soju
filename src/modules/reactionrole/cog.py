@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.paginator import send_command_browser
 from src.modules.reactionrole import service
 
 
@@ -18,9 +19,7 @@ class ReactionRole(commands.Cog):
     @commands.guild_only()
     async def reactionrole(self, ctx) -> None:
         """Roles granted by reacting to a message."""
-        await ctx.send(embed=embeds.info(
-            "`,reactionrole add <message_link> <emoji> <role>` · `remove <message_link> <emoji>` · `list` · `clear`"
-        ))
+        await send_command_browser(ctx, ctx.command)
 
     @reactionrole.command(name="add")
     @commands.has_permissions(manage_roles=True)

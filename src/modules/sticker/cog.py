@@ -9,6 +9,7 @@ from discord.ext import commands
 
 from src.core import embeds
 from src.core.http import fetch_bytes
+from src.core.paginator import send_command_browser
 
 
 class Sticker(commands.Cog):
@@ -18,7 +19,7 @@ class Sticker(commands.Cog):
     async def cog_check(self, ctx: commands.Context) -> bool:
         """Every subcommand touches ctx.guild, but the group's guild_only() is
         skipped for subcommands under invoke_without_command=True (discord.py
-        dispatches straight to the subcommand). Guard them all here — the same
+        dispatches straight to the subcommand). Guard them all here, the same
         fix the leaderboard cog uses for the same reason."""
         return ctx.guild is not None
 
@@ -26,7 +27,7 @@ class Sticker(commands.Cog):
     @commands.guild_only()
     async def sticker(self, ctx) -> None:
         """Custom sticker management. Bare command lists the subcommands."""
-        await ctx.send(embed=embeds.info("`,sticker add` · `rename` · `remove` · `list`"))
+        await send_command_browser(ctx, ctx.command)
 
     @sticker.command(name="add", aliases=["create"])
     @commands.has_permissions(manage_expressions=True)

@@ -7,6 +7,7 @@ from discord.ext import commands
 
 from src.core import embeds
 from src.core.http import fetch_bytes
+from src.core.paginator import send_command_browser
 from src.modules.webhook import service
 
 
@@ -33,10 +34,7 @@ class Webhook(commands.Cog):
     @commands.guild_only()
     async def webhook(self, ctx) -> None:
         """Manage webhooks the bot owns."""
-        await ctx.send(embed=embeds.info(
-            "`,webhook create <name>` · `list` · `send <id> <content>` · "
-            "`edit <channel> <message_id> <content>` · `avatar <id> [url]` · `delete <id>`"
-        ))
+        await send_command_browser(ctx, ctx.command)
 
     @webhook.command(name="create")
     @commands.has_permissions(manage_webhooks=True)
@@ -55,7 +53,7 @@ class Webhook(commands.Cog):
         if not rows:
             await ctx.send(embed=embeds.info("No managed webhooks."))
             return
-        lines = [f"`{r.short_id}` — <#{r.channel_id}>" for r in rows]
+        lines = [f"`{r.short_id}` · <#{r.channel_id}>" for r in rows]
         await ctx.send(embed=embeds.info("\n".join(lines), f"Webhooks ({len(rows)})"))
 
     @webhook.command(name="send")

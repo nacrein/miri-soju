@@ -22,7 +22,7 @@ class Leaderboard(commands.Cog):
         """Every board resolves member names off ctx.guild, so all of them are
         guild-only. The group declares guild_only, but with invoke_without_command
         the group's checks are skipped for subcommands (discord.py dispatches
-        straight to the subcommand) — a cog_check covers the group and every
+        straight to the subcommand); a cog_check covers the group and every
         subcommand uniformly, including the leveling ones added later."""
         return ctx.guild is not None
 
@@ -35,23 +35,19 @@ class Leaderboard(commands.Cog):
             member = ctx.guild.get_member(uid)
             name = member.display_name if member else f"User {uid}"
             rank = Emojis.TROPHY if i == 1 else f"`#{i}`"
-            lines.append(f"{rank} **{name}** — {value_str}")
+            lines.append(f"{rank} **{name}** · {value_str}")
         e = embeds.info("\n".join(lines), f"{Emojis.TROPHY} {title}")
-        e.set_footer(text="Boards: ,lb networth · ,lb bits · ,lb generator")
+        e.set_footer(text="Boards: ,lb bits · gen · level · voice")
         await ctx.send(embed=e)
 
     @commands.hybrid_group(
-        name="leaderboard", aliases=["lb", "top", "rich"], invoke_without_command=True
+        name="leaderboard",
+        aliases=["lb", "top", "rich", "networth", "net", "worth"],
+        invoke_without_command=True,
     )
     @commands.guild_only()
     async def leaderboard(self, ctx: commands.Context) -> None:
         """Server rankings. Bare command shows net worth; subcommands switch the board."""
-        rows = await economy.leaderboard(10)
-        await self._show_board(ctx, [(uid, f"{Emojis.BITS} {_fmt(w)}") for uid, w in rows], "Net Worth")
-
-    @leaderboard.command(name="networth", aliases=["net", "worth"])
-    async def lb_networth(self, ctx: commands.Context) -> None:
-        """Top players by wallet plus vault."""
         rows = await economy.leaderboard(10)
         await self._show_board(ctx, [(uid, f"{Emojis.BITS} {_fmt(w)}") for uid, w in rows], "Net Worth")
 

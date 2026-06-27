@@ -1,4 +1,7 @@
-"""Custom emoji management: add, steal, rename, list, remove, and bulk variants."""
+"""Custom emoji management: add, rename, remove, list, and enlarge.
+
+`add` and `remove` each take one or several emojis, so there are no separate bulk
+commands."""
 
 from __future__ import annotations
 
@@ -9,6 +12,7 @@ from discord.ext import commands
 
 from src.core import embeds
 from src.core.http import fetch_bytes
+from src.core.paginator import send_command_browser
 
 _CUSTOM = re.compile(r"<(a?):(\w+):(\d+)>")
 
@@ -19,17 +23,15 @@ class Emoji(commands.Cog):
 
     async def cog_check(self, ctx: commands.Context) -> bool:
         """Subcommands touch ctx.guild, but the group's guild_only() is skipped
-        for them under invoke_without_command=True. Guard the whole cog here —
-        the same fix the leaderboard cog uses for the same reason."""
+        for them under invoke_without_command=True. Guard the whole cog here.
+        The same fix the leaderboard cog uses for the same reason."""
         return ctx.guild is not None
 
     @commands.group(name="emoji", invoke_without_command=True)
     @commands.guild_only()
     async def emoji(self, ctx) -> None:
         """Custom emoji management. Bare command lists the subcommands."""
-        await ctx.send(embed=embeds.info(
-            "`,emoji add` · `steal` · `addmany` · `rename` · `remove` · `removemany` · `enlarge` · `list`"
-        ))
+        await send_command_browser(ctx, ctx.command)
 
     @emoji.command(name="enlarge", aliases=["jumbo"])
     async def emoji_enlarge(self, ctx, emoji: discord.PartialEmoji) -> None:
@@ -38,40 +40,42 @@ class Emoji(commands.Cog):
         e.set_image(url=emoji.url)
         await ctx.send(embed=e)
 
-    @emoji.command(name="add", aliases=["create"])
+    @emoji.command(name="add", aliases=["create", "steal", "addmany", "stealmany"])
     @commands.has_permissions(manage_expressions=True)
     @commands.bot_has_permissions(manage_expressions=True)
-    async def emoji_add(self, ctx, emoji: str | None = None, name: str | None = None) -> None:
-        """Add an emoji from another custom emoji, a URL, or an attachment."""
-        data, default_name = await self._resolve(ctx, emoji)
+    async def emoji_add(self, ctx, *, emojis: str | None = None) -> None:
+        """Add one or more emojis.
+
+        Give one source (a custom emoji, an image URL, or an attachment) with an
+        optional name, or paste several custom emojis to add them all at once
+        (each keeps its own name).
+        """
+        tokens = _CUSTOM.findall(emojis or "")
+        if len(tokens) >= 2:  # bulk: each custom emoji added under its own name
+            added = 0
+            for animated, name, eid in tokens:
+                url = f"https://cdn.discordapp.com/emojis/{eid}.{'gif' if animated else 'png'}"
+                try:
+                    await ctx.guild.create_custom_emoji(
+                        name=name, image=await fetch_bytes(url), reason=f"by {ctx.author}"
+                    )
+                    added += 1
+                except (discord.HTTPException, ValueError):
+                    continue
+            await ctx.send(embed=embeds.success(f"Added {added} emoji(s)."))
+            return
+        # single source, with an optional trailing name
+        parts = (emojis or "").split()
+        source = parts[0] if parts else None
+        name = parts[1] if len(parts) > 1 else None
+        data, default_name = await self._resolve(ctx, source)
         final = name or default_name
         if not final:
             raise commands.BadArgument("Give a name for the emoji.")
-        created = await ctx.guild.create_custom_emoji(name=final, image=data, reason=f"by {ctx.author}")
+        created = await ctx.guild.create_custom_emoji(
+            name=final, image=data, reason=f"by {ctx.author}"
+        )
         await ctx.send(embed=embeds.success(f"Added {created}."))
-
-    @emoji.command(name="steal")
-    async def emoji_steal(self, ctx, emoji: discord.PartialEmoji, name: str | None = None) -> None:
-        """Add a custom emoji from another server."""
-        data = await fetch_bytes(str(emoji.url))
-        created = await ctx.guild.create_custom_emoji(name=name or emoji.name, image=data, reason=f"by {ctx.author}")
-        await ctx.send(embed=embeds.success(f"Stole {created}."))
-
-    @emoji.command(name="addmany", aliases=["stealmany"])
-    async def emoji_addmany(self, ctx, *, emojis: str) -> None:
-        """Add several custom emojis at once."""
-        found = _CUSTOM.findall(emojis)
-        if not found:
-            raise commands.BadArgument("Give one or more custom emojis.")
-        added = 0
-        for animated, name, eid in found:
-            url = f"https://cdn.discordapp.com/emojis/{eid}.{'gif' if animated else 'png'}"
-            try:
-                await ctx.guild.create_custom_emoji(name=name, image=await fetch_bytes(url), reason=f"by {ctx.author}")
-                added += 1
-            except (discord.HTTPException, ValueError):
-                continue
-        await ctx.send(embed=embeds.success(f"Added {added} emoji(s)."))
 
     @emoji.command(name="rename")
     async def emoji_rename(self, ctx, emoji: discord.Emoji, new_name: str) -> None:
@@ -81,28 +85,29 @@ class Emoji(commands.Cog):
         await emoji.edit(name=new_name, reason=f"by {ctx.author}")
         await ctx.send(embed=embeds.success(f"Renamed to `{new_name}` {emoji}."))
 
-    @emoji.command(name="remove", aliases=["delete", "del"])
-    async def emoji_remove(self, ctx, emoji: discord.Emoji) -> None:
-        """Remove a server emoji."""
-        if emoji.guild_id != ctx.guild.id:
-            raise commands.BadArgument("That emoji isn't from this server.")
-        name = emoji.name
-        await emoji.delete(reason=f"by {ctx.author}")
-        await ctx.send(embed=embeds.success(f"Removed `{name}`."))
-
-    @emoji.command(name="removemany")
-    async def emoji_removemany(self, ctx, *, emojis: str) -> None:
-        """Remove several server emojis at once."""
-        ids = {int(eid) for _a, _n, eid in _CUSTOM.findall(emojis)}
-        removed = 0
-        for emoji in list(ctx.guild.emojis):
-            if emoji.id in ids:
-                try:
-                    await emoji.delete(reason=f"by {ctx.author}")
-                    removed += 1
-                except discord.HTTPException:
-                    continue
-        await ctx.send(embed=embeds.success(f"Removed {removed} emoji(s)."))
+    @emoji.command(name="remove", aliases=["delete", "del", "removemany"])
+    @commands.has_permissions(manage_expressions=True)
+    @commands.bot_has_permissions(manage_expressions=True)
+    async def emoji_remove(self, ctx, emojis: commands.Greedy[discord.Emoji]) -> None:
+        """Remove one or more server emojis."""
+        if not emojis:
+            raise commands.BadArgument("Give one or more server emojis.")
+        removed = []
+        for emoji in emojis:
+            if emoji.guild_id != ctx.guild.id:
+                continue
+            name = emoji.name
+            try:
+                await emoji.delete(reason=f"by {ctx.author}")
+                removed.append(name)
+            except discord.HTTPException:
+                continue
+        if not removed:
+            raise commands.BadArgument("None of those are emojis from this server.")
+        if len(removed) == 1:
+            await ctx.send(embed=embeds.success(f"Removed `{removed[0]}`."))
+        else:
+            await ctx.send(embed=embeds.success(f"Removed {len(removed)} emojis."))
 
     @emoji.command(name="list", aliases=["all"])
     async def emoji_list(self, ctx) -> None:

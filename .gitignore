@@ -2,6 +2,11 @@
 .env
 logs/
 
+# Local database (SQLite dev DB)
+*.db
+*.sqlite
+*.sqlite3
+
 # Python
 __pycache__/
 *.py[cod]

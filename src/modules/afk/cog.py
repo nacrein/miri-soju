@@ -44,17 +44,17 @@ class Afk(commands.Cog):
         if message.guild is None or message.author.bot:
             return
 
-        # The author is back — clear their AFK, but never on the message that set it.
+        # The author is back: clear their AFK, but never on the message that set it.
         key = (message.guild.id, message.author.id)
         entry = self._afk.get(key)
         if entry is not None and message.id != entry.set_by_message:
             del self._afk[key]
             await message.channel.send(
-                embed=embeds.info(f"Welcome back, {message.author.mention} — cleared your AFK."),
+                embed=embeds.info(f"Welcome back, {message.author.mention} · cleared your AFK."),
                 delete_after=10,
             )
 
-        # Someone pinged AFK members — announce them in one message.
+        # Someone pinged AFK members: announce them in one message.
         notices = []
         for user in message.mentions:
             pinged = self._afk.get((message.guild.id, user.id))

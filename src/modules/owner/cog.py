@@ -40,7 +40,7 @@ class Owner(commands.Cog):
             await ctx.send(embed=embeds.info("Not in any servers."))
             return
         lines = [
-            f"`{g.id}` — **{g.name}** ({g.member_count} members, owner: {g.owner_id})"
+            f"`{g.id}` · **{g.name}** ({g.member_count} members, owner: {g.owner_id})"
             for g in sorted(self.bot.guilds, key=lambda g: g.member_count or 0, reverse=True)
         ]
         chunk = ""
