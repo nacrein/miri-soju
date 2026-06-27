@@ -302,25 +302,6 @@ class Economy(commands.Cog):
         )
         await ctx.send(embed=e)
 
-    # ── leaderboard ─────────────────────────────────────────────────────────
-
-    @commands.command(name="leaderboard", aliases=["lb", "rich"])
-    @commands.guild_only()
-    async def leaderboard(self, ctx: commands.Context) -> None:
-        """Show the richest players by net worth."""
-        rows = await service.leaderboard(10)
-        if not rows:
-            await ctx.send(embed=embeds.info("No players yet."))
-            return
-        lines = []
-        for i, (uid, worth) in enumerate(rows, 1):
-            member = ctx.guild.get_member(uid)
-            name = member.display_name if member else f"User {uid}"
-            medal = {1: Emojis.TROPHY, 2: Emojis.MEDAL_SILVER, 3: Emojis.MEDAL_BRONZE}.get(i, f"`{i}.`")
-            lines.append(f"{medal} **{name}** — {Emojis.BITS} {_fmt(worth)}")
-        await ctx.send(embed=embeds.info("\n".join(lines), f"{Emojis.TROPHY} Richest Players"))
-
-
     # ── interactive games ───────────────────────────────────────────────────
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
