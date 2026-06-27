@@ -17,6 +17,12 @@ class Emoji(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    async def cog_check(self, ctx: commands.Context) -> bool:
+        """Subcommands touch ctx.guild, but the group's guild_only() is skipped
+        for them under invoke_without_command=True. Guard the whole cog here —
+        the same fix the leaderboard cog uses for the same reason."""
+        return ctx.guild is not None
+
     @commands.group(name="emoji", invoke_without_command=True)
     @commands.guild_only()
     async def emoji(self, ctx) -> None:

@@ -40,7 +40,9 @@ class Leaderboard(commands.Cog):
         e.set_footer(text="Boards: ,lb networth · ,lb bits · ,lb generator")
         await ctx.send(embed=e)
 
-    @commands.group(name="leaderboard", aliases=["lb", "top", "rich"], invoke_without_command=True)
+    @commands.hybrid_group(
+        name="leaderboard", aliases=["lb", "top", "rich"], invoke_without_command=True
+    )
     @commands.guild_only()
     async def leaderboard(self, ctx: commands.Context) -> None:
         """Server rankings. Bare command shows net worth; subcommands switch the board."""

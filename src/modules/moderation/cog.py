@@ -483,6 +483,15 @@ class Moderation(commands.Cog):
         e.set_footer(text=f"Page {page}/{pages}")
         await ctx.send(embed=e)
 
+    @commands.command(name="reason", extras={"example": "reason 12 raiding the server"})
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    async def reason(self, ctx, case_id: int, *, reason: str) -> None:
+        """Edit the reason on an existing case by its id."""
+        if not await service.edit_case_reason(ctx.guild.id, case_id, reason):
+            raise service.ModerationError("No case with that id in this server.")
+        await ctx.send(embed=embeds.success(f"Updated the reason for case #{case_id}."))
+
     # ── immune ────────────────────────────────────────────────────────────────
 
     @commands.group(name="immune", invoke_without_command=True)

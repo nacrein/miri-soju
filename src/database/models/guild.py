@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
-from sqlalchemy import BigInteger, Boolean
+from sqlalchemy import BigInteger, Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database.base import Base, TimestampMixin
@@ -17,8 +15,11 @@ class GuildConfig(Base, TimestampMixin):
 
     guild_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
+    # Custom command prefix. None = use the global default (",").
+    prefix: Mapped[str | None] = mapped_column(String(8), nullable=True)
+
     # Audit log channel. None = logging off for this server.
-    log_channel_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    log_channel_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
     # Per-event toggles.
     log_joins: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

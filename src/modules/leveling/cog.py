@@ -67,7 +67,7 @@ class Leveling(commands.Cog):
 
     # ── member-facing ─────────────────────────────────────────────────────────
 
-    @commands.command(name="rank", aliases=["level", "lvl", "xp"])
+    @commands.hybrid_command(name="rank", aliases=["level", "lvl", "xp"])
     @commands.guild_only()
     async def rank(self, ctx, member: discord.Member | None = None) -> None:
         """Show your level, rank, and progress to the next level."""

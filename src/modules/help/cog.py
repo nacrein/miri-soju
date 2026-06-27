@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import discord
 from discord.ext import commands
 
 from src.core import embeds
 from src.core.emojis import Emojis
-from src.core.help_format import PREFIX, usage_embed
-from src.modules.help.views import CommandPaginator, HelpMenu
+from src.core.help_format import usage_embed
+from src.modules.help.views import HelpMenu
 
 
 class Help(commands.Cog):
@@ -43,17 +42,17 @@ class Help(commands.Cog):
         if command is None:
             cats = self._categories()
             e = embeds.info(
-                f"Pick a category below, or use `{PREFIX}help <command>`.",
+                f"Pick a category below, or use `{ctx.clean_prefix}help <command>`.",
                 f"{Emojis.QUESTION} Help",
             )
-            await ctx.send(embed=e, view=HelpMenu(ctx.author.id, cats))
+            await ctx.send(embed=e, view=HelpMenu(ctx.author.id, cats, ctx.clean_prefix))
             return
 
         cmd = self.bot.get_command(command)
         if cmd is None or cmd.hidden:
             await ctx.send(embed=embeds.error(f"No command called `{command}`."))
             return
-        await ctx.send(embed=usage_embed(cmd))
+        await ctx.send(embed=usage_embed(cmd, ctx.clean_prefix))
 
 
 async def setup(bot: commands.Bot) -> None:

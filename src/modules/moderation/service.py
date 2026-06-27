@@ -90,6 +90,16 @@ async def clear_warnings(guild_id: int, user_id: int) -> int:
         return await ModerationRepository(session).delete_cases_by_kind(guild_id, user_id, "warn")
 
 
+async def edit_case_reason(guild_id: int, case_id: int, reason: str) -> bool:
+    """Update a case's reason in place. Returns whether the case existed."""
+    async with get_session() as session:
+        case = await ModerationRepository(session).case_by_id(guild_id, case_id)
+        if case is None:
+            return False
+        case.reason = reason
+        return True
+
+
 # ── immune list (cached; read before every action) ─────────────────────────
 
 # guild_id -> set of immune target ids (users + roles). Invalidated on change.

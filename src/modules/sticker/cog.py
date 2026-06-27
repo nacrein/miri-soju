@@ -15,6 +15,13 @@ class Sticker(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    async def cog_check(self, ctx: commands.Context) -> bool:
+        """Every subcommand touches ctx.guild, but the group's guild_only() is
+        skipped for subcommands under invoke_without_command=True (discord.py
+        dispatches straight to the subcommand). Guard them all here — the same
+        fix the leaderboard cog uses for the same reason."""
+        return ctx.guild is not None
+
     @commands.group(name="sticker", invoke_without_command=True)
     @commands.guild_only()
     async def sticker(self, ctx) -> None:

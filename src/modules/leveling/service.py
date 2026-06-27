@@ -64,9 +64,9 @@ async def award_message_xp(guild_id: int, user_id: int, channel_id: int) -> int 
         return None
     mult = (await _multipliers(guild_id)).get(channel_id, 1.0)
     gain = int(cfg.xp_per_message * mult)
-    _msg_cooldown[key] = mono
     if gain <= 0:
         return None
+    _msg_cooldown[key] = mono
     async with get_session() as session:
         repo = LevelingRepository(session)
         member = await repo.get_or_create_member(guild_id, user_id)

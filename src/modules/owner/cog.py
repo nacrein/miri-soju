@@ -7,7 +7,6 @@ This cog holds the bot-specific quality-of-life commands jishaku doesn't.
 from __future__ import annotations
 
 import logging
-import time
 
 import discord
 from discord.ext import commands
@@ -23,17 +22,6 @@ class Owner(commands.Cog):
 
     async def cog_check(self, ctx: commands.Context) -> bool:
         return await self.bot.is_owner(ctx.author)
-
-    @commands.command(name="ping")
-    async def ping(self, ctx: commands.Context) -> None:
-        """Show gateway latency and round-trip time."""
-        gateway = self.bot.latency * 1000
-        start = time.perf_counter()
-        msg = await ctx.send(embed=embeds.info("Pinging..."))
-        rtt = (time.perf_counter() - start) * 1000
-        await msg.edit(
-            embed=embeds.info(f"Gateway: `{gateway:.0f}ms` · Round-trip: `{rtt:.0f}ms`", "Pong")
-        )
 
     @commands.command(name="status")
     async def status(self, ctx: commands.Context) -> None:

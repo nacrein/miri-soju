@@ -29,11 +29,22 @@ def _intents() -> discord.Intents:
     return intents
 
 
+async def _get_prefix(bot: commands.Bot, message: discord.Message) -> list[str]:
+    """Resolve the invocation prefixes: the bot mention, plus the guild's
+    configured prefix (cached) or the ',' default. DMs always use the default."""
+    prefix = ","
+    if message.guild is not None:
+        from src.modules.prefix.service import get_prefix
+
+        prefix = await get_prefix(message.guild.id)
+    return commands.when_mentioned_or(prefix)(bot, message)
+
+
 class Bot(commands.Bot):
     def __init__(self) -> None:
         owner_id = get_settings().owner_id
         super().__init__(
-            command_prefix=commands.when_mentioned_or(","),
+            command_prefix=_get_prefix,
             intents=_intents(),
             help_command=None,
             owner_id=owner_id,  # if None, discord.py derives it from the app

@@ -35,14 +35,15 @@ class _OwnerView(discord.ui.View):
 class CommandPaginator(_OwnerView):
     """Page through a cluster of related commands with ◀ ▶."""
 
-    def __init__(self, author_id: int, group: list[commands.Command]) -> None:
+    def __init__(self, author_id: int, group: list[commands.Command], prefix: str = PREFIX) -> None:
         super().__init__(author_id)
         self._group = group
+        self._prefix = prefix
         self._index = 0
         self._sync_buttons()
 
     def current_embed(self) -> discord.Embed:
-        e = usage_embed(self._group[self._index])
+        e = usage_embed(self._group[self._index], self._prefix)
         e.set_footer(text=f"{self._index + 1} / {len(self._group)}")
         return e
 
@@ -64,8 +65,9 @@ class CommandPaginator(_OwnerView):
 
 
 class _CategorySelect(discord.ui.Select):
-    def __init__(self, categories: dict[str, list[commands.Command]]) -> None:
+    def __init__(self, categories: dict[str, list[commands.Command]], prefix: str = PREFIX) -> None:
         self._categories = categories
+        self._prefix = prefix
         options = [
             discord.SelectOption(label=name, description=f"{len(cmds)} command(s)")
             for name, cmds in categories.items()
@@ -75,18 +77,20 @@ class _CategorySelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction) -> None:
         name = self.values[0]
         cmds = self._categories[name]
-        lines = [
-            f"{Emojis.BULLET} `{PREFIX}{c.qualified_name}` — {next(iter((c.help or '').splitlines()), 'No description.')}"
-            for c in cmds
-        ]
+        lines = []
+        for c in cmds:
+            summary = next(iter((c.help or "").splitlines()), "No description.")
+            lines.append(f"{Emojis.BULLET} `{self._prefix}{c.qualified_name}` — {summary}")
         e = embeds.info("\n".join(lines), f"{name} Commands")
-        e.set_footer(text=f"Use {PREFIX}help <command> for details")
+        e.set_footer(text=f"Use {self._prefix}help <command> for details")
         await interaction.response.edit_message(embed=e, view=self.view)
 
 
 class HelpMenu(_OwnerView):
     """Top-level help: a dropdown of categories."""
 
-    def __init__(self, author_id: int, categories: dict[str, list[commands.Command]]) -> None:
+    def __init__(
+        self, author_id: int, categories: dict[str, list[commands.Command]], prefix: str = PREFIX
+    ) -> None:
         super().__init__(author_id)
-        self.add_item(_CategorySelect(categories))
+        self.add_item(_CategorySelect(categories, prefix))
