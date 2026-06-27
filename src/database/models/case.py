@@ -1,4 +1,4 @@
-"""Moderation warnings, recorded per-guild. A server's records are its own."""
+"""Unified moderation record: warnings, notes, and logged actions as one history."""
 
 from __future__ import annotations
 
@@ -10,16 +10,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 from src.database.base import Base, IdMixin, TimestampMixin
 
 
-class Infraction(Base, IdMixin, TimestampMixin):
-    """A warning issued to a user in a specific guild. Mods act on these manually."""
+class ModCase(Base, IdMixin, TimestampMixin):
+    """One moderation event against a user in a guild. The case id is the reference."""
 
-    __tablename__ = "infractions"
+    __tablename__ = "mod_cases"
     __table_args__ = (
-        # "this user's warnings in this server", newest first.
-        Index("ix_infractions_guild_user", "guild_id", "user_id"),
+        Index("ix_mod_cases_guild_user", "guild_id", "user_id"),
     )
 
     guild_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     moderator_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)  # warn, note, ban, kick, timeout...
     reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)

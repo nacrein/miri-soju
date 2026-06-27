@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from src.core import embeds
 from src.core.emojis import Emojis
@@ -66,9 +67,39 @@ def action_embed(
 class Moderation(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self._temprole_loop.start()
+
+    def cog_unload(self) -> None:
+        self._temprole_loop.cancel()
 
     async def _log(self, guild_id: int, embed: discord.Embed) -> None:
         await log_event(self.bot, guild_id, embed, "mod")
+
+    async def _guard(self, ctx, target, *, require_bot_higher: bool = True) -> None:
+        """check_target plus the immune list. Run before any enforcement action."""
+        if isinstance(target, discord.Member):
+            check_target(ctx, target, require_bot_higher=require_bot_higher)
+        role_ids = [r.id for r in target.roles] if isinstance(target, discord.Member) else []
+        if await service.is_immune(ctx.guild.id, target.id, role_ids):
+            raise service.ModerationError("That user is on the immune list and can't be actioned.")
+
+    @tasks.loop(seconds=60)
+    async def _temprole_loop(self) -> None:
+        for entry_id, gid, uid, rid in await service.due_temproles():
+            guild = self.bot.get_guild(gid)
+            if guild is not None:
+                member = guild.get_member(uid)
+                role = guild.get_role(rid)
+                if member is not None and role is not None and role in member.roles:
+                    try:
+                        await member.remove_roles(role, reason="temprole expired")
+                    except discord.HTTPException:
+                        pass
+            await service.delete_temprole(entry_id)
+
+    @_temprole_loop.before_loop
+    async def _before_temprole_loop(self) -> None:
+        await self.bot.wait_until_ready()
 
     @commands.hybrid_command(name="ban", extras={"example": "ban 123456789012345678 spamming"})
     @commands.has_permissions(ban_members=True)
@@ -79,9 +110,9 @@ class Moderation(commands.Cog):
     ) -> None:
         """Ban a user by mention or ID (works even if they aren't in the server)."""
         member = ctx.guild.get_member(user.id)
-        if member is not None:
-            check_target(ctx, member)
+        await self._guard(ctx, member or user)
         await ctx.guild.ban(user, reason=f"{ctx.author}: {reason}", delete_message_days=0)
+        await service.add_case(ctx.guild.id, user.id, ctx.author.id, "ban", reason)
         await ctx.send(embed=embeds.success(f"Banned **{user}**."))
         await self._log(ctx.guild.id, action_embed("Ban", ctx.author, user, reason))
 
@@ -97,6 +128,7 @@ class Moderation(commands.Cog):
             await ctx.guild.unban(user, reason=f"{ctx.author}: {reason}")
         except discord.NotFound:
             raise service.ModerationError("That user isn't banned.")
+        await service.add_case(ctx.guild.id, user.id, ctx.author.id, "unban", reason)
         await ctx.send(embed=embeds.success(f"Unbanned **{user}**."))
         await self._log(ctx.guild.id, action_embed("Unban", ctx.author, user, reason))
 
@@ -163,8 +195,9 @@ class Moderation(commands.Cog):
         self, ctx: commands.Context, member: discord.Member, *, reason: str = _DEFAULT_REASON
     ) -> None:
         """Kick a member from the server."""
-        check_target(ctx, member)
+        await self._guard(ctx, member)
         await member.kick(reason=f"{ctx.author}: {reason}")
+        await service.add_case(ctx.guild.id, member.id, ctx.author.id, "kick", reason)
         await ctx.send(embed=embeds.success(f"Kicked **{member}**."))
         await self._log(ctx.guild.id, action_embed("Kick", ctx.author, member, reason))
 
@@ -181,9 +214,10 @@ class Moderation(commands.Cog):
         reason: str = _DEFAULT_REASON,
     ) -> None:
         """Timeout a member for a duration like 10m, 2h, 1d."""
-        check_target(ctx, member)
+        await self._guard(ctx, member)
         delta = service.parse_duration(duration)
         await member.timeout(delta, reason=f"{ctx.author}: {reason}")
+        await service.add_case(ctx.guild.id, member.id, ctx.author.id, "timeout", f"{duration}: {reason}")
         await ctx.send(embed=embeds.success(f"Timed out **{member}** for {duration}."))
         await self._log(
             ctx.guild.id,
@@ -199,6 +233,7 @@ class Moderation(commands.Cog):
     ) -> None:
         """Remove a member's timeout."""
         await member.timeout(None, reason=f"{ctx.author}: {reason}")
+        await service.add_case(ctx.guild.id, member.id, ctx.author.id, "untimeout", reason)
         await ctx.send(embed=embeds.success(f"Removed timeout from **{member}**."))
         await self._log(ctx.guild.id, action_embed("Untimeout", ctx.author, member, reason))
 
@@ -348,14 +383,13 @@ class Moderation(commands.Cog):
         self, ctx: commands.Context, member: discord.Member, *, reason: str = _DEFAULT_REASON
     ) -> None:
         """Warn a member. The warning is recorded for this server."""
-        check_target(ctx, member, require_bot_higher=False)
-        warning_id = await service.add_warning(ctx.guild.id, member.id, ctx.author.id, reason)
+        await self._guard(ctx, member, require_bot_higher=False)
+        case_id = await service.add_case(ctx.guild.id, member.id, ctx.author.id, "warn", reason)
         count = len(await service.list_warnings(ctx.guild.id, member.id))
         await ctx.send(embed=embeds.success(
-            f"Warned **{member}** (warning #{warning_id}). They now have **{count}** warning(s)."
+            f"Warned **{member}** (case #{case_id}). They now have **{count}** warning(s)."
         ))
-        embed = action_embed(f"Warning #{warning_id}", ctx.author, member, reason)
-        await self._log(ctx.guild.id, embed)
+        await self._log(ctx.guild.id, action_embed(f"Warning #{case_id}", ctx.author, member, reason))
 
     @commands.hybrid_command(name="warnings", aliases=["warns"], extras={"example": "warnings @user"})
     @commands.has_permissions(kick_members=True)
@@ -376,12 +410,11 @@ class Moderation(commands.Cog):
     @commands.hybrid_command(name="delwarn", extras={"example": "delwarn 12"})
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
-    async def delwarn(self, ctx: commands.Context, warning_id: int) -> None:
-        """Delete a single warning by its id."""
-        ok = await service.delete_warning(ctx.guild.id, warning_id)
-        if not ok:
-            raise service.ModerationError("No warning with that id in this server.")
-        await ctx.send(embed=embeds.success(f"Deleted warning #{warning_id}."))
+    async def delwarn(self, ctx: commands.Context, case_id: int) -> None:
+        """Delete a single case by its id."""
+        if not await service.delete_case(ctx.guild.id, case_id):
+            raise service.ModerationError("No case with that id in this server.")
+        await ctx.send(embed=embeds.success(f"Deleted case #{case_id}."))
 
     @commands.hybrid_command(name="clearwarnings", aliases=["clearwarns"], extras={"example": "clearwarnings @user"})
     @commands.has_permissions(kick_members=True)
@@ -390,6 +423,101 @@ class Moderation(commands.Cog):
         """Clear all of a member's warnings in this server."""
         count = await service.clear_warnings(ctx.guild.id, member.id)
         await ctx.send(embed=embeds.success(f"Cleared **{count}** warning(s) from {member.mention}."))
+
+    # ── notes & history ───────────────────────────────────────────────────────
+
+    @commands.group(name="note", invoke_without_command=True)
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    async def note(self, ctx: commands.Context) -> None:
+        """Staff notes on a member."""
+        await ctx.send(embed=embeds.info("`,note add @user <text>` · `,note list @user` · `,note remove <case_id>`"))
+
+    @note.command(name="add")
+    @commands.has_permissions(kick_members=True)
+    async def note_add(self, ctx, member: discord.Member, *, text: str) -> None:
+        """Record a private note on a member."""
+        case_id = await service.add_case(ctx.guild.id, member.id, ctx.author.id, "note", text)
+        await ctx.send(embed=embeds.success(f"Note added on **{member}** (case #{case_id})."))
+
+    @note.command(name="list")
+    @commands.has_permissions(kick_members=True)
+    async def note_list(self, ctx, member: discord.Member) -> None:
+        """Show a member's notes."""
+        rows = await service.list_notes(ctx.guild.id, member.id)
+        if not rows:
+            await ctx.send(embed=embeds.info(f"**{member}** has no notes."))
+            return
+        lines = [
+            f"`#{c.id}` {c.reason or '—'} — by <@{c.moderator_id}> · {discord.utils.format_dt(c.created_at, 'R')}"
+            for c in rows
+        ]
+        await ctx.send(embed=embeds.info("\n".join(lines), f"{member.display_name}'s Notes ({len(rows)})"))
+
+    @note.command(name="remove", aliases=["del"])
+    @commands.has_permissions(kick_members=True)
+    async def note_remove(self, ctx, case_id: int) -> None:
+        """Remove a case by id."""
+        if not await service.delete_case(ctx.guild.id, case_id):
+            raise service.ModerationError("No case with that id in this server.")
+        await ctx.send(embed=embeds.success(f"Removed case #{case_id}."))
+
+    @commands.command(name="modlogs", aliases=["cases"])
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    async def modlogs(self, ctx, member: discord.Member, page: int = 1) -> None:
+        """Full moderation history for a member (every case type)."""
+        page = max(1, page)
+        per = 15
+        rows, total = await service.list_cases(ctx.guild.id, member.id, limit=per, offset=(page - 1) * per)
+        if not rows:
+            await ctx.send(embed=embeds.info(f"**{member}** has no moderation history."))
+            return
+        lines = [
+            f"`#{c.id}` **{c.kind}** — {c.reason or '—'} · by <@{c.moderator_id}> · "
+            f"{discord.utils.format_dt(c.created_at, 'R')}"
+            for c in rows
+        ]
+        pages = (total + per - 1) // per
+        e = embeds.info("\n".join(lines), f"{member.display_name}'s History ({total})")
+        e.set_footer(text=f"Page {page}/{pages}")
+        await ctx.send(embed=e)
+
+    # ── immune ────────────────────────────────────────────────────────────────
+
+    @commands.group(name="immune", invoke_without_command=True)
+    @commands.has_permissions(manage_guild=True)
+    @commands.guild_only()
+    async def immune(self, ctx: commands.Context) -> None:
+        """Protect a member or role from moderation actions."""
+        await ctx.send(embed=embeds.info("`,immune add <member|role>` · `,immune remove <member|role>` · `,immune list`"))
+
+    @immune.command(name="add")
+    @commands.has_permissions(manage_guild=True)
+    async def immune_add(self, ctx, *, target: discord.Member | discord.Role) -> None:
+        """Add a member or role to the immune list."""
+        await service.add_immune(ctx.guild.id, target.id, isinstance(target, discord.Role))
+        await ctx.send(embed=embeds.success(f"Added {target.mention} to the immune list."))
+
+    @immune.command(name="remove")
+    @commands.has_permissions(manage_guild=True)
+    async def immune_remove(self, ctx, *, target: discord.Member | discord.Role) -> None:
+        """Remove a member or role from the immune list."""
+        if not await service.remove_immune(ctx.guild.id, target.id):
+            await ctx.send(embed=embeds.error("That isn't on the immune list."))
+            return
+        await ctx.send(embed=embeds.success(f"Removed {target.mention} from the immune list."))
+
+    @immune.command(name="list")
+    @commands.has_permissions(manage_guild=True)
+    async def immune_list(self, ctx: commands.Context) -> None:
+        """Show the immune list."""
+        rows = await service.list_immune(ctx.guild.id)
+        if not rows:
+            await ctx.send(embed=embeds.info("The immune list is empty."))
+            return
+        lines = [(f"<@&{tid}>" if is_role else f"<@{tid}>") for tid, is_role in rows]
+        await ctx.send(embed=embeds.info("\n".join(lines), f"Immune ({len(rows)})"))
 
     # ── channel control ─────────────────────────────────────────────────────
 
@@ -688,6 +816,56 @@ class Moderation(commands.Cog):
                 continue
         await ctx.send(embed=embeds.success(f"Removed {role.mention} from {removed} member(s)."))
 
+    # ── temp roles ────────────────────────────────────────────────────────────
+
+    @commands.group(name="temprole", aliases=["tr"], invoke_without_command=True)
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    @commands.guild_only()
+    async def temprole(self, ctx, member: discord.Member = None, role: discord.Role = None, duration: str = None) -> None:
+        """Give a role that lifts itself after a duration (max 1 year)."""
+        if member is None or role is None or duration is None:
+            await ctx.send(embed=embeds.info("`,temprole @user @role <duration>` · `,temprole list` · `,temprole remove @user @role`"))
+            return
+        self._check_role(ctx, role)
+        delta = service.parse_duration(duration, max_delta=timedelta(days=365))
+        if role not in member.roles:
+            await member.add_roles(role, reason=f"temprole by {ctx.author}")
+        expires = datetime.now(timezone.utc) + delta
+        await service.add_temprole(ctx.guild.id, member.id, role.id, expires)
+        await ctx.send(embed=embeds.success(f"Gave {role.mention} to {member.mention} for {duration}."))
+
+    @temprole.command(name="list")
+    @commands.has_permissions(manage_roles=True)
+    async def temprole_list(self, ctx: commands.Context) -> None:
+        """Show active temp roles."""
+        rows = await service.list_temproles(ctx.guild.id)
+        if not rows:
+            await ctx.send(embed=embeds.info("No active temp roles."))
+            return
+        lines = [
+            f"<@{t.user_id}> · <@&{t.role_id}> · expires {discord.utils.format_dt(t.expires_at, 'R')}"
+            for t in rows
+        ]
+        await ctx.send(embed=embeds.info("\n".join(lines)[:4000], f"Temp Roles ({len(rows)})"))
+
+    @temprole.command(name="remove")
+    @commands.has_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
+    async def temprole_remove(self, ctx, member: discord.Member, *, role: discord.Role) -> None:
+        """Lift a temp role early."""
+        self._check_role(ctx, role)
+        removed = await service.remove_temprole(ctx.guild.id, member.id, role.id)
+        if role in member.roles:
+            try:
+                await member.remove_roles(role, reason=f"temprole removed by {ctx.author}")
+            except discord.HTTPException:
+                pass
+        if removed == 0 and role not in member.roles:
+            await ctx.send(embed=embeds.info("No matching temp role."))
+            return
+        await ctx.send(embed=embeds.success(f"Removed {role.mention} from {member.mention}."))
+
     # ── nickname / cleanup / pins / newusers ────────────────────────────────────
 
     @commands.group(name="nickname", aliases=["nick"], invoke_without_command=True)
@@ -788,7 +966,7 @@ class Moderation(commands.Cog):
                 "`,jail @user [reason]` · `,jail role <role>` · `,jail list`"
             ))
             return
-        check_target(ctx, member)
+        await self._guard(ctx, member)
         role_id = await service.get_jail_role(ctx.guild.id)
         if role_id is None:
             raise service.ModerationError("No jail role set. Use `,jail role <role>` first.")
@@ -804,6 +982,7 @@ class Moderation(commands.Cog):
         keep = [r for r in member.roles if r not in removed and r != ctx.guild.default_role]
         await member.edit(roles=keep + [jail_role], reason=f"{ctx.author} (jail): {reason}")
         await service.store_jailed(ctx.guild.id, member.id, [r.id for r in removed])
+        await service.add_case(ctx.guild.id, member.id, ctx.author.id, "jail", reason)
         await ctx.send(embed=embeds.success(f"Jailed **{member}**."))
         await self._log(ctx.guild.id, action_embed("Jail", ctx.author, member, reason))
 
@@ -850,6 +1029,7 @@ class Moderation(commands.Cog):
         await member.edit(
             roles=list(dict.fromkeys(new_roles)), reason=f"{ctx.author} (unjail): {reason}"
         )
+        await service.add_case(ctx.guild.id, member.id, ctx.author.id, "unjail", reason)
         await ctx.send(embed=embeds.success(f"Released **{member}**."))
         await self._log(ctx.guild.id, action_embed("Unjail", ctx.author, member, reason))
 
