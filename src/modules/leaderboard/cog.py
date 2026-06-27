@@ -67,6 +67,20 @@ class Leaderboard(commands.Cog):
             ctx, [(uid, f"T{tier} · {_fmt(rate)}/hr") for uid, tier, rate in rows], "Generators"
         )
 
+    @leaderboard.command(name="level", aliases=["lvl", "xp"])
+    async def lb_level(self, ctx: commands.Context) -> None:
+        """Top members by level."""
+        from src.modules.leveling import service as leveling
+        rows = await leveling.leaderboard_level(ctx.guild.id, 10)
+        await self._show_board(ctx, [(uid, f"Level {lvl}") for uid, lvl in rows], "Levels")
+
+    @leaderboard.command(name="voice", aliases=["vc"])
+    async def lb_voice(self, ctx: commands.Context) -> None:
+        """Top members by voice time."""
+        from src.modules.leveling import service as leveling
+        rows = await leveling.leaderboard_voice(ctx.guild.id, 10)
+        await self._show_board(ctx, [(uid, hrs) for uid, hrs in rows], "Voice Time")
+
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Leaderboard(bot))
