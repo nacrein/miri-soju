@@ -73,6 +73,25 @@ class Bot(commands.Bot):
         setup_error_handling(self)
         await self.load_extension("jishaku")
         await self._load_all_cogs()
+        await self._sync_app_commands()
+
+    async def _sync_app_commands(self) -> None:
+        """Push hybrid/app commands to Discord. Hybrid commands are added to the
+        tree as each cog loads, but Discord only learns about them after a sync —
+        without this, slash commands never appear (prefix commands need no sync).
+
+        With DEV_GUILD_ID set we copy the global commands into that one guild and
+        sync there: instant, ideal while developing. Global registration (visible
+        everywhere, up to ~1h propagation) stays manual via `jsk sync` to avoid
+        the per-restart global sync rate limit."""
+        guild_id = get_settings().dev_guild_id
+        if guild_id is None:
+            log.info("DEV_GUILD_ID unset; run `jsk sync` to register slash commands globally")
+            return
+        guild = discord.Object(id=guild_id)
+        self.tree.copy_global_to(guild=guild)
+        synced = await self.tree.sync(guild=guild)
+        log.info("Synced %d app command(s) to dev guild %s", len(synced), guild_id)
 
     async def _load_all_cogs(self) -> None:
         """Load every submodule of src.modules that exposes setup()."""

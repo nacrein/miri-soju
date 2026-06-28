@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from src.core.emojis import Emojis
+
 # ── daily ───────────────────────────────────────────────────────────────────
 DAILY_COOLDOWN = timedelta(hours=20)
 DAILY_RESET_GRACE = timedelta(hours=28)  # miss beyond this and the streak resets
@@ -91,11 +93,11 @@ GAMBLE_MIN_BET = 10  # no upper cap; a wager is limited only by the player's wal
 # Symbol -> (weight, three-of-a-kind multiplier). Tuned so the machine's
 # expected value is ~0.81 per bit (a real ~19% house edge, verified by sim).
 SLOTS_SYMBOLS = {
-    "🍒": (40, 3),
-    "🍋": (30, 7),
-    "🔔": (18, 15),
-    "💎": (10, 50),
-    "🎰": (2, 300),   # jackpot
+    Emojis.CHERRY: (40, 3),
+    Emojis.LEMON: (30, 7),
+    Emojis.BELL: (18, 15),
+    Emojis.GEM: (10, 50),
+    Emojis.SLOTS: (2, 300),   # jackpot
 }
 # Two matching returns half the stake (a softened loss, not a win), which keeps
 # frequent near-misses from leaking the house edge.

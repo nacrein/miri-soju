@@ -80,7 +80,7 @@ class Help(commands.Cog):
             e.add_field(name="​", value=links, inline=False)
         return e
 
-    @commands.command(name="help")
+    @commands.hybrid_command(name="help", aliases=["h"])
     async def help(self, ctx: commands.Context, *, command: str | None = None) -> None:
         """Show the command menu, or detailed help for one command."""
         if command is None:

@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.emojis import Emojis
 from src.core.http import fetch_bytes
 from src.core.paginator import send_command_browser
 from src.modules.webhook import service
@@ -65,7 +66,7 @@ class Webhook(commands.Cog):
         if hook is None:
             raise commands.BadArgument("No webhook with that id.")
         await hook.send(content=content, allowed_mentions=discord.AllowedMentions.none())
-        await ctx.message.add_reaction("✅")
+        await ctx.message.add_reaction(Emojis.SUCCESS)
 
     @webhook.command(name="edit")
     @commands.has_permissions(manage_webhooks=True)
@@ -75,7 +76,7 @@ class Webhook(commands.Cog):
         for wh in await channel.webhooks():
             try:
                 await wh.edit_message(message_id, content=content)
-                await ctx.message.add_reaction("✅")
+                await ctx.message.add_reaction(Emojis.SUCCESS)
                 return
             except discord.HTTPException:
                 continue

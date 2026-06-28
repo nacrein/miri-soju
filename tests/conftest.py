@@ -16,6 +16,6 @@ os.environ.setdefault("OWNER_ID", "1")
 
 # A file-based SQLite DB (not :memory:) so every async connection — including
 # any background task loop a cog starts on load — sees the same schema.
-_fd, _path = tempfile.mkstemp(prefix="betta_test_", suffix=".sqlite")
+_fd, _path = tempfile.mkstemp(prefix="vesper_test_", suffix=".sqlite")
 os.close(_fd)
 os.environ.setdefault("DATABASE_URL", f"sqlite+aiosqlite:///{_path.replace(chr(92), '/')}")

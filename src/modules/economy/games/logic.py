@@ -5,10 +5,12 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 
+from src.core.emojis import Emojis
+
 # ── blackjack ───────────────────────────────────────────────────────────────
 
 _RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
-_SUITS = ["♠", "♥", "♦", "♣"]
+_SUITS = [Emojis.SUIT_SPADE, Emojis.SUIT_HEART, Emojis.SUIT_DIAMOND, Emojis.SUIT_CLUB]
 
 
 def _card_value(rank: str) -> int:

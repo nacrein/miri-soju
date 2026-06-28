@@ -62,11 +62,15 @@ class LevelingRepository:
                 .order_by(MemberLevel.xp.desc()).limit(limit))
         return [(r[0], r[1]) for r in (await self.session.execute(stmt)).all()]
 
-    async def top_by_voice(self, guild_id: int, limit: int) -> list[tuple[int, int]]:
-        stmt = (select(MemberLevel.user_id, MemberLevel.voice_minutes)
-                .where(MemberLevel.guild_id == guild_id, MemberLevel.voice_minutes > 0)
-                .order_by(MemberLevel.voice_minutes.desc()).limit(limit))
-        return [(r[0], r[1]) for r in (await self.session.execute(stmt)).all()]
+    async def top_by_voice_global(self, limit: int) -> list[tuple[int, int]]:
+        """Total voice minutes per user, summed across every server (voice time is
+        a global stat). Returns [(user_id, total_minutes), ...]."""
+        total = func.sum(MemberLevel.voice_minutes)
+        stmt = (select(MemberLevel.user_id, total.label("total"))
+                .group_by(MemberLevel.user_id)
+                .having(total > 0)
+                .order_by(total.desc()).limit(limit))
+        return [(r[0], int(r[1])) for r in (await self.session.execute(stmt)).all()]
 
     # ── rewards ───────────────────────────────────────────────────────────────
 

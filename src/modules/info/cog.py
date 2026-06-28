@@ -48,7 +48,7 @@ class Info(commands.Cog):
         e.add_field(name="ID", value=str(g.id))
         e.add_field(name="Owner", value=f"<@{g.owner_id}>")
         e.add_field(name="Created", value=discord.utils.format_dt(g.created_at, "R"))
-        e.add_field(name="Members", value=str(g.member_count))
+        e.add_field(name="Members", value=str(g.member_count if g.member_count is not None else len(g.members)))
         e.add_field(name="Channels", value=str(len(g.channels)))
         e.add_field(name="Roles", value=str(len(g.roles)))
         e.add_field(name="Boosts", value=f"{g.premium_subscription_count} (Tier {g.premium_tier})")
@@ -81,10 +81,18 @@ class Info(commands.Cog):
     async def membercount(self, ctx) -> None:
         """Show how many members are in this server."""
         g = ctx.guild
+        if not g.chunked:
+            # The human/bot split is counted from the member cache; without a
+            # chunk it's empty and we'd report 0/0. Pull the members first.
+            try:
+                await g.chunk()
+            except discord.ClientException:
+                pass
+        total = g.member_count if g.member_count is not None else len(g.members)
         humans = sum(1 for m in g.members if not m.bot)
-        bots = (g.member_count or 0) - humans
+        bots = max(total - humans, 0)
         e = embeds.info("", f"{g.name} · Members")
-        e.add_field(name="Total", value=str(g.member_count))
+        e.add_field(name="Total", value=str(total))
         e.add_field(name="Humans", value=str(humans))
         e.add_field(name="Bots", value=str(bots))
         await ctx.send(embed=e)

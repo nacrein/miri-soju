@@ -15,10 +15,11 @@ COLOR_ERROR = discord.Color.from_str("#A05566")    # mauve dusk
 COLOR_WARNING = discord.Color.from_str("#C08A4E")  # amber dusk
 COLOR_INFO = COLOR_DUSK
 
-# Light footer signature on command embeds. Set BRAND = "" to drop it entirely.
+# Optional footer signature on command embeds. Empty by default so command embeds
+# carry no brand footer (and no timestamp); set BRAND = "Vesper" to bring it back.
 # A cog that sets its own footer overrides this, so functional footers
 # (pagination, hints) still win.
-BRAND = "Betta"
+BRAND = ""
 
 
 def apply_author(embed: discord.Embed, user: discord.abc.User | None) -> discord.Embed:
@@ -39,10 +40,9 @@ def _build(
     description: str | None,
     author: discord.abc.User | None = None,
 ) -> discord.Embed:
-    """The shared modern finish: dusk accent, a timestamp, a light brand footer
-    (which any caller can override), and the invoker's author row when given."""
+    """The shared modern finish: dusk accent, the invoker's author row when given,
+    and an optional brand footer (off by default; any caller can set its own)."""
     e = discord.Embed(title=title, description=description, color=color)
-    e.timestamp = discord.utils.utcnow()
     apply_author(e, author)
     if BRAND:
         e.set_footer(text=BRAND)

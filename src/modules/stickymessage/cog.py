@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.emojis import Emojis
 from src.core.paginator import send_command_browser
 from src.modules.stickymessage import service
 
@@ -79,7 +80,7 @@ class StickyMessageCog(commands.Cog, name="StickyMessage"):
             except discord.HTTPException:
                 pass
         try:
-            sent = await message.channel.send(embed=embeds.info(row.content, "📌 Sticky"))
+            sent = await message.channel.send(embed=embeds.info(row.content, f"{Emojis.PIN} Sticky"))
             await service.set_last(message.channel.id, sent.id)
         except discord.HTTPException:
             pass

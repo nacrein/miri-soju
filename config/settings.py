@@ -18,6 +18,10 @@ class Settings(BaseSettings):
 
     # Optional explicit owner id (otherwise taken from the bot application).
     owner_id: int | None = Field(None, alias="OWNER_ID")
+    # Optional dev/test guild. When set, slash commands are synced to this guild
+    # on startup (instant). Leave unset in production and sync globally via
+    # `jsk sync` to avoid the per-restart global sync rate limit.
+    dev_guild_id: int | None = Field(None, alias="DEV_GUILD_ID")
     # Comma-separated trusted staff user IDs (moderation visibility, not owner power).
     staff_ids: str = Field("", alias="STAFF_IDS")
 

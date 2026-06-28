@@ -77,21 +77,37 @@ async def award_message_xp(guild_id: int, user_id: int, channel_id: int) -> int 
     return new if new > old else None
 
 
-async def award_voice_xp(guild_id: int, user_id: int, channel_id: int) -> int | None:
-    """Award one minute of voice XP. Returns the new level on a level-up, else None."""
-    cfg = await get_config(guild_id)
-    if cfg is None or not cfg.enabled:
-        return None
-    mult = (await _multipliers(guild_id)).get(channel_id, 1.0)
-    gain = int(config.VOICE_XP_PER_MINUTE * mult)
+async def credit_voice(batch: list[tuple[int, int, int, int]]) -> list[tuple[int, int, int]]:
+    """Write a batch of accrued voice minutes in one transaction.
+
+    ``batch`` is ``[(guild_id, user_id, channel_id, minutes)]``. Voice time is a
+    global stat, so the minutes are always added to ``voice_minutes`` (in every
+    server, leveling on or off). XP is awarded only where leveling is enabled,
+    scaled by the channel's multiplier. Returns level-ups ``[(guild, user,
+    level)]`` (de-duplicated to the highest new level per member)."""
+    levelups: dict[tuple[int, int], int] = {}
     async with get_session() as session:
         repo = LevelingRepository(session)
-        member = await repo.get_or_create_member(guild_id, user_id)
-        old = config.level_from_xp(member.xp)
-        member.xp += gain
-        member.voice_minutes += 1
-        new = config.level_from_xp(member.xp)
-    return new if new > old else None
+        for guild_id, user_id, channel_id, minutes in batch:
+            if minutes <= 0:
+                continue
+            cfg = await get_config(guild_id)
+            enabled = cfg is not None and cfg.enabled
+            member = await repo.get_or_create_member(guild_id, user_id)
+            member.voice_minutes += minutes
+            if not enabled:
+                continue
+            mult = (await _multipliers(guild_id)).get(channel_id, 1.0)
+            gain = int(config.VOICE_XP_PER_MINUTE * mult) * minutes
+            if gain <= 0:
+                continue
+            old = config.level_from_xp(member.xp)
+            member.xp += gain
+            new = config.level_from_xp(member.xp)
+            if new > old:
+                k = (guild_id, user_id)
+                levelups[k] = max(levelups.get(k, 0), new)
+    return [(g, u, lvl) for (g, u), lvl in levelups.items()]
 
 
 # ── member queries ──────────────────────────────────────────────────────────
@@ -209,7 +225,8 @@ async def leaderboard_level(guild_id: int, limit: int = 10) -> list[tuple[int, i
     return [(uid, config.level_from_xp(xp)) for uid, xp in rows]
 
 
-async def leaderboard_voice(guild_id: int, limit: int = 10) -> list[tuple[int, str]]:
+async def leaderboard_voice_global(limit: int = 10) -> list[tuple[int, str]]:
+    """Top users by voice time across all servers. Returns [(user_id, "Xh Ym"), ...]."""
     async with get_session() as session:
-        rows = await LevelingRepository(session).top_by_voice(guild_id, limit)
+        rows = await LevelingRepository(session).top_by_voice_global(limit)
     return [(uid, f"{mins // 60}h {mins % 60}m") for uid, mins in rows]

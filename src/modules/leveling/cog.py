@@ -1,23 +1,30 @@
-"""Leveling: the levels config tree, rank, the message listener, and the voice loop."""
+"""Leveling: the levels config tree, rank, the message listener, and voice time."""
 
 from __future__ import annotations
+
+import logging
+import time
 
 import discord
 from discord.ext import commands, tasks
 
-from src.core import embeds
+from src.core import embeds, rankings
 from src.core.emojis import Emojis
 from src.core.paginator import send_command_browser
 from src.modules.leveling import service
+from src.modules.leveling.voice import VoiceTracker
+
+log = logging.getLogger(__name__)
 
 
 class Leveling(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self._voice_loop.start()
+        self._voice = VoiceTracker()
+        self._flush_voice.start()
 
     def cog_unload(self) -> None:
-        self._voice_loop.cancel()
+        self._flush_voice.cancel()
 
     # ── shared ────────────────────────────────────────────────────────────────
 
@@ -91,6 +98,18 @@ class Leveling(commands.Cog):
             return "▰" * width
         filled = min(width, int(width * into / needed))
         return "▰" * filled + "▱" * (width - filled)
+
+    @commands.hybrid_command(name="top", aliases=["toplevels", "levels_top"])
+    @commands.guild_only()
+    async def top(self, ctx) -> None:
+        """This server's level leaderboard (levels are per-server)."""
+        rows = await service.leaderboard_level(ctx.guild.id, 10)
+        entries = [(uid, f"Level {lvl}") for uid, lvl in rows]
+        await ctx.send(embed=rankings.ranked_list(
+            ctx.guild, entries, "Server Levels", author=ctx.author,
+            footer=f"This server only · {ctx.clean_prefix}rank for your card",
+            empty="No ranked members yet.",
+        ))
 
     # ── admin config (manage_guild on every subcommand) ────────────────────────
 
@@ -282,26 +301,68 @@ class Leveling(commands.Cog):
         if level is not None:
             await self._announce(message.guild, message.author, level, message.channel)
 
-    @tasks.loop(seconds=60)
-    async def _voice_loop(self) -> None:
-        for guild in self.bot.guilds:
-            cfg = await service.get_config(guild.id)
-            if cfg is None or not cfg.enabled:
-                continue
-            for vc in guild.voice_channels:
-                humans = [m for m in vc.members if not m.bot]
-                if len(humans) < 2:
-                    continue  # alone → no XP
-                for member in humans:
-                    vs = member.voice
-                    if vs is None or vs.self_mute or vs.mute:
-                        continue  # muted → no XP
-                    level = await service.award_voice_xp(guild.id, member.id, vc.id)
-                    if level is not None:
-                        await self._announce(guild, member, level, vc)
+    def _eligible(self, member: discord.Member) -> bool:
+        """Is this member actively present in voice right now? Not a bot, in a real
+        (non-AFK) channel, not muted or deafened, and with at least one other human
+        for company. Voice time accrues only while this holds."""
+        vs = member.voice
+        if member.bot or vs is None or vs.channel is None:
+            return False
+        if vs.channel == member.guild.afk_channel:
+            return False
+        if vs.self_mute or vs.mute or vs.self_deaf or vs.deaf:
+            return False
+        return sum(1 for m in vs.channel.members if not m.bot) >= 2
 
-    @_voice_loop.before_loop
-    async def _before_voice(self) -> None:
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
+    ) -> None:
+        # Event-driven accrual: a member's join/leave/mute/deafen/move ends one
+        # eligible interval and may start another — and, by changing a channel's
+        # head-count, flips the 'alone' status of everyone else in the channels it
+        # touched. Settle them all; the tracker banks whole minutes for the flush.
+        if member.bot:
+            return
+        now = time.monotonic()
+        key = (member.guild.id, member.id)
+        if after.channel is None:
+            self._voice.leave(key, now)
+        else:
+            self._voice.observe(key, after.channel.id, self._eligible(member), now)
+        for channel in {before.channel, after.channel}:
+            if channel is None:
+                continue
+            for other in channel.members:
+                if other.bot or other.id == member.id:
+                    continue
+                self._voice.observe(
+                    (member.guild.id, other.id), channel.id, self._eligible(other), now
+                )
+
+    @tasks.loop(seconds=60)
+    async def _flush_voice(self) -> None:
+        """Bank the in-progress intervals and write the accrued minutes in one
+        batched transaction, then announce any level-ups."""
+        self._voice.checkpoint(time.monotonic())
+        batch = self._voice.drain()
+        if not batch:
+            return
+        try:
+            levelups = await service.credit_voice(batch)
+        except Exception:
+            log.exception("voice credit flush failed; re-queueing %d entries", len(batch))
+            self._voice.restore(batch)
+            return
+        for guild_id, user_id, level in levelups:
+            guild = self.bot.get_guild(guild_id)
+            member = guild.get_member(user_id) if guild else None
+            if guild and member:
+                channel = member.voice.channel if member.voice else None
+                await self._announce(guild, member, level, channel)
+
+    @_flush_voice.before_loop
+    async def _before_flush(self) -> None:
         await self.bot.wait_until_ready()
 
 

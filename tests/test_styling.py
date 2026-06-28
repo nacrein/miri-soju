@@ -52,12 +52,17 @@ def test_palette_is_dusk():
     }) == 4
 
 
-def test_builders_apply_color_timestamp_and_footer():
+def test_builders_apply_color_and_title():
     e = embeds.success("done", "Title")
     assert e.color == embeds.COLOR_SUCCESS
-    assert e.timestamp is not None
-    assert e.footer.text == embeds.BRAND
     assert e.title == f"{Emojis.SUCCESS} Title"
+
+
+def test_builders_omit_brand_footer_and_timestamp_by_default():
+    # Command embeds carry no brand footer or timestamp unless a caller adds one.
+    e = embeds.success("done", "Title")
+    assert e.footer.text is None
+    assert e.timestamp is None
 
 
 def test_error_and_info_colors():
