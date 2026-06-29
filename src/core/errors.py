@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.error_log import record_error
 from src.core.help_format import usage_embed
 
 log = logging.getLogger(__name__)
@@ -50,10 +51,14 @@ def _friendly(exc: Exception) -> str:
     return "That didn't work, check your input and try again."
 
 
-async def _report_bug(send, exc: BaseException, context: str) -> None:
-    """Mint an ID, log the traceback under it, tell the user the ID."""
+async def _report_bug(
+    send, exc: BaseException, context: str, *,
+    guild_id: int | None = None, user_id: int | None = None,
+) -> None:
+    """Mint an ID, log the traceback under it, persist it, tell the user the ID."""
     error_id = _new_error_id()
     log.error("[%s] Unhandled error in %s", error_id, context, exc_info=exc)
+    await record_error(error_id, context, exc, guild_id=guild_id, user_id=user_id)
     try:
         await send(embed=embeds.error(f"Something went wrong. Error code: `{error_id}`"))
     except discord.HTTPException:
@@ -83,7 +88,10 @@ def setup_error_handling(bot: commands.Bot) -> None:
         if isinstance(exc, _USER_FACING):
             await ctx.send(embed=embeds.error(_friendly(exc)))
             return
-        await _report_bug(ctx.send, original, f"command '{ctx.command}'")
+        await _report_bug(
+            ctx.send, original, f"command '{ctx.command}'",
+            guild_id=ctx.guild.id if ctx.guild else None, user_id=ctx.author.id,
+        )
 
     async def on_app_command_error(
         interaction: discord.Interaction, exc: app_commands.AppCommandError
@@ -97,12 +105,16 @@ def setup_error_handling(bot: commands.Bot) -> None:
         elif isinstance(exc, app_commands.CommandOnCooldown):
             msg = f"On cooldown. Try again in {exc.retry_after:.0f}s."
         else:
-            # Real bug: mint an ID and log it.
+            # Real bug: mint an ID, log it, persist it.
             error_id = _new_error_id()
+            cmd_name = interaction.command.name if interaction.command else "?"
             log.error(
-                "[%s] Unhandled error in app command '%s'",
-                error_id, interaction.command.name if interaction.command else "?",
-                exc_info=original,
+                "[%s] Unhandled error in app command '%s'", error_id, cmd_name, exc_info=original,
+            )
+            await record_error(
+                error_id, f"app command '{cmd_name}'", original,
+                guild_id=interaction.guild_id,
+                user_id=interaction.user.id if interaction.user else None,
             )
             msg = f"Something went wrong. Error code: `{error_id}`"
 

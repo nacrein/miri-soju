@@ -21,7 +21,7 @@ def apply_prefix(raw: str) -> str:
     """Validate a new prefix. Returns the cleaned value or raises ValueError."""
     new = str(raw).strip()
     if not new or len(new) > _MAX_PREFIX_LEN or any(c.isspace() for c in new):
-        raise ValueError(f"Prefix must be 1–{_MAX_PREFIX_LEN} characters with no spaces.")
+        raise ValueError(f"Prefix must be 1-{_MAX_PREFIX_LEN} characters with no spaces.")
     return new
 
 

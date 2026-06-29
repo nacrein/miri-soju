@@ -5,15 +5,21 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 
 from dashboard import discord_api
-from dashboard.deps import get_manageable_guilds, require_guild
+from dashboard.deps import get_current_user, get_manageable_guilds, require_guild
 from dashboard.schemas import ChannelOut, GuildMetaOut, GuildOut, RoleOut
 
 router = APIRouter(tags=["guilds"])
 
 
 @router.get("/guilds", response_model=list[GuildOut])
-async def list_guilds(request: Request) -> list[GuildOut]:
-    """Servers the logged-in user may configure (admin there + bot present)."""
+async def list_guilds(
+    request: Request, _user: dict = Depends(get_current_user)
+) -> list[GuildOut]:
+    """Servers the logged-in user may configure (admin there + bot present).
+
+    Requires auth (``get_current_user`` → 401 when logged out) so an anonymous
+    request gets 401, not an empty 200.
+    """
     guilds = get_manageable_guilds(request)
     return [
         GuildOut(id=gid, name=g["name"], icon=g.get("icon"))

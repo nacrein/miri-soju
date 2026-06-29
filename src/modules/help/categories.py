@@ -35,12 +35,18 @@ CATEGORIES: dict[str, tuple[str, str, list[str]]] = {
     "Server Setup": (
         Emojis.SETTINGS,
         "Configure the bot for your server.",
-        ["Setup", "Prefix", "ButtonRole", "ReactionRole", "StickyMessage", "Webhook", "Embed"],
+        ["Setup", "Prefix", "ButtonRole", "ReactionRole", "StickyMessage", "Webhook", "Embed",
+         "Boosterrole", "Voicemaster", "Vanity"],
     ),
     "Utility": (
         Emojis.INFO,
         "Everyday tools and information.",
         ["Info", "Snipe", "Afk", "Ask", "Reminder", "Timer", "Emoji", "Sticker"],
+    ),
+    "Fun": (
+        Emojis.WIN,
+        "Reaction gifs and internet-culture nonsense.",
+        ["Fun"],
     ),
     "Bot": (
         Emojis.CROWN,

@@ -71,7 +71,7 @@ class Help(commands.Cog):
         return cog_to_category().get(cog_name, DEFAULT_CATEGORY)
 
     def _menu_embed(self, ctx: commands.Context) -> discord.Embed:
-        e = discord.Embed(description=_menu_blurb(ctx.clean_prefix), color=embeds.COLOR_DUSK)
+        e = discord.Embed(description=_menu_blurb(ctx.clean_prefix), color=embeds.COLOR_SIGNATURE)
         e.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url)
         if self.bot.user:
             e.set_thumbnail(url=self.bot.user.display_avatar.url)

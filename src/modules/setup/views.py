@@ -63,9 +63,17 @@ class SetupMenu(OwnerView):
                 embed=embeds.error("That module is no longer available."), ephemeral=True
             )
             return
-        wizard = entry.factory(self._author_id, self._guild_id)
-        wizard.invoker = self.invoker
-        wizard.message = self.message
-        await wizard.load()
-        await interaction.response.edit_message(embed=wizard.render(), view=wizard)
+        await interaction.response.defer()  # ack within 3s; load() does DB I/O
+        try:
+            wizard = entry.factory(self._author_id, self._guild_id)
+            wizard.invoker = self.invoker
+            wizard.message = self.message
+            await wizard.load()
+            await interaction.edit_original_response(embed=wizard.render(), view=wizard)
+        except Exception:
+            await interaction.followup.send(
+                embed=embeds.error("I couldn't open that panel — try again in a moment."),
+                ephemeral=True,
+            )
+            return
         self.stop()

@@ -29,9 +29,9 @@ class Ask(commands.Cog, name="Ask"):
             try:
                 answer = await service.ask(self.bot, ctx.author.id, prompt)
             except anthropic.RateLimitError:
-                raise BotError("The AI is busy right now — try again in a moment.")
+                raise BotError("The AI is busy right now. Try again in a moment.")
             except anthropic.APIError:
-                raise BotError("Couldn't reach the AI right now — try again shortly.")
+                raise BotError("Couldn't reach the AI right now. Try again shortly.")
         await ctx.send(answer[:_MAX_LEN], allowed_mentions=discord.AllowedMentions.none())
 
 

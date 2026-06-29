@@ -14,7 +14,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="app-shell">
       <header className="topbar">
         <Link to="/" className="topbar__brand">
-          <span className="dot" /> Bot Dashboard
+          <span className="dot" /> Miri
         </Link>
         {session && (
           <div className="topbar__user">

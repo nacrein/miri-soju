@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from src.core import embeds
 from src.core.emojis import Emojis
@@ -27,6 +27,7 @@ log = logging.getLogger(__name__)
 class Automod(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self._prune_loop.start()
 
     async def cog_load(self) -> None:
         from src.core.setup_registry import SetupEntry, register_setup
@@ -41,7 +42,16 @@ class Automod(commands.Cog):
     def cog_unload(self) -> None:
         from src.core.setup_registry import unregister_setup
 
+        self._prune_loop.cancel()
         unregister_setup("automod")
+
+    @tasks.loop(minutes=10)
+    async def _prune_loop(self) -> None:
+        service.prune_spam_state()
+
+    @_prune_loop.before_loop
+    async def _before_prune(self) -> None:
+        await self.bot.wait_until_ready()
 
     async def cog_check(self, ctx: commands.Context) -> bool:
         if ctx.guild is None:
@@ -61,9 +71,10 @@ class Automod(commands.Cog):
         # Discord edits a message to attach a link/embed unfurl; ignore those so the
         # same content isn't scanned (and double-counted) a second time.
         if before.content != after.content:
-            await self._scan(after)
+            # count_spam=False: re-editing one message must not inflate the flood counter.
+            await self._scan(after, count_spam=False)
 
-    async def _scan(self, message: discord.Message) -> None:
+    async def _scan(self, message: discord.Message, *, count_spam: bool = True) -> None:
         if message.guild is None or message.author.bot or message.webhook_id is not None:
             return
         if message.type not in (discord.MessageType.default, discord.MessageType.reply):
@@ -82,7 +93,7 @@ class Automod(commands.Cog):
         ):
             return
 
-        violation = self._stateful_violation(message, cfg)
+        violation = self._stateful_violation(message, cfg) if count_spam else None
         if violation is None:
             view = detector.MessageView(
                 content=message.content,
@@ -135,7 +146,9 @@ class Automod(commands.Cog):
         lists = await service.get_lists(ctx.guild.id)
         active = [n for n in amconfig.FILTERS if getattr(cfg, amconfig.FILTER_FLAG[n])]
         e = embeds.info("", f"{Emojis.SHIELD} AutoMod Settings")
-        e.add_field(name="Mode", value="Dry-run (logging only)" if cfg.log_only else "LIVE — enforcing")
+        e.add_field(
+            name="Mode", value="Dry-run (logging only)" if cfg.log_only else "LIVE: enforcing",
+        )
         e.add_field(name="Exempt mods", value="Yes" if cfg.exempt_mods else "No")
         e.add_field(name="Strike window", value=f"{cfg.strike_window_hours}h")
         e.add_field(name="Filters on", value=", ".join(active) or "none", inline=False)
@@ -153,7 +166,7 @@ class Automod(commands.Cog):
 
     @automod.command(name="enable")
     async def am_enable(self, ctx: commands.Context) -> None:
-        """Turn automod on (starts in dry-run — it logs but takes no action)."""
+        """Turn automod on (starts in dry-run, where it logs but takes no action)."""
         await service.set_enabled(ctx.guild.id, True)
         await ctx.send(embed=embeds.success(
             "AutoMod enabled in **dry-run** mode. Turn on filters, then `,automod live` to enforce."
@@ -175,7 +188,9 @@ class Automod(commands.Cog):
     async def am_dryrun(self, ctx: commands.Context) -> None:
         """Return to dry-run: automod logs violations but takes no action."""
         await service.set_log_only(ctx.guild.id, True)
-        await ctx.send(embed=embeds.success("AutoMod is in **dry-run** mode — it logs but won't action anyone."))
+        await ctx.send(embed=embeds.success(
+            "AutoMod is in **dry-run** mode: it logs but won't action anyone."
+        ))
 
     @automod.command(name="filter")
     async def am_filter(self, ctx: commands.Context, name: str, state: bool) -> None:
@@ -303,7 +318,10 @@ class Automod(commands.Cog):
         if not words:
             await ctx.send(embed=embeds.info("No banned words. `,automod words add <word>`"))
             return
-        await ctx.send(embed=embeds.info(", ".join(f"`{w}`" for w in words), f"Banned words ({len(words)})"))
+        body = ", ".join(f"`{w}`" for w in words)
+        if len(body) > 3900:  # stay under Discord's 4096 description limit
+            body = body[:3900].rsplit(",", 1)[0] + f" … ({len(words)} words total)"
+        await ctx.send(embed=embeds.info(body, f"Banned words ({len(words)})"))
 
     # ── allowed domains ───────────────────────────────────────────────────────
 

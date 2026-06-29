@@ -29,7 +29,7 @@ from src.core.emojis import Emojis
 from src.modules.embed import script
 
 _TIMEOUT = 300  # builders run longer than the 120s house default — you're typing.
-_HINT = "**Embed builder** — shape it with the controls below, then press **Send**."
+_HINT = "**Embed builder**: shape it with the controls below, then press **Send**."
 
 
 # ── modals (free-text entry; one per section) ─────────────────────────────────
@@ -267,7 +267,7 @@ class EmbedBuilderView(discord.ui.View):
         except ValueError:
             return embeds.info(
                 "This embed is empty. Use **Content** to add a title or description, "
-                "or **Add field** — then press **Send** to post it.",
+                "or **Add field**, then press **Send** to post it.",
                 f"{Emojis.SETTINGS} Embed builder",
             )
 

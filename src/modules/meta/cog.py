@@ -96,7 +96,7 @@ class Meta(commands.Cog):
                 f"Servers: `{len(self.bot.guilds)}`\n"
                 f"Users: `{members:,}`"
             ),
-            color=embeds.COLOR_DUSK,
+            color=embeds.COLOR_SIGNATURE,
         )
         view = _LinkButtons(self._invite_url(), SUPPORT_URL, WEBSITE_URL)
         await ctx.send(embed=e, view=view)

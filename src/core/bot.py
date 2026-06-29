@@ -40,6 +40,9 @@ log = logging.getLogger(__name__)
 
 _MODULES_PACKAGE = "src.modules"
 
+# The status Miri wears in the member list. Hostess vibe; edit the one line to taste.
+_PRESENCE = discord.Activity(type=discord.ActivityType.listening, name="orders")
+
 
 def _make_case_insensitive(command: commands.Command) -> None:
     """Make a group (and its subgroups) match subcommands case-insensitively.
@@ -164,4 +167,5 @@ class Bot(commands.Bot):
         log.info("Loaded %d cog(s)", loaded)
 
     async def on_ready(self) -> None:
+        await self.change_presence(activity=_PRESENCE)
         log.info("Logged in as %s (id: %s)", self.user, self.user.id if self.user else "?")

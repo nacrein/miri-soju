@@ -40,7 +40,7 @@ class EmbedBuilder(commands.Cog, name="Embed"):
             await ctx.send(embed=built)
         except discord.HTTPException:
             raise commands.BadArgument(
-                "Discord rejected that embed — check your URLs and that no field is blank."
+                "Discord rejected that embed. Check your URLs and that no field is blank."
             )
 
     @commands.command(name="embedcopy", aliases=["ec"])

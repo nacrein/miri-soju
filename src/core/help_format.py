@@ -113,7 +113,7 @@ def command_card(
 
     A markdown ``## Command: name`` heading, the blockquoted help, then an ansi
     Syntax/Example panel. `author` (the invoker) fills the author row; `category`
-    + `page`/`total` build the footer (`Moderation • page 1/5 (5 entries)`); `url`
+    + `page`/`total` build the footer (`Moderation · page 1/5 (5 entries)`); `url`
     links the heading. All optional, so the same card works standalone or inside
     the browser.
     """
@@ -128,14 +128,14 @@ def command_card(
         lines.append("-# Aliases: " + ", ".join(command.aliases))
     lines.append(_ansi_syntax(command, prefix))
 
-    e = discord.Embed(description="\n".join(lines), color=embeds.COLOR_DUSK)
+    e = discord.Embed(description="\n".join(lines), color=embeds.COLOR_SIGNATURE)
     if author is not None:
         e.set_author(name=author.display_name, icon_url=author.display_avatar.url)
 
     footer = category or ""
     if page is not None and total is not None:
         paging = f"page {page}/{total} ({total} entries)"
-        footer = f"{footer} • {paging}" if footer else paging
+        footer = f"{footer} · {paging}" if footer else paging
     if footer:
         e.set_footer(text=footer)
     return e

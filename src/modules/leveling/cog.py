@@ -174,7 +174,7 @@ class Leveling(commands.Cog):
     @levels.command(name="rate")
     @commands.has_permissions(manage_guild=True)
     async def levels_rate(self, ctx, amount: int) -> None:
-        """Set XP awarded per message (1–1000)."""
+        """Set XP awarded per message (1-1000)."""
         if amount < config.RATE_MIN or amount > config.RATE_MAX:
             raise commands.BadArgument(
                 f"Rate must be between {config.RATE_MIN} and {config.RATE_MAX}."
@@ -185,7 +185,7 @@ class Leveling(commands.Cog):
     @levels.command(name="cooldown")
     @commands.has_permissions(manage_guild=True)
     async def levels_cooldown(self, ctx, seconds: int) -> None:
-        """Set the gap between XP-earning messages (0–3600s)."""
+        """Set the gap between XP-earning messages (0-3600s)."""
         if seconds < config.COOLDOWN_MIN or seconds > config.COOLDOWN_MAX:
             raise commands.BadArgument(
                 f"Cooldown must be between {config.COOLDOWN_MIN} and {config.COOLDOWN_MAX} seconds."
@@ -222,7 +222,7 @@ class Leveling(commands.Cog):
     @levels.command(name="setlevel")
     @commands.has_permissions(manage_guild=True)
     async def levels_setlevel(self, ctx, member: discord.Member, level: int) -> None:
-        """Force a member's level (0–1000)."""
+        """Force a member's level (0-1000)."""
         if level < 0 or level > 1000:
             raise commands.BadArgument("Level must be between 0 and 1000.")
         await service.set_level(ctx.guild.id, member.id, level)
@@ -288,7 +288,7 @@ class Leveling(commands.Cog):
     @levels_multiplier.command(name="set")
     @commands.has_permissions(manage_guild=True)
     async def mult_set(self, ctx, channel: discord.abc.GuildChannel, rate: float) -> None:
-        """Scale XP in a channel (0–10; 0 disables XP there). Works for text and voice."""
+        """Scale XP in a channel (0-10; 0 disables XP there). Works for text and voice."""
         if rate < 0 or rate > 10:
             raise commands.BadArgument("Rate must be between 0 and 10.")
         await service.set_multiplier(ctx.guild.id, channel.id, rate)

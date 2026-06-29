@@ -61,7 +61,7 @@ class ButtonRoleCog(commands.Cog, name="ButtonRole"):
     async def cog_load(self) -> None:
         self.bot.add_dynamic_items(ButtonRoleButton)
 
-    @commands.group(name="buttonrole", aliases=["br"], invoke_without_command=True)
+    @commands.group(name="buttonrole", invoke_without_command=True)
     @commands.has_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.guild_only()

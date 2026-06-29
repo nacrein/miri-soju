@@ -48,7 +48,7 @@ class Prefix(commands.Cog):
         new = new.strip()
         if not new or len(new) > _MAX_PREFIX_LEN or any(c.isspace() for c in new):
             await ctx.send(embed=embeds.error(
-                f"Prefix must be 1–{_MAX_PREFIX_LEN} characters with no spaces."
+                f"Prefix must be 1-{_MAX_PREFIX_LEN} characters with no spaces."
             ))
             return
 

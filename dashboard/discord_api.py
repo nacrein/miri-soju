@@ -112,7 +112,8 @@ async def fetch_bot_guild_ids() -> set[int]:
 
 
 async def fetch_guild_roles(guild_id: int) -> list[dict]:
-    """Assignable roles for a guild, highest first. Excludes @everyone."""
+    """Assignable roles for a guild, alphabetical. Excludes @everyone and
+    integration-managed roles (bot/booster roles can't be handed out as rewards)."""
     cached = _roles_cache.get(guild_id)
     if cached is not None:
         return cached
@@ -130,6 +131,7 @@ async def fetch_guild_roles(guild_id: int) -> list[dict]:
         }
         for r in resp.json()
         if str(r["id"]) != str(guild_id)  # @everyone shares the guild id
+        and not r.get("managed", False)   # bot/integration/booster roles aren't assignable
     ]
     roles.sort(key=lambda r: r["name"].lower())
     _roles_cache.set(guild_id, roles)

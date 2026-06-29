@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,24 +27,31 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Bot Dashboard", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
     # Signed, http-only session cookie (Starlette uses itsdangerous under the hood).
+    # Secure the cookie automatically when the frontend is served over HTTPS, even
+    # if the operator forgot the flag; localhost http stays non-secure for dev.
+    https_only = settings.cookie_secure or settings.frontend_url.startswith("https")
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.session_secret,
         session_cookie="dash_session",
         same_site="lax",
-        https_only=settings.cookie_secure,
-        max_age=7 * 24 * 3600,
+        https_only=https_only,
+        # Authorization (the manageable-guild set) is snapshotted at login, so cap
+        # how long a stale snapshot can live — a re-login re-checks Discord. 8 hours.
+        max_age=8 * 3600,
     )
 
     # Only needed if the frontend is served from a *different* origin than this API
     # (otherwise same-origin / the Vite proxy covers it). Credentialed, so the
     # origin must be explicit — never "*".
+    # Credentialed CORS: per the Fetch spec "*" isn't a wildcard once credentials
+    # are allowed, so enumerate exactly what the API uses.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.frontend_url],
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type"],
     )
 
     api_routers = (
@@ -80,8 +87,11 @@ def _mount_frontend(app: FastAPI) -> None:
 
     @app.get("/{full_path:path}")
     async def spa(full_path: str) -> FileResponse:
-        # API routes are matched earlier; anything else falls through to the SPA,
-        # which does its own client-side routing.
+        # A real /api/* path matched earlier and won; one that reaches here doesn't
+        # exist, so 404 it instead of masking the error with index.html. Everything
+        # else is a client-side route → serve the SPA shell.
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404)
         candidate = _FRONTEND_DIST / full_path
         if full_path and candidate.is_file():
             return FileResponse(candidate)

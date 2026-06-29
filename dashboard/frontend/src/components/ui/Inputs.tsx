@@ -54,7 +54,14 @@ export function NumberField({ label, hint, error, value, onChange, min, max, ste
         max={max}
         step={step}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value === "" ? NaN : Number(e.target.value))}
+        onChange={(e) => {
+          // Never emit NaN: an empty/invalid field would serialize to null and the
+          // backend's required int fields would 422. Coalesce to the min (or 0).
+          const raw = e.target.value;
+          if (raw === "") return onChange(min ?? 0);
+          const n = Number(raw);
+          onChange(Number.isFinite(n) ? n : (min ?? 0));
+        }}
       />
     </Field>
   );

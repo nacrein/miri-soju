@@ -96,14 +96,14 @@ class HelpMenu(_OwnerView):
             body += f"> {blurb}\n"
         body += command_listing(cmds)
 
-        e = discord.Embed(description=body, color=embeds.COLOR_DUSK)
+        e = discord.Embed(description=body, color=embeds.COLOR_SIGNATURE)
         if self._invoker is not None:
             e.set_author(
                 name=self._invoker.display_name,
                 icon_url=self._invoker.display_avatar.url,
             )
         groups = sum(1 for c in cmds if isinstance(c, commands.Group))
-        e.set_footer(text=f"{len(cmds)} commands • {groups} groups")
+        e.set_footer(text=f"{len(cmds)} commands · {groups} groups")
         return e
 
     async def open_category(self, name: str, interaction: discord.Interaction) -> None:

@@ -6,17 +6,17 @@ import discord
 
 from src.core.emojis import Emojis
 
-# The bot's palette, a dusk theme. Restyle the whole bot by editing these.
-# Dusk indigo is the signature/neutral color; success, error, and warning are
-# dusk-toned variants kept distinct enough to read at a glance.
-COLOR_DUSK = discord.Color.from_str("#4C4A7D")     # signature / neutral
-COLOR_SUCCESS = discord.Color.from_str("#5F8D7E")  # sage dusk
-COLOR_ERROR = discord.Color.from_str("#A05566")    # mauve dusk
-COLOR_WARNING = discord.Color.from_str("#C08A4E")  # amber dusk
-COLOR_INFO = COLOR_DUSK
+# The bot's palette, a warm sushi-bar theme. Restyle the whole bot by editing these.
+# Warm salmon is the signature/neutral color; success, error, and warning are
+# warm-toned variants kept distinct enough to read at a glance.
+COLOR_SIGNATURE = discord.Color.from_str("#C56B5C")  # warm salmon - signature / neutral
+COLOR_SUCCESS = discord.Color.from_str("#6E9E5E")    # matcha green
+COLOR_ERROR = discord.Color.from_str("#B14A52")      # maguro red
+COLOR_WARNING = discord.Color.from_str("#D49A3F")    # soy-glaze amber
+COLOR_INFO = COLOR_SIGNATURE
 
 # Optional footer signature on command embeds. Empty by default so command embeds
-# carry no brand footer (and no timestamp); set BRAND = "Vesper" to bring it back.
+# carry no brand footer (and no timestamp); set BRAND = "Miri" to bring it back.
 # A cog that sets its own footer overrides this, so functional footers
 # (pagination, hints) still win.
 BRAND = ""
@@ -40,7 +40,7 @@ def _build(
     description: str | None,
     author: discord.abc.User | None = None,
 ) -> discord.Embed:
-    """The shared modern finish: dusk accent, the invoker's author row when given,
+    """The shared modern finish: warm salmon accent, the invoker's author row when given,
     and an optional brand footer (off by default; any caller can set its own)."""
     e = discord.Embed(title=title, description=description, color=color)
     apply_author(e, author)

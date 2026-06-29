@@ -229,7 +229,9 @@ class AutomodSetupView(WizardView):
         active = [n for n in amconfig.FILTERS if self.get(amconfig.FILTER_FLAG[n])]
         e = embeds.info("", f"{Emojis.SHIELD} AutoMod Setup")
         e.add_field(name="Status", value="On" if self.get("enabled") else "Off")
-        e.add_field(name="Mode", value="Dry-run (safe)" if self.get("log_only") else "LIVE — enforcing")
+        e.add_field(
+            name="Mode", value="Dry-run (safe)" if self.get("log_only") else "LIVE (enforcing)",
+        )
         e.add_field(name="Exempt mods", value="Yes" if self.get("exempt_mods") else "No")
         e.add_field(name="Filters on", value=", ".join(active) or "none", inline=False)
         e.add_field(

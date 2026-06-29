@@ -71,7 +71,7 @@ async def test_command_card_shape():
         assert d.startswith("## Command: ban")  # markdown heading, not embed title
         assert "\n> " in d  # blockquoted help
         assert "```ansi" in d and "Syntax: ,ban" in d  # ansi syntax panel
-        assert e.footer.text == "Moderation • page 1/5 (5 entries)"
+        assert e.footer.text == "Moderation · page 1/5 (5 entries)"
     finally:
         await _unload(bot)
 
@@ -133,7 +133,7 @@ async def test_command_browser_pages_family_with_four_buttons():
         assert len(buttons) == 4  # prev, next, search, close
         first = view.card()
         assert first.description.startswith(f"## Command: {family[0].qualified_name}")
-        assert first.footer.text == f"Moderation • page 1/{len(family)} ({len(family)} entries)"
+        assert first.footer.text == f"Moderation · page 1/{len(family)} ({len(family)} entries)"
         # advancing lands on the next family member
         view._index = 1
         assert view.card().description.startswith(f"## Command: {family[1].qualified_name}")
@@ -268,7 +268,7 @@ async def test_picking_a_category_lists_its_commands_in_one_codeblock():
         assert "```ansi" in e.description  # a single codeblock, not paged cards
         # footer counts the category's top-level commands and how many are groups
         groups = sum(1 for c in cats["Economy"] if isinstance(c, commands.Group))
-        assert e.footer.text == f"{len(cats['Economy'])} commands • {groups} groups"
+        assert e.footer.text == f"{len(cats['Economy'])} commands · {groups} groups"
         assert e.author.name == "nacrein"  # house-style invoker row is kept
     finally:
         await _unload(bot)

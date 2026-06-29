@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.modules.automod import config as am
 from src.modules.leveling.config import (
@@ -105,6 +105,14 @@ class LevelingConfigIn(BaseModel):
     announce_mode: Literal["here", "dm", "channel"]
     announce_channel_id: Optional[str] = None
     level_up_message: str = Field(..., min_length=1, max_length=MESSAGE_MAX)
+
+    @model_validator(mode="after")
+    def _channel_required_for_channel_mode(self) -> "LevelingConfigIn":
+        # 'channel' mode without a channel would silently fall back to the trigger
+        # channel — reject it so the client fixes the form instead of saving a no-op.
+        if self.announce_mode == "channel" and not self.announce_channel_id:
+            raise ValueError("announce_channel_id is required when announce_mode is 'channel'")
+        return self
 
 
 # ── serverlog (stored on GuildConfig) ────────────────────────────────────────

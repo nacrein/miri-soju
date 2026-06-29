@@ -8,6 +8,8 @@ from discord.ext import commands
 from src.core import embeds
 from src.core.checks import is_staff
 from src.core.emojis import Emojis
+from src.core.error_log import get_error
+from src.core.errors import BotError
 from src.core.paginator import send_command_browser
 from src.modules.economy import service
 
@@ -91,6 +93,32 @@ class Staff(commands.Cog):
         e.add_field(name="In Circulation", value=f"{Emojis.BITS} {_fmt(t['circulation'])}")
         e.add_field(name="Wallets", value=f"{Emojis.BITS} {_fmt(t['wallet_total'])}")
         e.add_field(name="Vaults", value=f"{Emojis.BANK} {_fmt(t['vault_total'])}")
+        await ctx.send(embed=e)
+
+    @staff.command(name="error", aliases=["err", "diagnose"])
+    @is_staff()
+    async def staff_error(self, ctx: commands.Context, code: str) -> None:
+        """Diagnose a logged error by its code, e.g. ,staff error 7187AE."""
+        code = code.strip().upper().removeprefix("#")
+        record = await get_error(code)
+        if record is None:
+            raise BotError(
+                f"No error logged with code `{code}`. Only unexpected bugs get a code "
+                "(plain validation messages don't)."
+            )
+        e = embeds.error(f"Diagnostics for error `{record.code}`.", "Error report")
+        when = discord.utils.format_dt(record.created_at, "R")
+        e.add_field(name="When", value=when, inline=False)
+        e.add_field(name="Where", value=f"`{record.context}`", inline=False)
+        e.add_field(name="Type", value=record.exc_type)
+        if record.guild_id:
+            e.add_field(name="Guild", value=str(record.guild_id))
+        if record.user_id:
+            e.add_field(name="User", value=f"<@{record.user_id}>")
+        e.add_field(name="Message", value=f"```\n{record.message[:980]}\n```", inline=False)
+        if record.traceback:
+            tail = f"```py\n{record.traceback[-950:]}\n```"
+            e.add_field(name="Traceback (tail)", value=tail, inline=False)
         await ctx.send(embed=e)
 
 

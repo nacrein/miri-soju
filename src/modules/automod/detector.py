@@ -54,11 +54,11 @@ def scan_static(
 ) -> Violation | None:
     content = view.content
 
-    if cfg.filter_mentions:
-        if cfg.block_everyone and view.mentions_everyone and not view.author_can_mention_everyone:
-            return Violation("everyone", "used @everyone/@here without permission")
-        if view.mention_count > cfg.mention_limit:
-            return Violation("mention", f"{view.mention_count} mentions (limit {cfg.mention_limit})")
+    # @everyone blocking is its own toggle — it works even if the mention-count filter is off.
+    if cfg.block_everyone and view.mentions_everyone and not view.author_can_mention_everyone:
+        return Violation("everyone", "used @everyone/@here without permission")
+    if cfg.filter_mentions and view.mention_count > cfg.mention_limit:
+        return Violation("mention", f"{view.mention_count} mentions (limit {cfg.mention_limit})")
 
     if cfg.filter_invites and _INVITE_RE.search(content):
         return Violation("invite", "posted a Discord invite link")

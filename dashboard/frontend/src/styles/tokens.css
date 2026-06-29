@@ -19,16 +19,16 @@
   --text-faint: #6b7280;
 
   /* ── color: brand + status ── */
-  --primary: #5865f2;
-  --primary-hover: #6b78ff;
-  --primary-soft: rgba(88, 101, 242, 0.16);
-  --success: #3ba55d;
-  --success-soft: rgba(59, 165, 93, 0.16);
-  --danger: #ed4245;
-  --danger-hover: #f25457;
-  --danger-soft: rgba(237, 66, 69, 0.14);
-  --warning: #faa61a;
-  --warning-soft: rgba(250, 166, 26, 0.15);
+  --primary: #c56b5c;
+  --primary-hover: #d4806f;
+  --primary-soft: rgba(197, 107, 92, 0.16);
+  --success: #6ea05e;
+  --success-soft: rgba(110, 160, 94, 0.16);
+  --danger: #c25560;
+  --danger-hover: #d06773;
+  --danger-soft: rgba(194, 85, 96, 0.14);
+  --warning: #d49a3f;
+  --warning-soft: rgba(212, 154, 63, 0.15);
 
   /* ── radius ── */
   --radius-sm: 6px;

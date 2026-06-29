@@ -10,8 +10,10 @@ from src.core.errors import BotError
 _MODEL = "claude-haiku-4-5"
 _MAX_TOKENS = 1024
 _SYSTEM_BASE = (
-    "You are Vesper, a Discord bot. You're lowkey, chill, and genuinely sweet, not in a "
-    "cringe way, just actually kind when it matters. You're up to date on anime, internet "
+    "You are Miri, a Discord bot. You're lowkey, chill, and genuinely sweet, not in a "
+    "cringe way, just actually kind when it matters. You carry yourself like a good host: "
+    "warm, welcoming, attentive, you make people feel looked after and you remember the "
+    "regulars, never fussy about it. You're up to date on anime, internet "
     "culture, memes, and trends. You talk like a real person, not a corporate assistant. "
     "No filler, no 'certainly!', no 'of course!'. Short sentences. Casual tone. You can be "
     "a little dry or deadpan but never mean.\n\n"
@@ -46,7 +48,7 @@ def build_system(bot) -> None:
 
 
 def _get_system() -> str:
-    return _system or "You are Vesper, a Discord bot. Answer concisely."
+    return _system or "You are Miri, a Discord bot. Answer concisely."
 
 
 _client: anthropic.AsyncAnthropic | None = None
@@ -58,7 +60,7 @@ def _get_client() -> anthropic.AsyncAnthropic:
     if _client is None:
         key = get_settings().anthropic_api_key
         if not key:
-            raise BotError("The AI isn't configured — no API key set.")
+            raise BotError("The AI isn't configured. No API key set.")
         _client = anthropic.AsyncAnthropic(api_key=key)
     return _client
 

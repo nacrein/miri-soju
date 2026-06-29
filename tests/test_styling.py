@@ -1,4 +1,4 @@
-"""Tests for the dusk embed theme and the non-breaking emoji placeholders."""
+"""Tests for the warm embed theme and the non-breaking emoji placeholders."""
 
 from __future__ import annotations
 
@@ -40,15 +40,15 @@ def test_every_registry_value_is_a_nonempty_string():
         assert isinstance(value, str) and value, f"{name} is empty"
 
 
-# ── dusk embed theme ────────────────────────────────────────────────────────
+# ── warm embed theme ────────────────────────────────────────────────────────
 
-def test_palette_is_dusk():
-    assert embeds.COLOR_INFO == embeds.COLOR_DUSK
-    assert str(embeds.COLOR_DUSK) == "#4c4a7d"
+def test_palette_is_signature():
+    assert embeds.COLOR_INFO == embeds.COLOR_SIGNATURE
+    assert str(embeds.COLOR_SIGNATURE) == "#c56b5c"
     # Semantic colors stay distinct so errors still read as errors.
     assert len({
         str(embeds.COLOR_SUCCESS), str(embeds.COLOR_ERROR),
-        str(embeds.COLOR_WARNING), str(embeds.COLOR_DUSK),
+        str(embeds.COLOR_WARNING), str(embeds.COLOR_SIGNATURE),
     }) == 4
 
 
@@ -67,7 +67,7 @@ def test_builders_omit_brand_footer_and_timestamp_by_default():
 
 def test_error_and_info_colors():
     assert embeds.error("boom").color == embeds.COLOR_ERROR
-    assert embeds.info("", "Card").color == embeds.COLOR_DUSK
+    assert embeds.info("", "Card").color == embeds.COLOR_SIGNATURE
 
 
 def test_caller_can_override_brand_footer():

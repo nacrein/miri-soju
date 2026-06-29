@@ -57,11 +57,11 @@ class _XpModal(discord.ui.Modal, title="XP settings"):
         super().__init__()
         self._view = view
         self.rate_in = discord.ui.TextInput(
-            label=f"XP per message ({config.RATE_MIN}–{config.RATE_MAX})",
+            label=f"XP per message ({config.RATE_MIN}-{config.RATE_MAX})",
             default=str(view.rate), max_length=4,
         )
         self.cooldown_in = discord.ui.TextInput(
-            label=f"Cooldown seconds ({config.COOLDOWN_MIN}–{config.COOLDOWN_MAX})",
+            label=f"Cooldown seconds ({config.COOLDOWN_MIN}-{config.COOLDOWN_MAX})",
             default=str(view.cooldown), max_length=4,
         )
         for item in (self.rate_in, self.cooldown_in):
