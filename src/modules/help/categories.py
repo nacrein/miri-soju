@@ -30,17 +30,17 @@ CATEGORIES: dict[str, tuple[str, str, list[str]]] = {
     "Moderation": (
         Emojis.SHIELD,
         "Keep your server safe and tidy.",
-        ["Moderation", "Staff", "ServerLog"],
+        ["Moderation", "Staff", "ServerLog", "Automod"],
     ),
     "Server Setup": (
         Emojis.SETTINGS,
         "Configure the bot for your server.",
-        ["Prefix", "ButtonRole", "ReactionRole", "StickyMessage", "Webhook", "Embed"],
+        ["Setup", "Prefix", "ButtonRole", "ReactionRole", "StickyMessage", "Webhook", "Embed"],
     ),
     "Utility": (
         Emojis.INFO,
         "Everyday tools and information.",
-        ["Info", "Snipe", "Afk", "Reminder", "Timer", "Emoji", "Sticker"],
+        ["Info", "Snipe", "Afk", "Ask", "Reminder", "Timer", "Emoji", "Sticker"],
     ),
     "Bot": (
         Emojis.CROWN,

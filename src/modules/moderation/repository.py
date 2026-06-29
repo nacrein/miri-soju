@@ -38,6 +38,17 @@ class ModerationRepository:
         )
         return int((await self.session.execute(stmt)).scalar_one())
 
+    async def count_recent_cases(
+        self, guild_id: int, user_id: int, kind: str, since: datetime
+    ) -> int:
+        stmt = select(func.count()).select_from(ModCase).where(
+            ModCase.guild_id == guild_id,
+            ModCase.user_id == user_id,
+            ModCase.kind == kind,
+            ModCase.created_at >= since,
+        )
+        return int((await self.session.execute(stmt)).scalar_one())
+
     async def cases_by_kind(self, guild_id: int, user_id: int, kind: str) -> list[ModCase]:
         stmt = (
             select(ModCase)

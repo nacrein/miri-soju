@@ -14,9 +14,48 @@ from config.settings import get_settings
 from src.core.embeds import apply_author
 from src.core.errors import setup_error_handling
 
+try:  # the dict discord.py uses for case-insensitive command lookup
+    from discord.ext.commands.core import _CaseInsensitiveDict
+except Exception:  # pragma: no cover - fallback if the private name ever moves
+    class _CaseInsensitiveDict(dict):
+        def __contains__(self, k):
+            return super().__contains__(k.casefold())
+
+        def __delitem__(self, k):
+            return super().__delitem__(k.casefold())
+
+        def __getitem__(self, k):
+            return super().__getitem__(k.casefold())
+
+        def get(self, k, default=None):
+            return super().get(k.casefold(), default)
+
+        def pop(self, k, default=None):
+            return super().pop(k.casefold(), default)
+
+        def __setitem__(self, k, v):
+            super().__setitem__(k.casefold(), v)
+
 log = logging.getLogger(__name__)
 
 _MODULES_PACKAGE = "src.modules"
+
+
+def _make_case_insensitive(command: commands.Command) -> None:
+    """Make a group (and its subgroups) match subcommands case-insensitively.
+
+    ``case_insensitive=True`` on the Bot only covers top-level commands; each Group
+    keeps its own lookup table. Convert them so ``,Levels Enable`` resolves exactly
+    like ``,levels enable`` at every depth — phone auto-capitalisation included."""
+    if not isinstance(command, commands.Group) or command.case_insensitive:
+        return
+    command.case_insensitive = True
+    existing = command.all_commands
+    command.all_commands = _CaseInsensitiveDict()
+    for key, sub in existing.items():
+        command.all_commands[key] = sub  # re-store names + aliases, now casefolded
+    for sub in set(existing.values()):
+        _make_case_insensitive(sub)
 
 os.environ.setdefault("JISHAKU_NO_UNDERSCORE", "true")
 os.environ.setdefault("JISHAKU_NO_DM_TRACEBACK", "true")
@@ -62,7 +101,14 @@ class Bot(commands.Bot):
             intents=_intents(),
             help_command=None,
             owner_id=owner_id,  # if None, discord.py derives it from the app
+            case_insensitive=True,  # ,Setup == ,setup (top-level; groups handled in add_command)
         )
+
+    def add_command(self, command: commands.Command) -> None:
+        # Every group becomes case-insensitive as it's registered, so subcommands
+        # match regardless of capitalisation too (not just top-level commands).
+        _make_case_insensitive(command)
+        super().add_command(command)
 
     async def get_context(self, origin, *, cls=BotContext):
         # Route both prefix messages and hybrid/slash interactions through the

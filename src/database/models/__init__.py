@@ -1,5 +1,12 @@
 """Import every model so SQLAlchemy's metadata (and Alembic) sees all tables."""
 
+from src.database.models.automod import (
+    AutomodConfig,
+    AutomodDomain,
+    AutomodExemptChannel,
+    AutomodExemptRole,
+    AutomodWord,
+)
 from src.database.models.buttonrole import ButtonRole
 from src.database.models.case import ModCase
 from src.database.models.guild import GuildConfig
@@ -20,4 +27,5 @@ __all__ = [
     "ModCase", "ModerationConfig", "JailedMember", "ImmuneEntry", "TempRole",
     "ManagedWebhook", "ReactionRole", "ButtonRole", "StickyMessage", "Timer", "Reminder",
     "LevelConfig", "MemberLevel", "LevelReward", "ChannelMultiplier",
+    "AutomodConfig", "AutomodWord", "AutomodDomain", "AutomodExemptRole", "AutomodExemptChannel",
 ]

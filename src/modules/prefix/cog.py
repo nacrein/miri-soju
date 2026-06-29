@@ -5,6 +5,7 @@ from __future__ import annotations
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.emojis import Emojis
 from src.modules.prefix import service
 
 _MAX_PREFIX_LEN = 5
@@ -13,6 +14,21 @@ _MAX_PREFIX_LEN = 5
 class Prefix(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+
+    async def cog_load(self) -> None:
+        from src.core.setup_registry import SetupEntry, register_setup
+        from src.modules.prefix.setup_view import PrefixSetupView
+
+        register_setup(SetupEntry(
+            key="prefix", label="Prefix", emoji=Emojis.SETTINGS,
+            description="Change the command prefix (server owner only).",
+            factory=lambda author_id, guild_id: PrefixSetupView(author_id, guild_id),
+        ))
+
+    def cog_unload(self) -> None:
+        from src.core.setup_registry import unregister_setup
+
+        unregister_setup("prefix")
 
     @commands.command(name="prefix", extras={"example": "prefix !"})
     @commands.guild_only()

@@ -1,0 +1,13 @@
+# Web-dashboard-only dependencies. Deliberately SEPARATE from the bot's
+# pyproject.toml so installing/running the bot is completely unaffected.
+#
+# Install into the same virtualenv the bot uses (it reuses the bot's src/):
+#   pip install -r dashboard/requirements.txt
+#
+# These layer on top of the bot's existing deps (sqlalchemy[asyncio], asyncpg,
+# pydantic-settings) which the dashboard imports from src/.
+
+fastapi>=0.110
+uvicorn[standard]>=0.29
+httpx>=0.27
+itsdangerous>=2.1          # session-cookie signing (used by Starlette SessionMiddleware)

@@ -11,7 +11,7 @@ from discord.ext import commands, tasks
 from src.core import embeds, rankings
 from src.core.emojis import Emojis
 from src.core.paginator import send_command_browser
-from src.modules.leveling import service
+from src.modules.leveling import config, service
 from src.modules.leveling.voice import VoiceTracker
 
 log = logging.getLogger(__name__)
@@ -23,8 +23,23 @@ class Leveling(commands.Cog):
         self._voice = VoiceTracker()
         self._flush_voice.start()
 
+    async def cog_load(self) -> None:
+        # Register the ,setup levels panel. Deferred imports keep the registry (core)
+        # free of any feature dependency.
+        from src.core.setup_registry import SetupEntry, register_setup
+        from src.modules.leveling.setup_view import LevelingSetupView
+
+        register_setup(SetupEntry(
+            key="levels", label="Leveling", emoji=Emojis.XP,
+            description="XP per message, level-ups, and the announce channel.",
+            factory=lambda author_id, guild_id: LevelingSetupView(author_id, guild_id),
+        ))
+
     def cog_unload(self) -> None:
+        from src.core.setup_registry import unregister_setup
+
         self._flush_voice.cancel()
+        unregister_setup("levels")
 
     # ── shared ────────────────────────────────────────────────────────────────
 
@@ -160,8 +175,10 @@ class Leveling(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def levels_rate(self, ctx, amount: int) -> None:
         """Set XP awarded per message (1–1000)."""
-        if amount < 1 or amount > 1000:
-            raise commands.BadArgument("Rate must be between 1 and 1000.")
+        if amount < config.RATE_MIN or amount > config.RATE_MAX:
+            raise commands.BadArgument(
+                f"Rate must be between {config.RATE_MIN} and {config.RATE_MAX}."
+            )
         await service.set_rate(ctx.guild.id, amount)
         await ctx.send(embed=embeds.success(f"XP per message set to {amount}."))
 
@@ -169,8 +186,10 @@ class Leveling(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def levels_cooldown(self, ctx, seconds: int) -> None:
         """Set the gap between XP-earning messages (0–3600s)."""
-        if seconds < 0 or seconds > 3600:
-            raise commands.BadArgument("Cooldown must be between 0 and 3600 seconds.")
+        if seconds < config.COOLDOWN_MIN or seconds > config.COOLDOWN_MAX:
+            raise commands.BadArgument(
+                f"Cooldown must be between {config.COOLDOWN_MIN} and {config.COOLDOWN_MAX} seconds."
+            )
         await service.set_cooldown(ctx.guild.id, seconds)
         await ctx.send(embed=embeds.success(f"Message cooldown set to {seconds}s."))
 

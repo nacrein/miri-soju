@@ -16,6 +16,8 @@ class ModCase(Base, IdMixin, TimestampMixin):
     __tablename__ = "mod_cases"
     __table_args__ = (
         Index("ix_mod_cases_guild_user", "guild_id", "user_id"),
+        # Supports the automod windowed strike count: guild+user+kind+created_at range.
+        Index("ix_mod_cases_guild_user_kind_created", "guild_id", "user_id", "kind", "created_at"),
     )
 
     guild_id: Mapped[int] = mapped_column(BigInteger, nullable=False)

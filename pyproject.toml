@@ -10,6 +10,7 @@ dependencies = [
     "alembic>=1.13",
     "pydantic-settings>=2.0",
     "jishaku>=2.7",
+    "anthropic>=0.69",
 ]
 
 [project.optional-dependencies]

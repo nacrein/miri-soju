@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Comma-separated trusted staff user IDs (moderation visibility, not owner power).
     staff_ids: str = Field("", alias="STAFF_IDS")
 
+    # Anthropic (AI commands). Empty disables the ,ask command at runtime.
+    anthropic_api_key: str = Field("", alias="ANTHROPIC_API_KEY")
+
     # Database
     database_url: str = Field(..., alias="DATABASE_URL")  # postgresql+asyncpg://user:pass@host/db
 

@@ -7,6 +7,11 @@ MESSAGE_COOLDOWN = 60          # default seconds between XP-earning messages
 VOICE_XP_PER_MINUTE = 10       # XP per eligible voice minute (code-tunable)
 DEFAULT_LEVEL_MESSAGE = "{user} reached level **{level}**!"
 
+# Per-guild adjustable ranges, enforced by both ,levels and the ,setup levels panel.
+RATE_MIN, RATE_MAX = 1, 1000
+COOLDOWN_MIN, COOLDOWN_MAX = 0, 3600  # seconds
+MESSAGE_MAX = 500                     # level-up template length cap
+
 
 def xp_to_advance(level: int) -> int:
     """XP to go from `level` to `level + 1`."""

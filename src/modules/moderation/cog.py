@@ -70,8 +70,21 @@ class Moderation(commands.Cog):
         self.bot = bot
         self._temprole_loop.start()
 
+    async def cog_load(self) -> None:
+        from src.core.setup_registry import SetupEntry, register_setup
+        from src.modules.moderation.setup_view import ModerationSetupView
+
+        register_setup(SetupEntry(
+            key="moderation", label="Moderation", emoji=Emojis.SHIELD,
+            description="Set the jail role used by ,jail.",
+            factory=lambda author_id, guild_id: ModerationSetupView(author_id, guild_id),
+        ))
+
     def cog_unload(self) -> None:
+        from src.core.setup_registry import unregister_setup
+
         self._temprole_loop.cancel()
+        unregister_setup("moderation")
 
     async def _log(self, guild_id: int, embed: discord.Embed) -> None:
         await log_event(self.bot, guild_id, embed, "mod")

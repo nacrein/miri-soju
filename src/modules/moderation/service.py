@@ -74,6 +74,13 @@ async def list_cases(guild_id: int, user_id: int, limit: int = 15, offset: int =
         return rows, total
 
 
+async def count_recent_cases(guild_id: int, user_id: int, kind: str, since: datetime) -> int:
+    """How many cases of one kind a user has since ``since`` (the automod strike window)."""
+    async with get_session() as session:
+        repo = ModerationRepository(session)
+        return await repo.count_recent_cases(guild_id, user_id, kind, since)
+
+
 async def delete_case(guild_id: int, case_id: int) -> bool:
     """Delete one case by id (guild-scoped). Returns whether it existed."""
     async with get_session() as session:

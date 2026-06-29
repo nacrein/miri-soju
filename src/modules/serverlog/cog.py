@@ -79,6 +79,21 @@ class ServerLog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    async def cog_load(self) -> None:
+        from src.core.setup_registry import SetupEntry, register_setup
+        from src.modules.serverlog.setup_view import ServerLogSetupView
+
+        register_setup(SetupEntry(
+            key="logging", label="Server Logging", emoji=Emojis.CHANNEL,
+            description="The audit-log channel and which server events to log.",
+            factory=lambda author_id, guild_id: ServerLogSetupView(author_id, guild_id),
+        ))
+
+    def cog_unload(self) -> None:
+        from src.core.setup_registry import unregister_setup
+
+        unregister_setup("logging")
+
     # ── configuration ───────────────────────────────────────────────────────
 
     @commands.hybrid_group(name="serverlog")
