@@ -76,6 +76,34 @@ def test_caller_can_override_brand_footer():
     assert e.footer.text == "Page 1/2"
 
 
+# ── log records (audit + server events) ──────────────────────────────────────
+
+_TARGET = SimpleNamespace(id=99, __str__=lambda self: "target#0001")
+_MOD = SimpleNamespace(id=7, __str__=lambda self: "mod#0002")
+
+
+def test_audit_log_uses_house_palette_not_stock_red():
+    e = embeds.audit_log("Ban", moderator=_MOD, target=_TARGET, reason="spam", icon="🔨")
+    assert e.color == embeds.COLOR_ERROR  # not discord.Color.dark_red()
+    assert e.title == "🔨 Ban"
+    # Records are timestamped (so a channel of them reads as a log); commands aren't.
+    assert e.timestamp is not None
+    names = [f.name for f in e.fields]
+    assert names == ["Member", "Moderator", "Reason"]
+
+
+def test_audit_log_appends_extra_fields():
+    e = embeds.audit_log("Kick", target=_TARGET, reason="x", fields=[("Strike", "2")])
+    assert [f.name for f in e.fields] == ["Member", "Reason", "Strike"]
+
+
+def test_event_log_takes_caller_color_and_is_timestamped():
+    e = embeds.event_log("joined", color=embeds.COLOR_SUCCESS, footer="ID: 1")
+    assert e.color == embeds.COLOR_SUCCESS
+    assert e.footer.text == "ID: 1"
+    assert e.timestamp is not None
+
+
 # ── author header (the house-style invoker row) ─────────────────────────────
 
 def test_apply_author_sets_invoker_when_absent():

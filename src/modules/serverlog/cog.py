@@ -22,57 +22,49 @@ def _truncate(text: str, limit: int = 1000) -> str:
 
 
 def join_embed(member: discord.Member) -> discord.Embed:
-    e = discord.Embed(
-        description=f"{Emojis.JOIN} {member.mention} joined", color=discord.Color.green()
+    return embeds.event_log(
+        f"{Emojis.JOIN} {member.mention} joined",
+        color=embeds.COLOR_SUCCESS,
+        author=member,
+        footer=f"ID: {member.id}",
+        fields=[("Account created", discord.utils.format_dt(member.created_at, "R"))],
     )
-    e.set_author(name=str(member), icon_url=member.display_avatar.url)
-    e.add_field(name="Account created", value=discord.utils.format_dt(member.created_at, "R"))
-    e.set_footer(text=f"ID: {member.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e
 
 
 def leave_embed(member: discord.Member) -> discord.Embed:
-    e = discord.Embed(
-        description=f"{Emojis.LEAVE} {member.mention} left", color=discord.Color.red()
+    return embeds.event_log(
+        f"{Emojis.LEAVE} {member.mention} left",
+        color=embeds.COLOR_ERROR,
+        author=member,
+        footer=f"ID: {member.id}",
     )
-    e.set_author(name=str(member), icon_url=member.display_avatar.url)
-    e.set_footer(text=f"ID: {member.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e
 
 
 def message_delete_embed(message: discord.Message) -> discord.Embed:
-    e = discord.Embed(
-        description=(
-            f"{Emojis.MESSAGE_DELETE} Message by {message.author.mention} "
-            f"deleted in {message.channel.mention}"
-        ),
-        color=discord.Color.orange(),
+    fields = [("Content", _truncate(message.content))] if message.content else None
+    return embeds.event_log(
+        f"{Emojis.MESSAGE_DELETE} Message by {message.author.mention} "
+        f"deleted in {message.channel.mention}",
+        color=embeds.COLOR_WARNING,
+        footer=f"Author ID: {message.author.id}",
+        fields=fields,
     )
-    if message.content:
-        e.add_field(name="Content", value=_truncate(message.content), inline=False)
-    e.set_footer(text=f"Author ID: {message.author.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e
 
 
 def message_edit_embed(before: discord.Message, after: discord.Message) -> discord.Embed:
     # Tighter cap on edits: two fields plus the jump link must stay well under
     # Discord's 6000-char total embed limit.
-    e = discord.Embed(
-        description=(
-            f"{Emojis.MESSAGE_EDIT} Message by {before.author.mention} "
-            f"edited in {before.channel.mention}"
-        ),
-        color=discord.Color.blue(),
+    return embeds.event_log(
+        f"{Emojis.MESSAGE_EDIT} Message by {before.author.mention} "
+        f"edited in {before.channel.mention}",
+        color=embeds.COLOR_SIGNATURE,
+        footer=f"Author ID: {before.author.id}",
+        fields=[
+            ("Before", _truncate(before.content, 900) or "(empty)"),
+            ("After", _truncate(after.content, 900) or "(empty)"),
+            ("Jump", f"[link]({after.jump_url})"),
+        ],
     )
-    e.add_field(name="Before", value=_truncate(before.content, 900) or "(empty)", inline=False)
-    e.add_field(name="After", value=_truncate(after.content, 900) or "(empty)", inline=False)
-    e.add_field(name="Jump", value=f"[link]({after.jump_url})", inline=False)
-    e.set_footer(text=f"Author ID: {before.author.id}")
-    e.timestamp = discord.utils.utcnow()
-    return e
 
 
 class ServerLog(commands.Cog):

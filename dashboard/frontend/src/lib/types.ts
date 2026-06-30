@@ -29,7 +29,8 @@ export interface Channel {
 export interface GuildMeta {
   guild: Guild;
   roles: Role[];
-  channels: Channel[];
+  channels: Channel[]; // text channels (logs/announcements)
+  voice_channels: Channel[]; // voice channels (e.g. VoiceMaster's join-to-create)
 }
 
 export interface Session {
@@ -110,4 +111,67 @@ export interface AutomodConfig {
   domains: string[];
   exempt_roles: string[];
   exempt_channels: string[];
+}
+
+// ── welcome / goodbye ─────────────────────────────────────────────────────────
+export interface WelcomeConfig {
+  welcome_channel_id: string | null;
+  welcome_message: string | null;
+  welcome_enabled: boolean;
+  goodbye_channel_id: string | null;
+  goodbye_message: string | null;
+  goodbye_enabled: boolean;
+}
+
+// ── starboard ─────────────────────────────────────────────────────────────────
+export interface StarboardConfig {
+  channel_id: string | null;
+  threshold: number;
+  star_emoji: string;
+  enabled: boolean;
+  self_star: boolean;
+}
+
+// ── vanity ────────────────────────────────────────────────────────────────────
+export interface VanityConfig {
+  enabled: boolean;
+  role_id: string | null;
+  channel_id: string | null;
+  message_template: string | null;
+}
+
+// ── music ─────────────────────────────────────────────────────────────────────
+export interface MusicConfig {
+  dj_role_id: string | null;
+  command_channel_id: string | null;
+  default_volume: number;
+}
+
+// ── boosterrole ───────────────────────────────────────────────────────────────
+export interface BoosterRoleConfig {
+  enabled: boolean;
+  hoist_above: boolean;
+  anchor_role_id: string | null;
+}
+
+// ── voicemaster ───────────────────────────────────────────────────────────────
+export interface VoiceMasterConfig {
+  enabled: boolean;
+  create_channel_id: string | null;
+}
+
+// ── autoroles ─────────────────────────────────────────────────────────────────
+export interface AutorolesConfig {
+  roles: string[];
+}
+
+// ── tags ──────────────────────────────────────────────────────────────────────
+export interface Tag {
+  name: string;
+  content: string;
+  author_id: string;
+  uses: number;
+}
+export interface TagsConfig {
+  tags: Tag[];
 }

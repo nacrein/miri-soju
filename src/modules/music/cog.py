@@ -142,6 +142,10 @@ class Music(commands.Cog):
             return
         # The votes were for the track that just ended.
         self._skip_votes.pop(player.guild.id, None)
+        # A track that failed to stream (e.g. a SoundCloud 404) ends with "loadFailed":
+        # transparently retry the same song on the fallback source before moving on.
+        if payload.reason == "loadFailed" and await self._recover_failed(player, payload.track):
+            return
         # We drive the queue ourselves (autoplay is disabled), so advance here. Using
         # queue.get() respects loop/loop_all; an empty queue raises and we go idle.
         try:
@@ -151,6 +155,40 @@ class Music(commands.Cog):
             return
         with contextlib.suppress(wavelink.WavelinkException):
             await player.play(nxt)
+
+    @commands.Cog.listener()
+    async def on_wavelink_track_stuck(self, payload: wavelink.TrackStuckEventPayload) -> None:
+        # No audio frames for too long — drop it; the resulting track_end advances us.
+        player = payload.player
+        if player is not None and player.connected:
+            with contextlib.suppress(wavelink.WavelinkException):
+                await player.skip(force=True)
+
+    async def _recover_failed(self, player: wavelink.Player, track: wavelink.Playable) -> bool:
+        """A track failed to stream — re-resolve the same song on the fallback source and
+        play that instead. Returns True if a replacement started. Each song is retried at
+        most once (a retried track that fails again falls through to the next in queue)."""
+        if getattr(track.extras, "retried", False):
+            return False
+        query = f"{track.author} {track.title}".strip() or track.title
+        try:
+            results = await wavelink.Playable.search(query, source=config.FALLBACK_SOURCE)
+        except wavelink.WavelinkException:
+            return False
+        if not results:
+            return False
+        replacement = results.tracks[0] if isinstance(results, wavelink.Playlist) else results[0]
+        replacement.extras = {
+            "requester": getattr(track.extras, "requester", None),
+            "retried": True,
+        }
+        log.info(
+            "Music: '%s' failed to stream; retrying via %s", track.title, config.FALLBACK_SOURCE
+        )
+        with contextlib.suppress(wavelink.WavelinkException):
+            await player.play(replacement)
+            return True
+        return False
 
     @commands.Cog.listener()
     async def on_voice_state_update(

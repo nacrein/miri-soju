@@ -12,6 +12,7 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.paginator import Paginator, paginate_lines
 
 log = logging.getLogger(__name__)
 
@@ -43,14 +44,8 @@ class Owner(commands.Cog):
             f"`{g.id}` · **{g.name}** ({g.member_count} members, owner: {g.owner_id})"
             for g in sorted(self.bot.guilds, key=lambda g: g.member_count or 0, reverse=True)
         ]
-        chunk = ""
-        for line in lines:
-            if len(chunk) + len(line) + 1 > 1900:
-                await ctx.send(embed=embeds.info(chunk))
-                chunk = ""
-            chunk += line + "\n"
-        if chunk:
-            await ctx.send(embed=embeds.info(chunk))
+        pages = paginate_lines(lines, f"Servers ({len(self.bot.guilds)})")
+        await Paginator(ctx.author.id, pages).start(ctx)
 
     @commands.command(name="leaveserver")
     async def leaveserver(self, ctx: commands.Context, guild_id: int) -> None:

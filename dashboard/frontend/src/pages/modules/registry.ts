@@ -1,10 +1,18 @@
 import type { ComponentType } from "react";
 
 import AutomodPanel from "./AutomodPanel";
+import AutorolesPanel from "./AutorolesPanel";
+import BoosterRolePanel from "./BoosterRolePanel";
 import LevelingPanel from "./LevelingPanel";
 import ModerationPanel from "./ModerationPanel";
+import MusicPanel from "./MusicPanel";
 import PrefixPanel from "./PrefixPanel";
 import ServerlogPanel from "./ServerlogPanel";
+import StarboardPanel from "./StarboardPanel";
+import TagsPanel from "./TagsPanel";
+import VanityPanel from "./VanityPanel";
+import VoiceMasterPanel from "./VoiceMasterPanel";
+import WelcomePanel from "./WelcomePanel";
 import type { PanelProps } from "./types";
 
 export interface ModuleDef {
@@ -22,6 +30,14 @@ export const MODULES: ModuleDef[] = [
   { key: "serverlog", label: "Server Log", icon: "📜", component: ServerlogPanel },
   { key: "moderation", label: "Moderation", icon: "🔨", component: ModerationPanel },
   { key: "prefix", label: "Prefix", icon: "⌨️", component: PrefixPanel },
+  { key: "welcome", label: "Welcome", icon: "👋", component: WelcomePanel },
+  { key: "starboard", label: "Starboard", icon: "⭐", component: StarboardPanel },
+  { key: "autoroles", label: "Autoroles", icon: "🎭", component: AutorolesPanel },
+  { key: "tags", label: "Tags", icon: "🏷️", component: TagsPanel },
+  { key: "boosterrole", label: "Booster Roles", icon: "🎨", component: BoosterRolePanel },
+  { key: "vanity", label: "Vanity", icon: "✨", component: VanityPanel },
+  { key: "voicemaster", label: "VoiceMaster", icon: "🔊", component: VoiceMasterPanel },
+  { key: "music", label: "Music", icon: "🎵", component: MusicPanel },
 ];
 
 export const defaultModuleKey = MODULES[0].key;

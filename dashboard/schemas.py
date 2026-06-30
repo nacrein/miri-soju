@@ -22,6 +22,8 @@ from src.modules.leveling.config import (
     RATE_MAX,
     RATE_MIN,
 )
+from src.modules.starboard.service import MAX_THRESHOLD as SB_MAX_THRESHOLD
+from src.modules.starboard.service import MIN_THRESHOLD as SB_MIN_THRESHOLD
 
 # A Discord snowflake on the wire: a 17–20 digit numeric string. Constraining it
 # here rejects junk like {"id": "abc"} with a 422 at the boundary instead of
@@ -57,11 +59,15 @@ class ChannelOut(BaseModel):
 
 
 class GuildMetaOut(BaseModel):
-    """Roles + text channels for populating the config dropdowns."""
+    """Roles + channels for populating the config dropdowns.
+
+    ``channels`` is text channels (logs/announcements); ``voice_channels`` is for
+    modules that target a voice channel (e.g. VoiceMaster's join-to-create)."""
 
     guild: GuildOut
     roles: list[RoleOut]
     channels: list[ChannelOut]
+    voice_channels: list[ChannelOut] = []
 
 
 class SessionOut(BaseModel):
@@ -242,3 +248,137 @@ class IdItemIn(BaseModel):
     """A role or channel id to add to an automod exemption list."""
 
     id: SnowflakeStr
+
+
+# ── welcome / goodbye ────────────────────────────────────────────────────────
+
+
+class WelcomeConfigOut(BaseModel):
+    welcome_channel_id: str | None = None
+    welcome_message: str | None = None
+    welcome_enabled: bool
+    goodbye_channel_id: str | None = None
+    goodbye_message: str | None = None
+    goodbye_enabled: bool
+
+
+class WelcomeConfigIn(BaseModel):
+    welcome_channel_id: SnowflakeStr | None = None
+    welcome_message: str | None = Field(None, max_length=2000)
+    welcome_enabled: bool
+    goodbye_channel_id: SnowflakeStr | None = None
+    goodbye_message: str | None = Field(None, max_length=2000)
+    goodbye_enabled: bool
+
+
+# ── starboard ────────────────────────────────────────────────────────────────
+
+
+class StarboardConfigOut(BaseModel):
+    channel_id: str | None = None
+    threshold: int
+    star_emoji: str
+    enabled: bool
+    self_star: bool
+
+
+class StarboardConfigIn(BaseModel):
+    channel_id: SnowflakeStr | None = None
+    threshold: int = Field(..., ge=SB_MIN_THRESHOLD, le=SB_MAX_THRESHOLD)
+    star_emoji: str = Field(..., min_length=1, max_length=64)
+    enabled: bool
+    self_star: bool
+
+
+# ── vanity ───────────────────────────────────────────────────────────────────
+
+
+class VanityConfigOut(BaseModel):
+    enabled: bool
+    role_id: str | None = None
+    channel_id: str | None = None
+    message_template: str | None = None
+
+
+class VanityConfigIn(BaseModel):
+    enabled: bool
+    role_id: SnowflakeStr | None = None
+    channel_id: SnowflakeStr | None = None
+    message_template: str | None = Field(None, max_length=500)
+
+
+# ── music ────────────────────────────────────────────────────────────────────
+
+
+class MusicConfigOut(BaseModel):
+    dj_role_id: str | None = None
+    command_channel_id: str | None = None
+    default_volume: int
+
+
+class MusicConfigIn(BaseModel):
+    dj_role_id: SnowflakeStr | None = None
+    command_channel_id: SnowflakeStr | None = None
+    default_volume: int = Field(..., ge=0, le=150)
+
+
+# ── boosterrole ──────────────────────────────────────────────────────────────
+
+
+class BoosterRoleConfigOut(BaseModel):
+    enabled: bool
+    hoist_above: bool
+    anchor_role_id: str | None = None
+
+
+class BoosterRoleConfigIn(BaseModel):
+    enabled: bool
+    hoist_above: bool
+    anchor_role_id: SnowflakeStr | None = None
+
+
+# ── voicemaster (panel message stays bot-managed; dashboard sets the basics) ──
+
+
+class VoiceMasterConfigOut(BaseModel):
+    enabled: bool
+    create_channel_id: str | None = None
+
+
+class VoiceMasterConfigIn(BaseModel):
+    enabled: bool
+    create_channel_id: SnowflakeStr | None = None
+
+
+# ── autoroles (a list of role ids; managed via add/remove like a reward list) ─
+
+
+class AutorolesConfigOut(BaseModel):
+    roles: list[str]
+
+
+class AutoroleIdIn(BaseModel):
+    role_id: SnowflakeStr
+
+
+# ── tags (per-guild custom commands; a CRUD list) ────────────────────────────
+
+
+class TagOut(BaseModel):
+    name: str
+    content: str
+    author_id: str
+    uses: int
+
+
+class TagsOut(BaseModel):
+    tags: list[TagOut]
+
+
+class TagIn(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    content: str = Field(..., min_length=1, max_length=2000)
+
+
+class TagContentIn(BaseModel):
+    content: str = Field(..., min_length=1, max_length=2000)

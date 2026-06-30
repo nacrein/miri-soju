@@ -18,7 +18,23 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from dashboard.config import get_dashboard_settings
-from dashboard.routers import auth, automod, guilds, leveling, moderation, prefix, serverlog
+from dashboard.routers import (
+    auth,
+    automod,
+    autoroles,
+    boosterrole,
+    guilds,
+    leveling,
+    moderation,
+    music,
+    prefix,
+    serverlog,
+    starboard,
+    tags,
+    vanity,
+    voicemaster,
+    welcome,
+)
 from src.core.cache_sync import publish_guild_changed
 
 _FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
@@ -83,6 +99,14 @@ def create_app() -> FastAPI:
         prefix.router,
         moderation.router,
         automod.router,
+        welcome.router,
+        starboard.router,
+        vanity.router,
+        music.router,
+        boosterrole.router,
+        voicemaster.router,
+        autoroles.router,
+        tags.router,
     )
     for router in api_routers:
         app.include_router(router, prefix="/api")

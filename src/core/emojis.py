@@ -97,6 +97,9 @@ class Emojis:
 
     # ── activity / leveling ─────────────────────────────────────────────────
     XP = _emoji("xp", id=0, fallback="⭐")
+    STAR = _emoji("star", id=0, fallback="⭐")  # starboard
+    TADA = _emoji("tada", id=0, fallback="🎉")  # giveaways
+    POLL = _emoji("poll", id=0, fallback="📊")  # polls
     LEVEL_UP = _emoji("level_up", id=0, fallback="🆙")
     VOICE = _emoji("voice", id=0, fallback="🎙️")
     MESSAGE = _emoji("message", id=0, fallback="💬")
