@@ -95,10 +95,13 @@ class Automod(commands.Cog):
 
         violation = self._stateful_violation(message, cfg) if count_spam else None
         if violation is None:
+            # @everyone/@here inside a code span never pings, so check the de-coded text
+            # to avoid actioning a member who only *typed* the literal in `code`/```fences```.
+            outside_code = normalize.strip_code(message.content)
             view = detector.MessageView(
                 content=message.content,
                 mention_count=len({m.id for m in message.mentions} | {r.id for r in message.role_mentions}),
-                mentions_everyone=("@everyone" in message.content or "@here" in message.content),
+                mentions_everyone=("@everyone" in outside_code or "@here" in outside_code),
                 author_can_mention_everyone=message.channel.permissions_for(message.author).mention_everyone,
             )
             violation = detector.scan_static(view, cfg, lists["matcher"], lists["domains"])

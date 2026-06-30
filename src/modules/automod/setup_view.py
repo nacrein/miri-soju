@@ -84,7 +84,7 @@ def apply_words(raw: str) -> list[str]:
 # ── modals ──────────────────────────────────────────────────────────────────────
 
 class _LimitsModal(discord.ui.Modal, title="Filter limits"):
-    def __init__(self, view: "AutomodSetupView") -> None:
+    def __init__(self, view: AutomodSetupView) -> None:
         super().__init__()
         self._view = view
         self.mention = discord.ui.TextInput(label="Max mentions per message", default=str(view.get("mention_limit")))
@@ -106,20 +106,22 @@ class _LimitsModal(discord.ui.Modal, title="Filter limits"):
 
 
 class _EscalationModal(discord.ui.Modal, title="Escalation thresholds"):
-    def __init__(self, view: "AutomodSetupView") -> None:
+    def __init__(self, view: AutomodSetupView) -> None:
         super().__init__()
         self._view = view
+        # NB: do NOT name a field ``self.timeout`` — that shadows Modal's reserved
+        # timeout attribute (float | None) and makes discord.py crash on send_modal.
         self.window = discord.ui.TextInput(label="Strike window (hours)", default=str(view.get("strike_window_hours")))
-        self.timeout = discord.ui.TextInput(label="Timeout 1: strikes and minutes", default=f"{view.get('timeout_at')} {view.get('timeout_minutes')}")
+        self.timeout1 = discord.ui.TextInput(label="Timeout 1: strikes and minutes", default=f"{view.get('timeout_at')} {view.get('timeout_minutes')}")
         self.timeout2 = discord.ui.TextInput(label="Timeout 2: strikes and minutes", default=f"{view.get('timeout2_at')} {view.get('timeout2_minutes')}")
         self.kick = discord.ui.TextInput(label="Kick at strikes (0 = off)", default=str(view.get("kick_at")))
         self.ban = discord.ui.TextInput(label="Ban at strikes (0 = off)", default=str(view.get("ban_at")))
-        for item in (self.window, self.timeout, self.timeout2, self.kick, self.ban):
+        for item in (self.window, self.timeout1, self.timeout2, self.kick, self.ban):
             self.add_item(item)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         try:
-            fields = apply_escalation(self.window.value, self.timeout.value, self.timeout2.value, self.kick.value, self.ban.value)
+            fields = apply_escalation(self.window.value, self.timeout1.value, self.timeout2.value, self.kick.value, self.ban.value)
         except ValueError as exc:
             await interaction.response.send_message(embed=embeds.error(str(exc)), ephemeral=True)
             return
@@ -128,7 +130,7 @@ class _EscalationModal(discord.ui.Modal, title="Escalation thresholds"):
 
 
 class _WordsModal(discord.ui.Modal, title="Add banned words"):
-    def __init__(self, view: "AutomodSetupView") -> None:
+    def __init__(self, view: AutomodSetupView) -> None:
         super().__init__()
         self._view = view
         self.words = discord.ui.TextInput(

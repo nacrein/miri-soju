@@ -10,7 +10,7 @@ Conventions:
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -23,20 +23,25 @@ from src.modules.leveling.config import (
     RATE_MIN,
 )
 
+# A Discord snowflake on the wire: a 17–20 digit numeric string. Constraining it
+# here rejects junk like {"id": "abc"} with a 422 at the boundary instead of
+# letting int() blow up into an opaque 500 in the router.
+SnowflakeStr = Annotated[str, Field(pattern=r"^\d{17,20}$")]
+
 # ── identity / guild discovery ───────────────────────────────────────────────
 
 
 class UserOut(BaseModel):
     id: str
     username: str
-    global_name: Optional[str] = None
-    avatar: Optional[str] = None
+    global_name: str | None = None
+    avatar: str | None = None
 
 
 class GuildOut(BaseModel):
     id: str
     name: str
-    icon: Optional[str] = None
+    icon: str | None = None
 
 
 class RoleOut(BaseModel):
@@ -74,7 +79,7 @@ class LevelRewardOut(BaseModel):
 
 class LevelRewardIn(BaseModel):
     level: int = Field(..., ge=1, le=1000)
-    role_id: str
+    role_id: SnowflakeStr
 
 
 class ChannelMultiplierOut(BaseModel):
@@ -83,7 +88,7 @@ class ChannelMultiplierOut(BaseModel):
 
 
 class ChannelMultiplierIn(BaseModel):
-    channel_id: str
+    channel_id: SnowflakeStr
     multiplier: float = Field(..., ge=0.0, le=10.0)
 
 
@@ -92,7 +97,7 @@ class LevelingConfigOut(BaseModel):
     xp_per_message: int
     message_cooldown: int
     announce_mode: str
-    announce_channel_id: Optional[str] = None
+    announce_channel_id: str | None = None
     level_up_message: str
     rewards: list[LevelRewardOut]
     multipliers: list[ChannelMultiplierOut]
@@ -103,11 +108,11 @@ class LevelingConfigIn(BaseModel):
     xp_per_message: int = Field(..., ge=RATE_MIN, le=RATE_MAX)
     message_cooldown: int = Field(..., ge=COOLDOWN_MIN, le=COOLDOWN_MAX)
     announce_mode: Literal["here", "dm", "channel"]
-    announce_channel_id: Optional[str] = None
+    announce_channel_id: SnowflakeStr | None = None
     level_up_message: str = Field(..., min_length=1, max_length=MESSAGE_MAX)
 
     @model_validator(mode="after")
-    def _channel_required_for_channel_mode(self) -> "LevelingConfigIn":
+    def _channel_required_for_channel_mode(self) -> LevelingConfigIn:
         # 'channel' mode without a channel would silently fall back to the trigger
         # channel — reject it so the client fixes the form instead of saving a no-op.
         if self.announce_mode == "channel" and not self.announce_channel_id:
@@ -119,7 +124,7 @@ class LevelingConfigIn(BaseModel):
 
 
 class ServerlogConfigOut(BaseModel):
-    log_channel_id: Optional[str] = None
+    log_channel_id: str | None = None
     log_joins: bool
     log_leaves: bool
     log_message_delete: bool
@@ -128,7 +133,7 @@ class ServerlogConfigOut(BaseModel):
 
 
 class ServerlogConfigIn(BaseModel):
-    log_channel_id: Optional[str] = None
+    log_channel_id: SnowflakeStr | None = None
     log_joins: bool
     log_leaves: bool
     log_message_delete: bool
@@ -140,24 +145,24 @@ class ServerlogConfigIn(BaseModel):
 
 
 class PrefixOut(BaseModel):
-    prefix: Optional[str] = None
+    prefix: str | None = None
     default: str
 
 
 class PrefixIn(BaseModel):
     # None resets to the global default; otherwise 1–8 non-space chars.
-    prefix: Optional[str] = Field(None, min_length=1, max_length=8)
+    prefix: str | None = Field(None, min_length=1, max_length=8)
 
 
 # ── moderation ───────────────────────────────────────────────────────────────
 
 
 class ModerationConfigOut(BaseModel):
-    jail_role_id: Optional[str] = None
+    jail_role_id: str | None = None
 
 
 class ModerationConfigIn(BaseModel):
-    jail_role_id: Optional[str] = None
+    jail_role_id: SnowflakeStr | None = None
 
 
 # ── automod ──────────────────────────────────────────────────────────────────
@@ -236,4 +241,4 @@ class StringItemIn(BaseModel):
 class IdItemIn(BaseModel):
     """A role or channel id to add to an automod exemption list."""
 
-    id: str
+    id: SnowflakeStr

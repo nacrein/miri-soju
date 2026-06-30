@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import BigInteger, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -31,8 +29,8 @@ class Transaction(Base, IdMixin, TimestampMixin):
     kind: Mapped[str] = mapped_column(String(32), nullable=False)  # daily, work, gamble_win...
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     balance_after: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    counterparty_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
-    note: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    counterparty_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    note: Mapped[str | None] = mapped_column(String(128), nullable=True)
     # Set only on interactive-game rows (stake + its resolution share one id);
     # NULL for every other transaction kind.
-    game_session_id: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    game_session_id: Mapped[str | None] = mapped_column(String(32), nullable=True)

@@ -40,6 +40,22 @@ async def test_parses_thousands_separators():
     assert await conv.convert(_ctx(1), "1_000") == 1000
 
 
+async def test_parses_shorthand_suffixes():
+    conv = WalletAmount()
+    assert await conv.convert(_ctx(1), "1k") == 1_000
+    assert await conv.convert(_ctx(1), "100k") == 100_000
+    assert await conv.convert(_ctx(1), "2m") == 2_000_000
+    assert await conv.convert(_ctx(1), "1b") == 1_000_000_000
+    assert await conv.convert(_ctx(1), "2.5m") == 2_500_000  # decimal with a suffix
+    assert await conv.convert(_ctx(1), "1.5K") == 1_500       # case-insensitive
+
+
+async def test_bare_decimal_still_rejected():
+    # A decimal only makes sense with a suffix; `1.5` bits is not a thing.
+    with pytest.raises(service.EconomyError):
+        await WalletAmount().convert(_ctx(1), "1.5")
+
+
 async def test_rejects_non_number():
     with pytest.raises(service.EconomyError):
         await WalletAmount().convert(_ctx(1), "abc")

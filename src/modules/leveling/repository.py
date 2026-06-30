@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models.level import ChannelMultiplier, LevelConfig, LevelReward, MemberLevel
@@ -17,7 +16,7 @@ class LevelingRepository:
 
     # ── config ────────────────────────────────────────────────────────────────
 
-    async def get_config(self, guild_id: int) -> Optional[LevelConfig]:
+    async def get_config(self, guild_id: int) -> LevelConfig | None:
         return await self.session.get(LevelConfig, guild_id)
 
     async def get_or_create_config(self, guild_id: int) -> LevelConfig:
@@ -30,7 +29,7 @@ class LevelingRepository:
 
     # ── member progress ─────────────────────────────────────────────────────
 
-    async def get_member(self, guild_id: int, user_id: int) -> Optional[MemberLevel]:
+    async def get_member(self, guild_id: int, user_id: int) -> MemberLevel | None:
         stmt = select(MemberLevel).where(MemberLevel.guild_id == guild_id, MemberLevel.user_id == user_id)
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
@@ -41,6 +40,33 @@ class LevelingRepository:
             self.session.add(member)
             await self.session.flush()
         return member
+
+    async def add_xp(
+        self, guild_id: int, user_id: int, gain: int, *, last_message_at: datetime | None = None
+    ) -> int:
+        """Atomically add ``gain`` to a member's XP in the DB and return the new
+        total. The row must already exist (call ``get_or_create_member`` first).
+        The in-DB increment avoids a read-modify-write race between the message-XP
+        and voice-XP paths overwriting each other's delta."""
+        values: dict = {"xp": MemberLevel.xp + gain}
+        if last_message_at is not None:
+            values["last_message_at"] = last_message_at
+        stmt = (update(MemberLevel)
+                .where(MemberLevel.guild_id == guild_id, MemberLevel.user_id == user_id)
+                .values(**values)
+                .returning(MemberLevel.xp))
+        return int((await self.session.execute(stmt)).scalar_one())
+
+    async def add_voice(self, guild_id: int, user_id: int, minutes: int, xp_gain: int) -> int:
+        """Atomically add voice minutes and XP to a member, returning the new XP
+        total. Both columns are incremented in-DB (no read-modify-write) so a
+        concurrent message-XP award can't clobber the voice delta."""
+        stmt = (update(MemberLevel)
+                .where(MemberLevel.guild_id == guild_id, MemberLevel.user_id == user_id)
+                .values(voice_minutes=MemberLevel.voice_minutes + minutes,
+                        xp=MemberLevel.xp + xp_gain)
+                .returning(MemberLevel.xp))
+        return int((await self.session.execute(stmt)).scalar_one())
 
     async def rank_by_xp(self, guild_id: int, xp: int) -> int:
         stmt = select(func.count()).select_from(MemberLevel).where(
@@ -74,7 +100,7 @@ class LevelingRepository:
 
     # ── rewards ───────────────────────────────────────────────────────────────
 
-    async def _reward(self, guild_id: int, level: int) -> Optional[LevelReward]:
+    async def _reward(self, guild_id: int, level: int) -> LevelReward | None:
         stmt = select(LevelReward).where(LevelReward.guild_id == guild_id, LevelReward.level == level)
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
@@ -102,7 +128,7 @@ class LevelingRepository:
 
     # ── channel multipliers ───────────────────────────────────────────────────
 
-    async def _mult(self, guild_id: int, channel_id: int) -> Optional[ChannelMultiplier]:
+    async def _mult(self, guild_id: int, channel_id: int) -> ChannelMultiplier | None:
         stmt = select(ChannelMultiplier).where(
             ChannelMultiplier.guild_id == guild_id, ChannelMultiplier.channel_id == channel_id
         )

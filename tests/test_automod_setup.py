@@ -9,6 +9,7 @@ import discord
 from src.modules.automod.setup_view import (
     _DEFAULTS,
     AutomodSetupView,
+    _EscalationModal,
     apply_escalation,
     apply_filter_limits,
     apply_words,
@@ -54,6 +55,17 @@ def test_apply_escalation_valid_and_invalid():
             assert False, f"expected {args} to raise"
         except ValueError:
             pass
+
+
+def test_escalation_modal_does_not_shadow_reserved_timeout():
+    # `timeout` is a reserved Modal attribute (float | None); a field named
+    # `self.timeout` shadows it and crashes discord.py on send_modal with
+    # "unsupported operand type(s) for +: 'float' and 'TextInput'".
+    modal = _EscalationModal(AutomodSetupView(1, 100))
+    assert modal.timeout is None
+    labels = [i.label for i in modal.children]
+    assert "Timeout 1: strikes and minutes" in labels
+    assert "Timeout 2: strikes and minutes" in labels
 
 
 def test_apply_words_splits_and_trims():

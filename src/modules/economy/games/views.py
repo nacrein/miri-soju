@@ -136,6 +136,7 @@ class CrashView(_GameView):
             for child in self.children:
                 child.disabled = True
             await service.payout_winnings(self._player_id, 0, self._session_id)
+            self._resolved = True
             e = self.embed(status=f"{Emojis.LOSE} Crashed at {self._mult:.2f}x! Stake lost.")
             await interaction.response.edit_message(embed=e, view=self)
             self.stop()

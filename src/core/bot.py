@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import pkgutil
@@ -11,6 +12,7 @@ import discord
 from discord.ext import commands
 
 from config.settings import get_settings
+from src.core import cache_sync
 from src.core.embeds import apply_author
 from src.core.errors import setup_error_handling
 
@@ -123,6 +125,15 @@ class Bot(commands.Bot):
         await self.load_extension("jishaku")
         await self._load_all_cogs()
         await self._sync_app_commands()
+        # Hear config writes made by the dashboard (a separate process) and drop the
+        # affected guild from our in-process caches at once. No-op on SQLite.
+        self._cache_listener = asyncio.create_task(cache_sync.run_listener())
+
+    async def close(self) -> None:
+        listener = getattr(self, "_cache_listener", None)
+        if listener is not None:
+            listener.cancel()
+        await super().close()
 
     async def _sync_app_commands(self) -> None:
         """Push hybrid/app commands to Discord. Hybrid commands are added to the

@@ -15,6 +15,53 @@ from src.core.emojis import Emojis
 from src.modules.voicemaster import service, state
 
 
+async def delete_old_panel(guild: discord.Guild) -> None:
+    """Best-effort delete of the guild's previously posted panel message.
+
+    Re-running setup (or re-picking the panel channel in the wizard) posts a fresh
+    panel; without this the old message lingers as a duplicate but still-functional
+    control panel. Silently ignores a missing channel/message or HTTP errors.
+    """
+    cfg = await service.get_config(guild.id)
+    if cfg is None or cfg.panel_channel_id is None or cfg.panel_message_id is None:
+        return
+    channel = guild.get_channel(cfg.panel_channel_id)
+    if not isinstance(channel, discord.abc.Messageable):
+        return
+    try:
+        await channel.get_partial_message(cfg.panel_message_id).delete()
+    except discord.HTTPException:
+        pass
+
+
+async def sync_owner_overwrites(
+    channel: discord.VoiceChannel, old_owner_id: int, new_owner_id: int
+) -> None:
+    """Move the spawn-time per-owner overwrite from the old owner to the new one.
+
+    Spawning grants the owner connect/manage_channels/move_members (cog ``_spawn``);
+    on transfer/claim that overwrite must follow ownership, otherwise the departed
+    owner keeps a manage_channels overwrite and the new owner gets none. Best-effort:
+    a missing member or HTTP error is ignored (DB ownership is the source of truth).
+    """
+    guild = channel.guild
+    old = guild.get_member(old_owner_id)
+    new = guild.get_member(new_owner_id)
+    try:
+        if old is not None:
+            await channel.set_permissions(old, overwrite=None, reason="VoiceMaster transfer")
+        if new is not None:
+            await channel.set_permissions(
+                new,
+                overwrite=discord.PermissionOverwrite(
+                    connect=True, manage_channels=True, move_members=True
+                ),
+                reason="VoiceMaster transfer",
+            )
+    except discord.HTTPException:
+        pass
+
+
 def panel_embed() -> discord.Embed:
     """The static panel embed posted in the panel channel."""
     return embeds.info(
@@ -118,7 +165,10 @@ class _TransferSelect(discord.ui.Select):
                 embed=embeds.error("That member isn't in the channel anymore."), ephemeral=True
             )
             return
+        record = await service.get_channel_by_id(interaction.guild.id, self.channel.id)
+        old_owner_id = record.owner_id if record is not None else interaction.user.id
         await service.transfer_ownership(interaction.guild.id, self.channel.id, target_id)
+        await sync_owner_overwrites(live, old_owner_id, target_id)
         await interaction.response.edit_message(
             embed=embeds.success(f"Ownership transferred to <@{target_id}>."), view=None
         )
@@ -262,6 +312,7 @@ class VoicePanelView(discord.ui.View):
             )
             return
         await service.transfer_ownership(interaction.guild.id, channel.id, interaction.user.id)
+        await sync_owner_overwrites(channel, record.owner_id, interaction.user.id)
         await interaction.response.send_message(
             embed=embeds.success("You're now the owner of this channel."), ephemeral=True
         )

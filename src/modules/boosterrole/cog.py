@@ -128,8 +128,11 @@ class Boosterrole(commands.Cog):
         if not cohort:
             return
         base = anchor.position
+        # Never target a slot at/above the bot's own role — Discord rejects the whole
+        # bulk reposition if any target equals/exceeds me.top_role.position.
+        ceiling = me.top_role.position - 1
         if cfg.hoist_above:
-            positions = {role: base + i for i, role in enumerate(cohort, start=1)}
+            positions = {role: min(base + i, ceiling) for i, role in enumerate(cohort, start=1)}
         else:
             positions = {role: max(1, base - i) for i, role in enumerate(cohort, start=1)}
         try:

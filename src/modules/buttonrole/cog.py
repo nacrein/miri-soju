@@ -33,6 +33,11 @@ class ButtonRoleButton(discord.ui.DynamicItem[discord.ui.Button], template=r"but
         if role is None:
             await interaction.response.send_message("That role no longer exists.", ephemeral=True)
             return
+        if role >= interaction.guild.me.top_role or role.managed or role.is_default():
+            await interaction.response.send_message(
+                "I can't manage that role anymore.", ephemeral=True
+            )
+            return
         member = interaction.user
         try:
             if role in member.roles:
@@ -77,6 +82,8 @@ class ButtonRoleCog(commands.Cog, name="ButtonRole"):
         """Add a button to a bot message that toggles a role."""
         if message.author.id != self.bot.user.id:
             raise commands.BadArgument("I can only add buttons to my own messages.")
+        if role.is_default() or role.managed:
+            raise commands.BadArgument("I can't bind @everyone or a managed/integration role.")
         if role >= ctx.guild.me.top_role:
             raise commands.BadArgument("That role is above my highest role.")
         if style not in _STYLES:
@@ -84,6 +91,8 @@ class ButtonRoleCog(commands.Cog, name="ButtonRole"):
         rows = await service.for_message(message.id)
         if len(rows) >= 25:
             raise commands.BadArgument("That message already has the maximum number of buttons.")
+        if any(r.role_id == role.id for r in rows):
+            raise commands.BadArgument("That role already has a button on this message.")
         await service.add(ctx.guild.id, message.id, role.id, label, emoji, style)
         await message.edit(view=_build_view(await service.for_message(message.id)))
         await ctx.send(embed=embeds.success(f"Added a button for {role.mention}."))

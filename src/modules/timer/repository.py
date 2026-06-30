@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +20,7 @@ class TimerRepository:
             message=message, next_run=next_run,
         ))
 
-    async def for_channel(self, channel_id: int) -> Optional[Timer]:
+    async def for_channel(self, channel_id: int) -> Timer | None:
         stmt = select(Timer).where(Timer.channel_id == channel_id)
         return (await self.session.execute(stmt)).scalar_one_or_none()
 

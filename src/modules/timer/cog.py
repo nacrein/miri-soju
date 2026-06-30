@@ -35,7 +35,7 @@ class TimerCog(commands.Cog, name="Timer"):
         try:
             delta = parse_duration(interval)
         except ValueError as exc:
-            raise commands.BadArgument(str(exc))
+            raise commands.BadArgument(str(exc)) from exc
         seconds = int(delta.total_seconds())
         if seconds < _MIN_INTERVAL:
             raise commands.BadArgument("Interval must be at least one minute.")

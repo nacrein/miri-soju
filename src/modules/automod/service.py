@@ -5,9 +5,10 @@ that invalidate). Discord work is delegated to ``enforcement``; this stays thin.
 
 from __future__ import annotations
 
+import asyncio
 import time
 from collections import deque
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from src.core.cache import TTLCache
 from src.database.session import get_session
@@ -24,7 +25,19 @@ _lists_cache: TTLCache = TTLCache(ttl_seconds=300)    # guild_id -> {matcher, wo
 # In-memory per-(guild,user) spam state — like leveling's _msg_cooldown, never persisted.
 # Pruned by the cog's _prune_loop so the dicts can't grow without bound.
 _recent_msgs: dict[tuple[int, int], deque] = {}
-_recent_text: dict[tuple[int, int], tuple[str, int, float]] = {}
+# A short ring of recent normalized texts (with timestamps) per user. Keeping more than
+# the single previous message catches copy-paste spam that alternates payloads
+# (A, B, A, B, …) instead of repeating one message back-to-back.
+_recent_text: dict[tuple[int, int], deque[tuple[str, float]]] = {}
+
+# How long a normalized message stays in the duplicate ring, and how many entries we
+# retain per user (capped at DUP_MAX so the highest configurable threshold still works).
+_DUP_WINDOW = 30.0
+
+# Per-(guild,user) locks serializing the read-modify-write strike sequence in
+# apply_violation, so a burst climbs the escalation ladder one strike at a time
+# instead of interleaving at the awaits and double-actioning.
+_violation_locks: dict[tuple[int, int], asyncio.Lock] = {}
 
 
 # ── cached reads ───────────────────────────────────────────────────────────────
@@ -220,12 +233,34 @@ def record_and_check_flood(guild_id: int, user_id: int, count: int, interval: in
 
 
 def record_and_check_duplicate(guild_id: int, user_id: int, norm_text: str, threshold: int) -> bool:
-    """Record the normalized text and report whether it's repeated ≥ ``threshold`` times."""
+    """Record the normalized text and report whether it's repeated ≥ ``threshold`` times.
+
+    Counts identical normalized messages within the recent ring (not just strictly
+    consecutive ones), so alternating two payloads or interleaving a different message
+    no longer resets the count and dodges the filter.
+    """
+    if not norm_text:
+        return False
+    now = time.monotonic()
     key = (guild_id, user_id)
-    prev, n, _ = _recent_text.get(key, ("", 0, 0.0))
-    n = n + 1 if norm_text and norm_text == prev else 1
-    _recent_text[key] = (norm_text, n, time.monotonic())
-    return n >= threshold
+    ring = _recent_text.get(key)
+    if ring is None:
+        ring = deque(maxlen=amconfig.DUP_MAX)
+        _recent_text[key] = ring
+    ring.append((norm_text, now))
+    while ring and ring[0][1] < now - _DUP_WINDOW:
+        ring.popleft()
+    return sum(1 for text, _ in ring if text == norm_text) >= threshold
+
+
+def _violation_lock(guild_id: int, user_id: int) -> asyncio.Lock:
+    """The per-(guild,user) lock serializing strike record/count/action."""
+    key = (guild_id, user_id)
+    lock = _violation_locks.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _violation_locks[key] = lock
+    return lock
 
 
 def prune_spam_state(max_age: float = 600.0) -> None:
@@ -236,9 +271,15 @@ def prune_spam_state(max_age: float = 600.0) -> None:
             dq.popleft()
         if not dq:
             del _recent_msgs[key]
-    for key, (_norm, _n, last) in list(_recent_text.items()):
-        if last < now - max_age:
+    for key, ring in list(_recent_text.items()):
+        while ring and ring[0][1] < now - max_age:
+            ring.popleft()
+        if not ring:
             del _recent_text[key]
+    # A lock with no waiters is idle; drop it so the dict can't grow without bound.
+    for key, lock in list(_violation_locks.items()):
+        if not lock.locked():
+            del _violation_locks[key]
 
 
 # ── escalation engine ──────────────────────────────────────────────────────────
@@ -250,7 +291,7 @@ async def apply_violation(bot, guild, member, channel, message, violation, cfg, 
     ):
         return  # defence in depth — the cog already gated, but never trust a single check
     reason = f"AutoMod ({violation.category}): {violation.reason}"
-    since = datetime.now(timezone.utc) - timedelta(hours=cfg.strike_window_hours)
+    since = datetime.now(UTC) - timedelta(hours=cfg.strike_window_hours)
 
     if cfg.log_only:
         # Dry-run logs but takes no action AND records no strike — otherwise a guild
@@ -263,14 +304,19 @@ async def apply_violation(bot, guild, member, channel, message, violation, cfg, 
         )
         return
 
-    await mod_service.add_case(guild.id, member.id, bot.user.id, "automod", reason)
-    strikes = await mod_service.count_recent_cases(guild.id, member.id, "automod", since)
-    action, minutes = amconfig.action_for(strikes, cfg)
-    await enforcement.try_delete(message)
-    acted = await enforcement.perform(action, minutes, guild, member, reason)
-    if cfg.dm_on_action:
-        await enforcement.dm_member(member, guild, violation, action, minutes)
-    await enforcement.log_action(
-        bot, guild, member, violation, action, minutes, strikes, dry_run=False
-    )
+    # Serialize the read-modify-write per (guild,user): without this, a flood's
+    # concurrent handlers interleave at these awaits, so one burst records several
+    # strikes "at once", jumps the escalation ladder, and double-actions (e.g. timeout
+    # AND kick AND ban). The lock makes each violation see the previous one's case.
+    async with _violation_lock(guild.id, member.id):
+        await mod_service.add_case(guild.id, member.id, bot.user.id, "automod", reason)
+        strikes = await mod_service.count_recent_cases(guild.id, member.id, "automod", since)
+        action, minutes = amconfig.action_for(strikes, cfg)
+        await enforcement.try_delete(message)
+        acted = await enforcement.perform(action, minutes, guild, member, reason)
+        if cfg.dm_on_action:
+            await enforcement.dm_member(member, guild, violation, action, minutes)
+        await enforcement.log_action(
+            bot, guild, member, violation, action, minutes, strikes, dry_run=False
+        )
     return acted

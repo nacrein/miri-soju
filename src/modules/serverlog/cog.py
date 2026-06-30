@@ -157,21 +157,32 @@ class ServerLog(commands.Cog):
 
     # ── passive event listeners ─────────────────────────────────────────────
 
+    async def _dispatch(self, guild_id: int, embed: discord.Embed, category: str) -> None:
+        """Send the event embed to the guild's log channel if the category is on."""
+        channel_id = await service.resolve_log_channel(guild_id, category)
+        if channel_id is None:
+            return
+        channel = self.bot.get_channel(channel_id)
+        if not isinstance(channel, discord.TextChannel):
+            return
+        try:
+            await channel.send(embed=embed)
+        except discord.HTTPException:
+            pass
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
-        await service.log_event(self.bot, member.guild.id, join_embed(member), "join")
+        await self._dispatch(member.guild.id, join_embed(member), "join")
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
-        await service.log_event(self.bot, member.guild.id, leave_embed(member), "leave")
+        await self._dispatch(member.guild.id, leave_embed(member), "leave")
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message) -> None:
         if message.guild is None or message.author.bot:
             return
-        await service.log_event(
-            self.bot, message.guild.id, message_delete_embed(message), "msg_delete"
-        )
+        await self._dispatch(message.guild.id, message_delete_embed(message), "msg_delete")
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message) -> None:
@@ -179,9 +190,7 @@ class ServerLog(commands.Cog):
             return
         if before.content == after.content:
             return  # ignore embed-unfurl edits with no content change
-        await service.log_event(
-            self.bot, before.guild.id, message_edit_embed(before, after), "msg_edit"
-        )
+        await self._dispatch(before.guild.id, message_edit_embed(before, after), "msg_edit")
 
 
 async def setup(bot: commands.Bot) -> None:

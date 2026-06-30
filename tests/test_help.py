@@ -79,9 +79,9 @@ async def test_command_card_shape():
 async def test_group_card_marks_a_subcommand_token():
     bot = await _loaded_bot()
     try:
-        vault = bot.get_command("vault")
-        assert isinstance(vault, commands.Group)
-        d = command_card(vault, ",").description
+        staff = bot.get_command("staff")
+        assert isinstance(staff, commands.Group)
+        d = command_card(staff, ",").description
         assert "```ansi" in d
         assert "<subcommand>" in d  # the syntax panel marks it as a group
     finally:
@@ -108,13 +108,13 @@ async def test_command_family_is_parent_then_subcommands():
 async def test_command_listing_names_commands_and_marks_groups():
     bot = await _loaded_bot()
     try:
-        vault = bot.get_command("vault")  # a group
+        staff = bot.get_command("staff")  # a group
         ban = bot.get_command("ban")      # a plain command
-        listing = command_listing([vault, ban])
+        listing = command_listing([staff, ban])
         # one ansi codeblock
         assert listing.startswith("```ansi") and listing.rstrip().endswith("```")
         # a group shows its visible-subcommand count and the `..` marker
-        assert f"vault ({len(subcommands_of(vault))}).." in listing
+        assert f"staff ({len(subcommands_of(staff))}).." in listing
         # a plain command is just its name (no count marker)
         assert "ban" in listing and "ban (" not in listing
     finally:
@@ -201,7 +201,7 @@ async def test_menu_uses_only_curated_categories_in_order():
         cats = bot.get_cog("Help")._categories()
         assert set(cats) <= set(CATEGORIES)
         assert list(cats) == [c for c in CATEGORIES if c in cats]
-        assert len(cats) <= 7, "the whole point is a short menu"
+        assert len(cats) <= 8, "the whole point is a short menu"
         assert DEFAULT_CATEGORY in CATEGORIES
     finally:
         await _unload(bot)

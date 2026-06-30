@@ -16,7 +16,6 @@ from src.modules.leveling import config, service
 from src.modules.leveling.cog import Leveling
 from src.modules.leveling.voice import VoiceTracker
 
-
 # ── VoiceTracker: pure interval accrual ───────────────────────────────────────
 
 def test_continuous_time_banks_whole_minutes_and_carries_the_rest():

@@ -4,12 +4,14 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { GuildIcon } from "../components/GuildIcon";
 import { Alert, CenteredSpinner } from "../components/ui";
+import { useDirtyGuardContext } from "../lib/dirtyGuard";
 import type { GuildMeta } from "../lib/types";
 import { MODULES, defaultModuleKey } from "./modules/registry";
 
 export default function GuildDashboardPage() {
   const { guildId, moduleKey } = useParams();
   const navigate = useNavigate();
+  const { confirmDiscard } = useDirtyGuardContext();
 
   const { data: meta, isLoading, isError, error } = useQuery<GuildMeta>({
     queryKey: ["meta", guildId],
@@ -47,7 +49,10 @@ export default function GuildDashboardPage() {
             <div
               key={m.key}
               className={"modnav__item" + (m.key === active.key ? " modnav__item--active" : "")}
-              onClick={() => navigate(`/guilds/${guildId}/${m.key}`)}
+              onClick={() => {
+                if (m.key === active.key) return;
+                if (confirmDiscard()) navigate(`/guilds/${guildId}/${m.key}`);
+              }}
             >
               <span className="modnav__icon">{m.icon}</span> {m.label}
             </div>

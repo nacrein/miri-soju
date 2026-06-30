@@ -19,7 +19,7 @@ from src.core.emojis import Emojis
 from src.core.errors import BotError
 from src.core.paginator import send_command_browser
 from src.modules.voicemaster import service, state
-from src.modules.voicemaster.views import VoicePanelView, panel_embed
+from src.modules.voicemaster.views import VoicePanelView, delete_old_panel, panel_embed
 
 log = logging.getLogger(__name__)
 
@@ -64,9 +64,14 @@ class Voicemaster(commands.Cog):
                     elif not any(not m.bot for m in channel.members):
                         await self._delete_channel(channel)  # empty leftover
                     else:
-                        self._order[record.channel_id] = [
-                            m.id for m in channel.members if not m.bot
-                        ]
+                        # channel.members is not join-ordered, so seed the recorded
+                        # owner first to keep the "owner stays owner" succession order
+                        # across restarts; the rest follow in whatever order Discord gives.
+                        members = [m.id for m in channel.members if not m.bot]
+                        if record.owner_id in members:
+                            members.remove(record.owner_id)
+                            members.insert(0, record.owner_id)
+                        self._order[record.channel_id] = members
         except Exception:
             log.exception("VoiceMaster orphan sweep failed")
 
@@ -197,6 +202,7 @@ class Voicemaster(commands.Cog):
         create_channel: discord.VoiceChannel, panel_channel: discord.TextChannel,
     ) -> None:
         """Pick the create channel and post the control panel (also enables VoiceMaster)."""
+        await delete_old_panel(ctx.guild)
         await service.set_create_channel(ctx.guild.id, create_channel.id)
         try:
             msg = await panel_channel.send(embed=panel_embed(), view=VoicePanelView())

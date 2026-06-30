@@ -78,6 +78,8 @@ class Emoji(commands.Cog):
         await ctx.send(embed=embeds.success(f"Added {created}."))
 
     @emoji.command(name="rename")
+    @commands.has_permissions(manage_expressions=True)
+    @commands.bot_has_permissions(manage_expressions=True)
     async def emoji_rename(self, ctx, emoji: discord.Emoji, new_name: str) -> None:
         """Rename a server emoji."""
         if emoji.guild_id != ctx.guild.id:

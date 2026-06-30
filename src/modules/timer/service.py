@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.database.session import get_session
 from src.modules.timer.repository import TimerRepository
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 async def add(guild_id, channel_id, interval_seconds, message) -> None:

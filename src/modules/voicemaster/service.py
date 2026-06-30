@@ -65,11 +65,6 @@ async def delete_channel(guild_id: int, channel_id: int) -> bool:
         return await VoiceMasterRepository(session).delete_channel(guild_id, channel_id)
 
 
-async def get_channel_by_owner(guild_id: int, owner_id: int) -> VoiceMasterChannel | None:
-    async with get_session() as session:
-        return await VoiceMasterRepository(session).get_by_owner(guild_id, owner_id)
-
-
 async def get_channel_by_id(guild_id: int, channel_id: int) -> VoiceMasterChannel | None:
     async with get_session() as session:
         return await VoiceMasterRepository(session).get_by_channel(guild_id, channel_id)

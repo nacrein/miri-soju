@@ -33,15 +33,15 @@ class EmbedBuilder(commands.Cog, name="Embed"):
         try:
             built = script.build(json.loads(code))
         except json.JSONDecodeError:
-            raise commands.BadArgument("That isn't valid JSON.")
+            raise commands.BadArgument("That isn't valid JSON.") from None
         except ValueError as exc:
-            raise commands.BadArgument(str(exc))
+            raise commands.BadArgument(str(exc)) from exc
         try:
             await ctx.send(embed=built)
         except discord.HTTPException:
             raise commands.BadArgument(
                 "Discord rejected that embed. Check your URLs and that no field is blank."
-            )
+            ) from None
 
     @commands.command(name="embedcopy", aliases=["ec"])
     @commands.has_permissions(manage_messages=True)

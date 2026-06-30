@@ -208,7 +208,7 @@ class Leveling(commands.Cog):
             try:
                 channel = await commands.TextChannelConverter().convert(ctx, target)
             except commands.BadArgument:
-                raise commands.BadArgument("Give `here`, `dm`, or a channel.")
+                raise commands.BadArgument("Give `here`, `dm`, or a channel.") from None
             await service.set_channel(ctx.guild.id, "channel", channel.id)
             await ctx.send(embed=embeds.success(f"Level-ups will post in {channel.mention}."))
 
@@ -291,6 +291,10 @@ class Leveling(commands.Cog):
         """Scale XP in a channel (0-10; 0 disables XP there). Works for text and voice."""
         if rate < 0 or rate > 10:
             raise commands.BadArgument("Rate must be between 0 and 10.")
+        # Only text/voice channel ids ever match an XP lookup; a category/stage/forum
+        # id would store a row that silently never applies, so reject it up front.
+        if not isinstance(channel, discord.TextChannel | discord.VoiceChannel):
+            raise commands.BadArgument("Pick a text or voice channel (not a category).")
         await service.set_multiplier(ctx.guild.id, channel.id, rate)
         await ctx.send(embed=embeds.success(f"{channel.mention} now earns {rate}x XP."))
 

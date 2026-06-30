@@ -27,8 +27,22 @@ def total_xp_for_level(level: int) -> int:
 
 
 def level_from_xp(xp: int) -> int:
-    """Highest level fully paid for by `xp`."""
-    level = 0
-    while total_xp_for_level(level + 1) <= xp:
-        level += 1
-    return level
+    """Highest level fully paid for by `xp`.
+
+    ``total_xp_for_level`` is monotonically increasing, so binary-search for the
+    highest level whose cumulative cost is still affordable — O(log level) instead
+    of an O(level) linear scan (the old loop did ~1000 cubic evals at level 1000)."""
+    if xp <= 0:
+        return 0
+    # Find an upper bound by doubling, then bisect on [lo, hi].
+    hi = 1
+    while total_xp_for_level(hi) <= xp:
+        hi *= 2
+    lo = hi // 2  # total_xp_for_level(lo) <= xp < total_xp_for_level(hi)
+    while lo + 1 < hi:
+        mid = (lo + hi) // 2
+        if total_xp_for_level(mid) <= xp:
+            lo = mid
+        else:
+            hi = mid
+    return lo

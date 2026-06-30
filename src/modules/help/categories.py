@@ -43,6 +43,11 @@ CATEGORIES: dict[str, tuple[str, str, list[str]]] = {
         "Everyday tools and information.",
         ["Info", "Snipe", "Afk", "Ask", "Reminder", "Timer", "Emoji", "Sticker"],
     ),
+    "Music": (
+        Emojis.VOICE,
+        "Play music in voice channels.",
+        ["Music"],
+    ),
     "Fun": (
         Emojis.WIN,
         "Reaction gifs and internet-culture nonsense.",

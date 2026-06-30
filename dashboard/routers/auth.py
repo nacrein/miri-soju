@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 import secrets
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Request, status
 from fastapi.responses import RedirectResponse
 
 from dashboard import discord_api

@@ -20,6 +20,11 @@ class BotError(commands.CommandError):
     """Expected, user-facing error. Its message is shown; not logged as a bug."""
 
 
+class SilentError(commands.CheckFailure):
+    """Abort a command after we've already replied (e.g. an interactive gate posted
+    its own embed). The error handler swallows it, so no second message is sent."""
+
+
 def _new_error_id() -> str:
     """Short uppercase ID, e.g. 'A4F9C2'."""
     return uuid.uuid4().hex[:6].upper()
@@ -75,6 +80,8 @@ def setup_error_handling(bot: commands.Bot) -> None:
 
         if isinstance(exc, commands.CommandNotFound):
             return  # ignore unknown prefix commands silently
+        if isinstance(exc, SilentError):
+            return  # a gate already replied; don't send a second message
         if isinstance(exc, BotError):
             await ctx.send(embed=embeds.error(str(exc)))
             return

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.database.session import get_session
 from src.modules.reminder.repository import ReminderRepository
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 async def add(user_id, channel_id, guild_id, remind_at, message) -> None:

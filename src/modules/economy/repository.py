@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +13,7 @@ class EconomyRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get(self, discord_id: int) -> Optional[Player]:
+    async def get(self, discord_id: int) -> Player | None:
         return await self.session.get(Player, discord_id)
 
     async def get_or_create(self, discord_id: int) -> Player:
@@ -40,7 +38,7 @@ class EconomyRepository:
             await self.session.flush()
         return player
 
-    async def get_for_update(self, discord_id: int) -> Optional[Player]:
+    async def get_for_update(self, discord_id: int) -> Player | None:
         """Fetch the row with a lock so concurrent mutations queue, not race."""
         stmt = select(Player).where(Player.discord_id == discord_id).with_for_update()
         result = await self.session.execute(stmt)
@@ -124,6 +122,7 @@ class EconomyRepository:
 
     async def transaction_count(self, discord_id: int) -> int:
         from sqlalchemy import func
+
         from src.database.models.transaction import Transaction
 
         stmt = select(func.count()).select_from(Transaction).where(
@@ -131,3 +130,21 @@ class EconomyRepository:
         )
         result = await self.session.execute(stmt)
         return int(result.scalar_one())
+
+    async def game_session_resolved(self, session_id: str) -> bool:
+        """True if this game session already has a resolution row.
+
+        A resolution is any of game_payout / game_forfeit / game_refund. Used to
+        make payout/forfeit idempotent against the concurrent component clicks
+        discord.py dispatches as separate tasks (and against on_timeout racing a
+        final click)."""
+        from sqlalchemy import func
+
+        from src.database.models.transaction import Transaction
+
+        stmt = select(func.count()).select_from(Transaction).where(
+            Transaction.game_session_id == session_id,
+            Transaction.kind.in_(("game_payout", "game_forfeit", "game_refund")),
+        )
+        result = await self.session.execute(stmt)
+        return int(result.scalar_one()) > 0

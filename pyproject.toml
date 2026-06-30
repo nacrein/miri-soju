@@ -12,6 +12,7 @@ dependencies = [
     "pydantic-settings>=2.0",
     "jishaku>=2.7",
     "anthropic>=0.69",
+    "wavelink>=3,<4",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +24,20 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom puts these calls in argument defaults on
+# purpose; they are not the mutable-default footgun B008 warns about.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Path",
+    "fastapi.Query",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Body",
+    "fastapi.Form",
+    "fastapi.File",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

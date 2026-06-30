@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +20,7 @@ class AutomodRepository:
 
     # ── config ────────────────────────────────────────────────────────────────
 
-    async def get_config(self, guild_id: int) -> Optional[AutomodConfig]:
+    async def get_config(self, guild_id: int) -> AutomodConfig | None:
         return await self.session.get(AutomodConfig, guild_id)
 
     async def get_or_create_config(self, guild_id: int) -> AutomodConfig:

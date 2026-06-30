@@ -15,6 +15,7 @@ from src.database.models.guild import GuildConfig
 from src.database.models.immune import ImmuneEntry
 from src.database.models.jail import JailedMember, ModerationConfig
 from src.database.models.level import ChannelMultiplier, LevelConfig, LevelReward, MemberLevel
+from src.database.models.music import MusicConfig
 from src.database.models.player import Player
 from src.database.models.reactionrole import ReactionRole
 from src.database.models.reminder import Reminder
@@ -31,6 +32,7 @@ __all__ = [
     "ModCase", "ModerationConfig", "JailedMember", "ImmuneEntry", "TempRole",
     "ManagedWebhook", "ReactionRole", "ButtonRole", "StickyMessage", "Timer", "Reminder",
     "LevelConfig", "MemberLevel", "LevelReward", "ChannelMultiplier",
+    "MusicConfig",
     "AutomodConfig", "AutomodWord", "AutomodDomain", "AutomodExemptRole", "AutomodExemptChannel",
     "BoosterRoleConfig", "BoosterRole",
     "VoiceMasterConfig", "VoiceMasterChannel",

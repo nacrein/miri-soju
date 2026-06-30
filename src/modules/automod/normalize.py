@@ -40,9 +40,17 @@ _NONALNUM = re.compile(r"[^a-z0-9]")
 
 
 def _fold(s: str) -> str:
-    """Casefold, drop accents/confusables (NFKD), map leetspeak. Spaces are kept."""
+    """Casefold, drop accents/confusables (NFKD), map leetspeak. Spaces are kept.
+
+    Zero-width / format characters (ZWSP, ZWNJ, ZWJ, U+FEFF, U+2060, …) are dropped
+    too: they survive NFKD (not combining marks) and aren't alphanumeric, so without
+    this they break ``\\b`` word boundaries and slip a short slur past the matcher.
+    """
     s = unicodedata.normalize("NFKD", s)
-    s = "".join(c for c in s if not unicodedata.combining(c))
+    s = "".join(
+        c for c in s
+        if not unicodedata.combining(c) and unicodedata.category(c) != "Cf"
+    )
     return s.casefold().translate(_FOLD_TABLE)
 
 

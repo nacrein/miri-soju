@@ -12,7 +12,6 @@ from src.modules.voicemaster import config, state
 from src.modules.voicemaster.setup_view import VoiceMasterSetupView
 from src.modules.voicemaster.views import VoicePanelView, panel_embed
 
-
 # ── persistent panel layout ────────────────────────────────────────────────────
 
 def test_panel_has_eight_buttons_with_static_ids_across_two_rows():

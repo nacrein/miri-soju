@@ -48,7 +48,7 @@ def parse_color(text: str) -> discord.Color:
             return discord.Color(value)
         return discord.Color.from_str(s)
     except ValueError:
-        raise ValueError("`color` must be a hex like `#5865f2`.")
+        raise ValueError("`color` must be a hex like `#5865f2`.") from None
 
 
 def build(data: dict) -> discord.Embed:

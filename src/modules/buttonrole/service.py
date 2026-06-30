@@ -6,7 +6,14 @@ from src.database.session import get_session
 from src.modules.buttonrole.repository import ButtonRoleRepository
 
 
-async def add(guild_id, message_id, role_id, label, emoji, style) -> None:
+async def add(
+    guild_id: int,
+    message_id: int,
+    role_id: int,
+    label: str | None,
+    emoji: str | None,
+    style: str,
+) -> None:
     async with get_session() as session:
         await ButtonRoleRepository(session).add(guild_id, message_id, role_id, label, emoji, style)
 

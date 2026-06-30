@@ -5,6 +5,7 @@ import {
   SaveBar,
   TextField,
 } from "../../components/ui";
+import { useDirtyGuard } from "../../lib/dirtyGuard";
 import type { PrefixConfig } from "../../lib/types";
 import { useConfigForm } from "../../lib/useConfigForm";
 import type { PanelProps } from "./types";
@@ -22,6 +23,7 @@ export default function PrefixPanel({ guildId }: PanelProps) {
     path,
     project: (c) => ({ prefix: c.prefix }),
   });
+  useDirtyGuard(form.dirty);
 
   if (form.isLoading || !form.draft || !form.config) return <CenteredSpinner />;
   const d = form.draft;

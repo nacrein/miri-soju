@@ -2,6 +2,13 @@ import type { ReactNode } from "react";
 
 import { Field } from "./Field";
 
+/** Clamp n into [min, max]; either bound may be undefined (treated as open). */
+function clamp(n: number, min?: number, max?: number): number {
+  if (min !== undefined && n < min) return min;
+  if (max !== undefined && n > max) return max;
+  return n;
+}
+
 // ── text ────────────────────────────────────────────────────────────────────
 interface TextFieldProps {
   label?: ReactNode;
@@ -60,7 +67,9 @@ export function NumberField({ label, hint, error, value, onChange, min, max, ste
           const raw = e.target.value;
           if (raw === "") return onChange(min ?? 0);
           const n = Number(raw);
-          onChange(Number.isFinite(n) ? n : (min ?? 0));
+          // Clamp to [min, max] so out-of-range values can't round-trip and surface
+          // as an opaque backend 422 — the backend bounds mirror these min/max props.
+          onChange(clamp(Number.isFinite(n) ? n : (min ?? 0), min, max));
         }}
       />
     </Field>

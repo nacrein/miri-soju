@@ -17,6 +17,7 @@ import {
   TextField,
   ToggleRow,
 } from "../../components/ui";
+import { useDirtyGuard } from "../../lib/dirtyGuard";
 import type { AutomodConfig } from "../../lib/types";
 import { useConfigAction, useConfigForm } from "../../lib/useConfigForm";
 import type { PanelProps } from "./types";
@@ -89,6 +90,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
     }),
   });
   const action = useConfigAction<AutomodConfig>(queryKey);
+  useDirtyGuard(form.dirty);
 
   const roleOptions = meta.roles.map((r) => ({ value: r.id, label: r.name }));
   const channelOptions = meta.channels.map((c) => ({ value: c.id, label: `#${c.name}` }));

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import BigInteger, CheckConstraint, DateTime, Index, Integer, text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -36,15 +35,19 @@ class Player(Base, TimestampMixin):
 
     # Passive generator.
     generator_tier: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    generator_claimed_at: Mapped[Optional[datetime]] = mapped_column(
+    generator_claimed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
     # Faucet cooldown anchors (evaluated on read; no background ticker).
-    last_daily_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_work_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_pray_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_steal_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_daily_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_work_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_pray_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_steal_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Daily streak (0-7+; resets if a day is missed).
     daily_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # When the user accepted the economy rules. None = not yet agreed; the economy
+    # cog gates every command until this is set (see modules/economy/agreement.py).
+    tos_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

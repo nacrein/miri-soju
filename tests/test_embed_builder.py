@@ -15,7 +15,6 @@ import discord
 from src.modules.embed import script
 from src.modules.embed.views import EmbedBuilderView
 
-
 # ── the script core: build / to_script ───────────────────────────────────────
 
 def test_build_roundtrips_through_to_script():

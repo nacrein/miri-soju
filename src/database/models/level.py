@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
-    BigInteger, Boolean, DateTime, Float, Index, Integer, String, UniqueConstraint,
+    BigInteger,
+    Boolean,
+    DateTime,
+    Float,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -23,7 +29,7 @@ class LevelConfig(Base, TimestampMixin):
     xp_per_message: Mapped[int] = mapped_column(Integer, nullable=False, default=20)
     message_cooldown: Mapped[int] = mapped_column(Integer, nullable=False, default=60)
     announce_mode: Mapped[str] = mapped_column(String(8), nullable=False, default="here")  # here/dm/channel
-    announce_channel_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    announce_channel_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     level_up_message: Mapped[str] = mapped_column(
         String(500), nullable=False, default="{user} reached level **{level}**!"
     )
@@ -43,7 +49,7 @@ class MemberLevel(Base, IdMixin, TimestampMixin):
     user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     xp: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     voice_minutes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class LevelReward(Base, IdMixin, TimestampMixin):

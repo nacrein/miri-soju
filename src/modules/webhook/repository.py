@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +17,7 @@ class WebhookRepository:
             guild_id=guild_id, channel_id=channel_id, webhook_id=webhook_id, short_id=short_id
         ))
 
-    async def get(self, guild_id: int, short_id: str) -> Optional[ManagedWebhook]:
+    async def get(self, guild_id: int, short_id: str) -> ManagedWebhook | None:
         stmt = select(ManagedWebhook).where(
             ManagedWebhook.guild_id == guild_id, ManagedWebhook.short_id == short_id
         )

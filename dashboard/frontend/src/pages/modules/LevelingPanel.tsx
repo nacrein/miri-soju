@@ -23,6 +23,7 @@ import {
   TextArea,
   ToggleRow,
 } from "../../components/ui";
+import { useDirtyGuard } from "../../lib/dirtyGuard";
 import type { LevelingConfig } from "../../lib/types";
 import { useConfigAction, useConfigForm } from "../../lib/useConfigForm";
 import type { PanelProps } from "./types";
@@ -53,6 +54,7 @@ export default function LevelingPanel({ guildId, meta }: PanelProps) {
     }),
   });
   const action = useConfigAction<LevelingConfig>(queryKey);
+  useDirtyGuard(form.dirty);
 
   const roleOptions = meta.roles.map((r) => ({ value: r.id, label: r.name }));
   const channelOptions = meta.channels.map((c) => ({ value: c.id, label: `#${c.name}` }));
@@ -69,6 +71,10 @@ export default function LevelingPanel({ guildId, meta }: PanelProps) {
   if (form.isLoading || !form.draft || !form.config) return <CenteredSpinner />;
   const d = form.draft;
   const { rewards, multipliers } = form.config;
+
+  // schemas.py rejects announce_mode='channel' without a channel; pre-validate so
+  // the user sees a field error instead of an opaque 422 after saving.
+  const channelRequired = d.announce_mode === "channel" && !d.announce_channel_id;
 
   return (
     <div className="stack">
@@ -113,6 +119,7 @@ export default function LevelingPanel({ guildId, meta }: PanelProps) {
               <Select
                 label="Announcement channel"
                 placeholder="Select a channel…"
+                error={channelRequired ? "Pick a channel to announce in." : undefined}
                 value={d.announce_channel_id}
                 onChange={(v) => form.set("announce_channel_id", v)}
                 options={channelOptions}
@@ -225,6 +232,7 @@ export default function LevelingPanel({ guildId, meta }: PanelProps) {
         onReset={form.reset}
         error={form.error}
         justSaved={form.justSaved}
+        invalid={channelRequired ? "Pick an announcement channel before saving." : undefined}
       />
     </div>
   );

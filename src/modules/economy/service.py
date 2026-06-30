@@ -13,12 +13,12 @@ from __future__ import annotations
 
 import random
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.core.errors import BotError
+from src.database.models.transaction import Transaction
 from src.database.session import get_session
 from src.modules.economy import config
-from src.database.models.transaction import Transaction
 from src.modules.economy.repository import EconomyRepository
 
 
@@ -35,6 +35,34 @@ def validate_amount(amount: int) -> int:
     if amount <= 0:
         raise EconomyError("Amount must be positive.")
     return amount
+
+
+# ── rules agreement (one-time economy ToS gate) ─────────────────────────────
+# Agreement is permanent once accepted, so accepted users are cached in-process to
+# keep the per-command gate check free; the set repopulates lazily from the DB after
+# a restart (first economy command per user costs one read, then nothing).
+_agreed: set[int] = set()
+
+
+async def has_agreed(user_id: int) -> bool:
+    """Whether this user has accepted the economy rules."""
+    if user_id in _agreed:
+        return True
+    async with get_session() as session:
+        player = await EconomyRepository(session).get(user_id)
+    if player is not None and player.tos_accepted_at is not None:
+        _agreed.add(user_id)
+        return True
+    return False
+
+
+async def record_agreement(user_id: int) -> None:
+    """Mark the user as having accepted the economy rules (idempotent)."""
+    async with get_session() as session:
+        player = await EconomyRepository(session).get_or_create(user_id)
+        if player.tos_accepted_at is None:
+            player.tos_accepted_at = datetime.now(UTC)
+    _agreed.add(user_id)
 
 
 # ── income multiplier seam ──────────────────────────────────────────────────
@@ -66,7 +94,7 @@ def _record(session, player, kind: str, amount: int,
 # ── cooldown helper ─────────────────────────────────────────────────────────
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -74,7 +102,7 @@ def _aware(dt: datetime | None) -> datetime | None:
     Postgres returns aware ones. This makes comparisons backend-independent."""
     if dt is None:
         return None
-    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
 
 
 def _cooldown_remaining(last: datetime | None, cooldown) -> int:
@@ -200,6 +228,8 @@ async def beg(discord_id: int) -> tuple[int, bool]:
 async def give(sender_id: int, receiver_id: int, amount: int) -> None:
     """Atomic transfer from sender's wallet to receiver's wallet."""
     validate_amount(amount)
+    if amount < config.GIVE_MIN:
+        raise EconomyError(f"You must give at least {config.GIVE_MIN:,} bits.")
     if sender_id == receiver_id:
         raise EconomyError("You can't give to yourself.")
     async with get_session() as session:
@@ -719,10 +749,18 @@ async def payout_winnings(discord_id: int, amount: int, session_id: str | None =
     Always writes a game_payout row tagged with the game's session id (even on a
     loss, amount 0) so the session is marked resolved and reconciliation won't
     mistake a finished game for a stranded one. The wallet only moves on a win.
+
+    Idempotent per session: discord.py dispatches each component click as its own
+    task, so two rapid clicks can both reach here before either disables the
+    buttons. Inside the lock we check whether this session already has a
+    resolution row and no-op (return the current wallet) if so, so the second
+    click can't pay out or log twice.
     """
     async with get_session() as session:
         repo = EconomyRepository(session)
         player = await repo.get_or_create_for_update(discord_id)
+        if session_id is not None and await repo.game_session_resolved(session_id):
+            return player.wallet
         if amount > 0:
             player.wallet += amount
         _record(session, player, "game_payout", amount, game_session_id=session_id)
@@ -747,10 +785,15 @@ async def log_forfeit(discord_id: int, amount: int, game: str,
     The bits already left at escrow; this writes the closing ledger entry so the
     audit trail shows the resolution instead of bits silently vanishing. It
     carries the game's session id so reconciliation sees the session as resolved.
+
+    Idempotent per session: if the game already resolved (e.g. a button click
+    landed just before the timeout), don't write a second resolution row.
     """
     async with get_session() as session:
         repo = EconomyRepository(session)
         player = await repo.get_or_create(discord_id)
+        if session_id is not None and await repo.game_session_resolved(session_id):
+            return
         session.add(Transaction(
             discord_id=discord_id,
             kind="game_forfeit",

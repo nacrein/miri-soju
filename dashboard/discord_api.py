@@ -27,6 +27,10 @@ PERM_MANAGE_GUILD = 0x20
 # Channel types that can receive log/announcement messages.
 TEXT_CHANNEL_TYPES = {0, 5}  # GUILD_TEXT, GUILD_ANNOUNCEMENT
 
+# GET /users/@me/guilds returns at most 200 guilds per page; paginate with the
+# ``after`` cursor (the highest snowflake seen so far) until a short page.
+GUILDS_PAGE_LIMIT = 200
+
 _bot_guilds_cache: TTLCache[str, set[int]] = TTLCache(ttl_seconds=120)
 _roles_cache: TTLCache[int, list[dict]] = TTLCache(ttl_seconds=60)
 _channels_cache: TTLCache[int, list[dict]] = TTLCache(ttl_seconds=60)
@@ -86,27 +90,55 @@ async def fetch_user(access_token: str) -> dict:
 
 
 async def fetch_user_guilds(access_token: str) -> list[dict]:
-    """Every guild the user is in, each with their ``permissions`` bitfield."""
+    """Every guild the user is in, each with their ``permissions`` bitfield.
+
+    Paginated: a user in >200 guilds would otherwise have the tail silently
+    dropped, hiding servers they can actually manage.
+    """
+    headers = {"Authorization": f"Bearer {access_token}"}
+    guilds: list[dict] = []
+    after = "0"
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(
-            f"{API_BASE}/users/@me/guilds",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-    resp.raise_for_status()
-    return resp.json()
+        while True:
+            resp = await client.get(
+                f"{API_BASE}/users/@me/guilds",
+                headers=headers,
+                params={"limit": GUILDS_PAGE_LIMIT, "after": after},
+            )
+            resp.raise_for_status()
+            page = resp.json()
+            guilds.extend(page)
+            if len(page) < GUILDS_PAGE_LIMIT:
+                break
+            after = str(max(int(g["id"]) for g in page))
+    return guilds
 
 
 async def fetch_bot_guild_ids() -> set[int]:
-    """The set of guild ids the bot itself is a member of (cached)."""
+    """The set of guild ids the bot itself is a member of (cached).
+
+    Paginated: without the ``after`` loop a bot in >200 guilds would only see
+    its first page, and auth would 403 admins of every omitted guild.
+    """
     cached = _bot_guilds_cache.get("ids")
     if cached is not None:
         return cached
     ids: set[int] = set()
+    after = "0"
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(f"{API_BASE}/users/@me/guilds", headers=_bot_headers())
-    resp.raise_for_status()
-    for g in resp.json():
-        ids.add(int(g["id"]))
+        while True:
+            resp = await client.get(
+                f"{API_BASE}/users/@me/guilds",
+                headers=_bot_headers(),
+                params={"limit": GUILDS_PAGE_LIMIT, "after": after},
+            )
+            resp.raise_for_status()
+            page = resp.json()
+            for g in page:
+                ids.add(int(g["id"]))
+            if len(page) < GUILDS_PAGE_LIMIT:
+                break
+            after = str(max(int(g["id"]) for g in page))
     _bot_guilds_cache.set("ids", ids)
     return ids
 

@@ -8,7 +8,7 @@ from src.core import embeds
 from src.core.emojis import Emojis
 from src.core.views import WizardView
 from src.modules.voicemaster import service
-from src.modules.voicemaster.views import VoicePanelView, panel_embed
+from src.modules.voicemaster.views import VoicePanelView, delete_old_panel, panel_embed
 
 
 class _CreateChannelSelect(discord.ui.ChannelSelect):
@@ -39,6 +39,7 @@ class _PanelChannelSelect(discord.ui.ChannelSelect):
                 embed=embeds.error("I couldn't access that channel."), ephemeral=True
             )
             return
+        await delete_old_panel(interaction.guild)
         try:
             msg = await channel.send(embed=panel_embed(), view=VoicePanelView())
         except discord.HTTPException:

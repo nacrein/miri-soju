@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +20,7 @@ class StickyRepository:
             row.content = content
             row.last_message_id = None
 
-    async def get(self, channel_id: int) -> Optional[StickyMessage]:
+    async def get(self, channel_id: int) -> StickyMessage | None:
         return await self.session.get(StickyMessage, channel_id)
 
     async def set_last(self, channel_id: int, message_id: int | None) -> None:

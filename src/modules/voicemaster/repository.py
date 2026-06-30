@@ -29,12 +29,6 @@ class VoiceMasterRepository:
 
     # ── tracked channels ──────────────────────────────────────────────────────
 
-    async def get_by_owner(self, guild_id: int, owner_id: int) -> VoiceMasterChannel | None:
-        stmt = select(VoiceMasterChannel).where(
-            VoiceMasterChannel.guild_id == guild_id, VoiceMasterChannel.owner_id == owner_id
-        )
-        return (await self.session.execute(stmt)).scalar_one_or_none()
-
     async def get_by_channel(self, guild_id: int, channel_id: int) -> VoiceMasterChannel | None:
         stmt = select(VoiceMasterChannel).where(
             VoiceMasterChannel.guild_id == guild_id, VoiceMasterChannel.channel_id == channel_id

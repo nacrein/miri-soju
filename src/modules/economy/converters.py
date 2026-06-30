@@ -22,19 +22,30 @@ from src.modules.economy import service
 _ALL_TOKENS = frozenset({"all", "max"})
 
 
+# Human shorthand suffixes: 1k = 1,000 · 2m = 2,000,000 · 1b · 1t.
+_SUFFIXES = {"k": 1_000, "m": 1_000_000, "b": 1_000_000_000, "t": 1_000_000_000_000}
+
+
 def _parse_int(argument: str) -> int:
-    """Parse a whole number, tolerating thousands separators (`1,500`, `1_000`).
+    """Parse a whole-number amount, tolerating thousands separators (`1,500`, `1_000`)
+    and human shorthand (`1k`, `100k`, `2m`, `2.5m`, `1b`, `1t`; case-insensitive).
 
     Raises EconomyError (a BotError) so the message reaches the user through the
     normal friendly-error path instead of a generic converter failure. Sign and
     range aren't judged here; the service's validate_amount/validate_bet stay the
     single source of truth for that.
     """
-    cleaned = argument.strip().replace(",", "").replace("_", "")
+    cleaned = argument.strip().lower().replace(",", "").replace("_", "")
+    factor = 1
+    if cleaned and cleaned[-1] in _SUFFIXES:
+        factor, cleaned = _SUFFIXES[cleaned[-1]], cleaned[:-1]
     try:
-        return int(cleaned)
+        # A decimal only makes sense with a suffix (`2.5k`); a bare `1.5` stays invalid.
+        return int(cleaned) if factor == 1 else int(float(cleaned) * factor)
     except ValueError:
-        raise service.EconomyError("Amount must be a whole number or `all`.") from None
+        raise service.EconomyError(
+            "Amount must be a number like `500`, `1k`, or `2.5m` (or `all`)."
+        ) from None
 
 
 class _BalanceAmount(commands.Converter):

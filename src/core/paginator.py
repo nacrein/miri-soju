@@ -36,6 +36,7 @@ class Paginator(discord.ui.View):
         self._author_id = author_id
         self._pages = pages
         self._index = 0
+        self.message: discord.Message | None = None
         if len(pages) > 1:
             for i, page in enumerate(pages):
                 page.set_footer(text=f"Page {i + 1}/{len(pages)}")
@@ -52,7 +53,7 @@ class Paginator(discord.ui.View):
         for page in self._pages:
             embeds.apply_author(page, ctx.author)
         view = self if len(self._pages) > 1 else None
-        await ctx.send(embed=self._current, view=view)
+        self.message = await ctx.send(embed=self._current, view=view)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self._author_id:
@@ -63,6 +64,11 @@ class Paginator(discord.ui.View):
     async def on_timeout(self) -> None:
         for child in self.children:
             child.disabled = True
+        if self.message is not None:
+            try:
+                await self.message.edit(view=self)
+            except discord.HTTPException:
+                pass
 
     def _sync_buttons(self) -> None:
         self._prev.disabled = self._index == 0
@@ -123,6 +129,7 @@ class CommandBrowser(discord.ui.View):
         self._invoker = invoker
         self._url = url
         self._index = 0
+        self.message: discord.Message | None = None
         self._sync()
 
     def card(self) -> discord.Embed:
@@ -145,6 +152,11 @@ class CommandBrowser(discord.ui.View):
     async def on_timeout(self) -> None:
         for child in self.children:
             child.disabled = True
+        if self.message is not None:
+            try:
+                await self.message.edit(view=self)
+            except discord.HTTPException:
+                pass
 
     def match_index(self, query: str) -> int | None:
         """The family index for ``query``: an exact name match wins, else the first
@@ -195,7 +207,10 @@ class CommandBrowser(discord.ui.View):
     @discord.ui.button(emoji=Emojis.CLOSE, style=discord.ButtonStyle.secondary)
     async def _close(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
         await interaction.response.defer()
-        await interaction.message.delete()
+        try:
+            await interaction.message.delete()
+        except discord.HTTPException:
+            pass
         self.stop()
 
 
@@ -215,4 +230,4 @@ async def send_command_browser(
     view = CommandBrowser(
         ctx.author.id, family, category, ctx.clean_prefix, invoker=ctx.author,
     )
-    await ctx.send(embed=view.card(), view=view)
+    view.message = await ctx.send(embed=view.card(), view=view)

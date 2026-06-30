@@ -3,7 +3,9 @@
 Guild config is cached (read-through with a TTL) since it's read on every logged
 event but changes rarely. Config writes invalidate the cache so changes take
 effect immediately. Audit data stays in each server's own channel and is never
-centrally stored. The cog builds the event embeds; this module only routes them.
+centrally stored. The cog builds the event embeds; this module resolves the
+target channel id (``resolve_log_channel``) and the cog performs the send. A thin
+``log_event`` wrapper remains for other modules that route mod-action embeds here.
 """
 
 from __future__ import annotations
@@ -19,8 +21,9 @@ from src.modules.serverlog.repository import GuildConfigRepository
 
 log = logging.getLogger(__name__)
 
-# guild_id -> GuildConfig (or None when the guild has no config row yet).
-_config_cache: TTLCache[int, GuildConfig | None] = TTLCache(ttl_seconds=300)
+_NO_CONFIG = object()
+# guild_id -> GuildConfig | _NO_CONFIG (sentinel when the guild has no config row).
+_config_cache: TTLCache = TTLCache(ttl_seconds=300)
 
 _CATEGORY_FLAG = {
     "join": "log_joins",
@@ -32,14 +35,14 @@ _CATEGORY_FLAG = {
 
 
 async def _load_config(guild_id: int) -> GuildConfig | None:
-    """Read-through: cache first, database on miss."""
+    """Read-through: cache first, database on miss. Negative-caches a missing row."""
     cached = _config_cache.get(guild_id)
     if cached is not None:
-        return cached
+        return None if cached is _NO_CONFIG else cached
     async with get_session() as session:
         repo = GuildConfigRepository(session)
         config = await repo.get(guild_id)
-    _config_cache.set(guild_id, config)
+    _config_cache.set(guild_id, config if config is not None else _NO_CONFIG)
     return config
 
 
@@ -87,17 +90,31 @@ async def set_event_flag(guild_id: int, flag: str, value: bool) -> None:
 
 # ── dispatch ────────────────────────────────────────────────────────────────
 
+async def resolve_log_channel(guild_id: int, category: str) -> int | None:
+    """Return the log channel id if logging + this category's toggle are on, else None.
+
+    Discord-free: the cog resolves the channel and sends the embed itself.
+    """
+    config = await _load_config(guild_id)
+    if config is None or config.log_channel_id is None:
+        return None
+    if not getattr(config, _CATEGORY_FLAG[category]):
+        return None
+    return config.log_channel_id
+
+
 async def log_event(
     bot: discord.Client, guild_id: int, embed: discord.Embed, category: str
 ) -> None:
-    """Post an embed to the guild's log channel if logging + the toggle are on."""
-    config = await _load_config(guild_id)
-    if config is None or config.log_channel_id is None:
-        return
-    if not getattr(config, _CATEGORY_FLAG[category]):
-        return
+    """Post an embed to the guild's log channel if logging + the toggle are on.
 
-    channel = bot.get_channel(config.log_channel_id)
+    Kept for other modules (automod/moderation/vanity) that route mod-action
+    embeds here; the serverlog cog's own listeners use ``resolve_log_channel``.
+    """
+    channel_id = await resolve_log_channel(guild_id, category)
+    if channel_id is None:
+        return
+    channel = bot.get_channel(channel_id)
     if not isinstance(channel, discord.TextChannel):
         return
     try:

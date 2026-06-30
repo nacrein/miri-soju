@@ -13,7 +13,6 @@ from src.modules.vanity.cog import _is_repping
 from src.modules.vanity.gate import has_vanity
 from src.modules.vanity.setup_view import VanitySetupView
 
-
 # ── the gate ────────────────────────────────────────────────────────────────────
 
 def test_has_vanity_checks_code_or_feature_flag():

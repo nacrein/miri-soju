@@ -3,13 +3,33 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_USER: botuser
-      POSTGRES_PASSWORD: botpass
-      POSTGRES_DB: botdb
+      POSTGRES_USER: nacrein
+      POSTGRES_PASSWORD: nanashi-betta-nacrein-hippo
+      POSTGRES_DB: miri_soju
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # Lavalink audio node for the music module. The bot connects with
+  # LAVALINK_URI=http://localhost:2333 and LAVALINK_PASSWORD=youshallnotpass
+  # (see src/modules/music/config.py); keep these in sync with application.yml.
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4
+    restart: unless-stopped
+    environment:
+      _JAVA_OPTIONS: -Xmx512m
+      SERVER_PORT: "2333"
+      LAVALINK_SERVER_PASSWORD: youshallnotpass
+      # Fill these in (or export them) to enable Spotify metadata resolution via LavaSrc.
+      SPOTIFY_CLIENT_ID: "${SPOTIFY_CLIENT_ID:-}"
+      SPOTIFY_CLIENT_SECRET: "${SPOTIFY_CLIENT_SECRET:-}"
+    volumes:
+      - ./application.yml:/opt/Lavalink/application.yml:ro
+      - lavalink_plugins:/opt/Lavalink/plugins
+    ports:
+      - "2333:2333"
+
 volumes:
   pgdata:
+  lavalink_plugins:

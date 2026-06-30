@@ -28,7 +28,7 @@ class ReminderCog(commands.Cog, name="Reminder"):
         try:
             delta = parse_duration(duration)
         except ValueError as exc:
-            raise commands.BadArgument(str(exc))
+            raise commands.BadArgument(str(exc)) from exc
         remind_at = datetime.now(UTC) + delta
         await service.add(ctx.author.id, ctx.channel.id, ctx.guild.id, remind_at, message)
         await ctx.send(embed=embeds.success(f"I'll remind you {discord.utils.format_dt(remind_at, 'R')}."))
@@ -58,7 +58,10 @@ class ReminderCog(commands.Cog, name="Reminder"):
         rows = await service.for_user(ctx.author.id)
         if index < 1 or index > len(rows):
             raise commands.BadArgument("No reminder at that index.")
-        await service.remove(ctx.author.id, rows[index - 1].id)
+        # The list and the delete run in separate sessions; the row may have
+        # fired (or been removed) in between, so trust the delete's rowcount.
+        if not await service.remove(ctx.author.id, rows[index - 1].id):
+            raise commands.BadArgument("No reminder at that index.")
         await ctx.send(embed=embeds.success("Removed that reminder."))
 
     @tasks.loop(seconds=30)

@@ -6,7 +6,7 @@ check, and all embed rendering. This module only raises errors and returns value
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from src.core.cache import TTLCache
 from src.core.errors import BotError
@@ -30,7 +30,7 @@ def parse_duration(text: str, max_delta: timedelta = _MAX_TIMEOUT) -> timedelta:
     try:
         amount = int(text[:-1])
     except ValueError:
-        raise ModerationError("Duration must be a number followed by s, m, h, or d.")
+        raise ModerationError("Duration must be a number followed by s, m, h, or d.") from None
     if amount <= 0:
         raise ModerationError("Duration must be positive.")
     delta = timedelta(seconds=amount * _DURATION_UNITS[text[-1]])
@@ -42,7 +42,7 @@ def parse_duration(text: str, max_delta: timedelta = _MAX_TIMEOUT) -> timedelta:
 # ── cases: warnings, notes, and logged actions ─────────────────────────────
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 async def add_case(guild_id: int, user_id: int, moderator_id: int, kind: str, reason: str | None = None) -> int:
@@ -165,6 +165,12 @@ async def delete_temprole(entry_id: int) -> None:
         await ModerationRepository(session).delete_temprole(entry_id)
 
 
+async def delete_temproles(entry_ids: list[int]) -> None:
+    """Delete several temp-role rows in a single session (used by the expiry loop)."""
+    async with get_session() as session:
+        await ModerationRepository(session).delete_temproles(entry_ids)
+
+
 async def remove_temprole(guild_id: int, user_id: int, role_id: int) -> int:
     async with get_session() as session:
         return await ModerationRepository(session).delete_temprole_for(guild_id, user_id, role_id)
@@ -185,6 +191,11 @@ async def set_jail_role(guild_id: int, role_id: int) -> None:
 async def get_jail_role(guild_id: int) -> int | None:
     async with get_session() as session:
         return await ModerationRepository(session).get_jail_role(guild_id)
+
+
+async def is_jailed(guild_id: int, user_id: int) -> bool:
+    async with get_session() as session:
+        return await ModerationRepository(session).is_jailed(guild_id, user_id)
 
 
 async def store_jailed(guild_id: int, user_id: int, prior_roles: list[int]) -> None:

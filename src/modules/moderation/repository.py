@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +56,7 @@ class ModerationRepository:
         )
         return list((await self.session.execute(stmt)).scalars().all())
 
-    async def case_by_id(self, guild_id: int, case_id: int) -> Optional[ModCase]:
+    async def case_by_id(self, guild_id: int, case_id: int) -> ModCase | None:
         stmt = select(ModCase).where(ModCase.id == case_id, ModCase.guild_id == guild_id)
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
@@ -72,7 +71,7 @@ class ModerationRepository:
 
     # ── immune ────────────────────────────────────────────────────────────────
 
-    async def _immune_row(self, guild_id: int, target_id: int) -> Optional[ImmuneEntry]:
+    async def _immune_row(self, guild_id: int, target_id: int) -> ImmuneEntry | None:
         stmt = select(ImmuneEntry).where(
             ImmuneEntry.guild_id == guild_id, ImmuneEntry.target_id == target_id
         )
@@ -107,6 +106,11 @@ class ModerationRepository:
     async def delete_temprole(self, entry_id: int) -> None:
         await self.session.execute(delete(TempRole).where(TempRole.id == entry_id))
 
+    async def delete_temproles(self, entry_ids: list[int]) -> None:
+        if not entry_ids:
+            return
+        await self.session.execute(delete(TempRole).where(TempRole.id.in_(entry_ids)))
+
     async def delete_temprole_for(self, guild_id: int, user_id: int, role_id: int) -> int:
         stmt = delete(TempRole).where(
             TempRole.guild_id == guild_id, TempRole.user_id == user_id, TempRole.role_id == role_id
@@ -129,6 +133,12 @@ class ModerationRepository:
             self.session.add(ModerationConfig(guild_id=guild_id, jail_role_id=role_id))
         else:
             cfg.jail_role_id = role_id
+
+    async def is_jailed(self, guild_id: int, user_id: int) -> bool:
+        stmt = select(JailedMember.id).where(
+            JailedMember.guild_id == guild_id, JailedMember.user_id == user_id
+        )
+        return (await self.session.execute(stmt)).first() is not None
 
     async def add_jailed(self, guild_id: int, user_id: int, prior_roles: list[int]) -> None:
         self.session.add(JailedMember(guild_id=guild_id, user_id=user_id, prior_roles=prior_roles))

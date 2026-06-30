@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +20,7 @@ class BaseRepository(Generic[ModelT]):
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get(self, pk: object) -> Optional[ModelT]:
+    async def get(self, pk: object) -> ModelT | None:
         return await self.session.get(self.model, pk)
 
     async def list(self, limit: int | None = None) -> list[ModelT]:

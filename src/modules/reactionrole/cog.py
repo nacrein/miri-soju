@@ -26,12 +26,14 @@ class ReactionRole(commands.Cog):
     @commands.bot_has_permissions(manage_roles=True, add_reactions=True)
     async def rr_add(self, ctx, message: discord.Message, emoji: str, *, role: discord.Role) -> None:
         """Bind an emoji on a message to a role."""
+        if role.is_default() or role.managed:
+            raise commands.BadArgument("I can't bind @everyone or a managed/integration role.")
         if role >= ctx.guild.me.top_role:
             raise commands.BadArgument("That role is above my highest role.")
         try:
             await message.add_reaction(emoji)
         except discord.HTTPException:
-            raise commands.BadArgument("I couldn't react with that emoji.")
+            raise commands.BadArgument("I couldn't react with that emoji.") from None
         await service.add(ctx.guild.id, message.id, emoji, role.id)
         await ctx.send(embed=embeds.success(f"Reacting with {emoji} now grants {role.mention}."))
 

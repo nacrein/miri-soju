@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from src.core.cache import TTLCache
-from src.database.models.level import LevelConfig
 from src.database.session import get_session
 from src.modules.leveling import config
 from src.modules.leveling.repository import LevelingRepository
@@ -14,11 +13,13 @@ from src.modules.leveling.repository import LevelingRepository
 _NO_CONFIG = object()
 _config_cache: TTLCache = TTLCache(ttl_seconds=300)        # guild_id -> LevelConfig | _NO_CONFIG
 _mult_cache: TTLCache = TTLCache(ttl_seconds=300)          # guild_id -> {channel_id: multiplier}
-_msg_cooldown: dict[tuple[int, int], float] = {}           # in-memory message-XP gate
+# In-memory message-XP gate. A TTLCache (ttl = the largest configurable cooldown)
+# so idle (guild, user) entries self-evict instead of growing without bound.
+_msg_cooldown: TTLCache = TTLCache(ttl_seconds=config.COOLDOWN_MAX)
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def render_message(template: str, member, level: int, guild) -> str:
@@ -66,14 +67,13 @@ async def award_message_xp(guild_id: int, user_id: int, channel_id: int) -> int 
     gain = int(cfg.xp_per_message * mult)
     if gain <= 0:
         return None
-    _msg_cooldown[key] = mono
+    _msg_cooldown.set(key, mono)
     async with get_session() as session:
         repo = LevelingRepository(session)
-        member = await repo.get_or_create_member(guild_id, user_id)
-        old = config.level_from_xp(member.xp)
-        member.xp += gain
-        member.last_message_at = _now()
-        new = config.level_from_xp(member.xp)
+        await repo.get_or_create_member(guild_id, user_id)
+        new_xp = await repo.add_xp(guild_id, user_id, gain, last_message_at=_now())
+    old = config.level_from_xp(new_xp - gain)
+    new = config.level_from_xp(new_xp)
     return new if new > old else None
 
 
@@ -93,17 +93,18 @@ async def credit_voice(batch: list[tuple[int, int, int, int]]) -> list[tuple[int
                 continue
             cfg = await get_config(guild_id)
             enabled = cfg is not None and cfg.enabled
-            member = await repo.get_or_create_member(guild_id, user_id)
-            member.voice_minutes += minutes
-            if not enabled:
-                continue
-            mult = (await _multipliers(guild_id)).get(channel_id, 1.0)
-            gain = int(config.VOICE_XP_PER_MINUTE * mult) * minutes
+            await repo.get_or_create_member(guild_id, user_id)
+            gain = 0
+            if enabled:
+                mult = (await _multipliers(guild_id)).get(channel_id, 1.0)
+                # Multiply the full minute span before truncating so a fractional
+                # multiplier still accrues XP across minutes (don't floor per-minute).
+                gain = int(config.VOICE_XP_PER_MINUTE * mult * minutes)
+            new_xp = await repo.add_voice(guild_id, user_id, minutes, gain)
             if gain <= 0:
                 continue
-            old = config.level_from_xp(member.xp)
-            member.xp += gain
-            new = config.level_from_xp(member.xp)
+            old = config.level_from_xp(new_xp - gain)
+            new = config.level_from_xp(new_xp)
             if new > old:
                 k = (guild_id, user_id)
                 levelups[k] = max(levelups.get(k, 0), new)

@@ -1,4 +1,10 @@
-"""Economy commands: wallet, daily, work, pray, give, deposit, withdraw."""
+"""Economy commands: wallet, faucets, give, vault/generator, gambling, profile.
+
+Money logic lives in the service; this cog is the Discord surface. Interactive panels
+(re-bet on the one-shot gambles, the profile hub, the vault/generator control panels,
+and the give/steal confirm) live in views.py and are reused here. Vault and generator
+are single commands whose actions are buttons, not subcommands.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +15,10 @@ from discord.ext import commands
 
 from src.core import embeds
 from src.core.emojis import Emojis
+from src.core.errors import SilentError
 from src.modules.economy import config, service
+from src.modules.economy import views as econ_views
+from src.modules.economy.agreement import AgreementView, agreement_embed
 from src.modules.economy.converters import VaultAmount, WalletAmount
 from src.modules.economy.games.views import BlackjackView, CrashView, HiLoView, LadderView
 
@@ -34,6 +43,21 @@ class Economy(commands.Cog):
         except Exception:
             log.exception("Economy escrow reconciliation failed (continuing)")
 
+    async def cog_check(self, ctx: commands.Context) -> bool:
+        """Gate every economy command behind a one-time rules agreement.
+
+        Runs before argument parsing and the command callback, so a command whose body
+        would open a view/modal never starts until the user has agreed — no half-opened
+        state. ``SilentError`` aborts cleanly after the prompt is posted (the error
+        handler swallows it, so the prompt is the only message)."""
+        if await service.has_agreed(ctx.author.id):
+            return True
+        view = AgreementView(ctx.author.id, invoker=ctx.author)
+        await view.start(ctx, agreement_embed())
+        raise SilentError()
+
+    # ── balances ──────────────────────────────────────────────────────────────
+
     @commands.command(
         name="wallet", aliases=["bal", "balance"], extras={"example": "wallet @user"}
     )
@@ -47,6 +71,15 @@ class Economy(commands.Cog):
         e.add_field(name="Vault", value=f"{Emojis.BANK} {_fmt(v)} / {_fmt(cap)}")
         e.add_field(name="Net Worth", value=f"{_fmt(w + v)}", inline=False)
         await ctx.send(embed=e)
+
+    @commands.command(name="profile", aliases=["p"])
+    @commands.guild_only()
+    async def profile(self, ctx: commands.Context, user: discord.User | None = None) -> None:
+        """Your full economy card: balances, wealth rank, streak, generator, cooldowns."""
+        target = user or ctx.author
+        await ctx.send(embed=await econ_views.render_profile(target))
+
+    # ── faucets ───────────────────────────────────────────────────────────────
 
     @commands.hybrid_command(name="daily")
     @commands.guild_only()
@@ -66,7 +99,9 @@ class Economy(commands.Cog):
     async def work(self, ctx: commands.Context) -> None:
         """Work for some bits."""
         amount = await service.work(ctx.author.id)
-        await ctx.send(embed=embeds.success(f"You earned {Emojis.BITS} **{_fmt(amount)}** working."))
+        await ctx.send(
+            embed=embeds.success(f"You earned {Emojis.BITS} **{_fmt(amount)}** working.")
+        )
 
     @commands.command(name="pray")
     @commands.guild_only()
@@ -92,14 +127,22 @@ class Economy(commands.Cog):
         else:
             await ctx.send(embed=embeds.info("Nobody spared you any bits. Try again later."))
 
+    # ── transfers ───────────────────────────────────────────────────────────────
+
     @commands.command(name="give", extras={"example": "give @user all"})
     @commands.guild_only()
     async def give(self, ctx: commands.Context, user: discord.User, amount: WalletAmount) -> None:
-        """Give bits from your wallet to another player. Use `all` to give everything."""
-        await service.give(ctx.author.id, user.id, amount)
-        await ctx.send(
-            embed=embeds.success(f"You gave {Emojis.BITS} **{_fmt(amount)}** to {user.mention}.")
-        )
+        """Give bits from your wallet to another player. Confirms before sending."""
+
+        async def _send() -> discord.Embed:
+            await service.give(ctx.author.id, user.id, amount)
+            return embeds.success(
+                f"You gave {Emojis.BITS} **{_fmt(amount)}** to {user.mention}."
+            )
+
+        view = econ_views.ConfirmView(ctx.author.id, _send, invoker=ctx.author)
+        prompt = embeds.warning(f"Give {Emojis.BITS} **{_fmt(amount)}** to {user.mention}?")
+        view.message = await ctx.send(embed=prompt, view=view)
 
     @commands.command(name="deposit", aliases=["dep"], extras={"example": "deposit all"})
     @commands.guild_only()
@@ -119,211 +162,122 @@ class Economy(commands.Cog):
             embed=embeds.success(f"Withdrew {Emojis.BITS} **{_fmt(moved)}** to your wallet.")
         )
 
+    # ── vault + generator (panels with action buttons) ──────────────────────────
 
-    # ── vault upgrades ──────────────────────────────────────────────────────
-
-    @commands.group(name="vault")
+    @commands.command(name="vault")
     @commands.guild_only()
     async def vault(self, ctx: commands.Context) -> None:
-        """View your vault and upgrade its capacity."""
-        if ctx.invoked_subcommand is None:
-            w, v, cap = await service.get_balance(ctx.author.id)
-            info = service.vault_upgrade_info(cap)
-            e = embeds.info("", f"{Emojis.BANK} Your Vault")
-            e.add_field(name="Stored", value=f"{_fmt(v)} / {_fmt(cap)}", inline=False)
-            if info is None:
-                e.add_field(name="Upgrade", value="Maxed out.", inline=False)
-            else:
-                next_cap, cost = info
-                e.add_field(
-                    name="Next upgrade",
-                    value=f"Capacity {_fmt(next_cap)} for {Emojis.BITS} {_fmt(cost)}\n"
-                          f"Use `,vault upgrade`",
-                    inline=False,
-                )
-            await ctx.send(embed=e)
+        """View your vault and upgrade its capacity with a button."""
+        view = econ_views.VaultView(ctx.author, invoker=ctx.author)
+        view.message = await ctx.send(embed=await econ_views.render_vault(ctx.author), view=view)
 
-    @vault.command(name="upgrade")
-    async def vault_upgrade(self, ctx: commands.Context) -> None:
-        """Buy the next vault capacity tier (paid from your wallet)."""
-        new_cap, cost = await service.upgrade_vault(ctx.author.id)
-        await ctx.send(
-            embed=embeds.success(
-                f"Vault upgraded to {Emojis.BANK} **{_fmt(new_cap)}** capacity "
-                f"for {Emojis.BITS} {_fmt(cost)}."
-            )
-        )
-
-    # ── generator ───────────────────────────────────────────────────────────
-
-    @commands.group(name="generator", aliases=["gen"])
+    @commands.command(name="generator", aliases=["gen"])
     @commands.guild_only()
     async def generator(self, ctx: commands.Context) -> None:
-        """View, claim, and upgrade your passive bit generator."""
-        if ctx.invoked_subcommand is None:
-            tier, rate, pending = await service.get_generator(ctx.author.id)
-            e = embeds.info("", f"{Emojis.SETTINGS} Your Generator")
-            if tier <= 0:
-                e.description = "You don't own a generator yet."
-                up = service.generator_upgrade_info(0)
-                if up:
-                    nt, nr, cost = up
-                    e.add_field(
-                        name="Buy one",
-                        value=f"Tier {nt}: {_fmt(nr)}/hr for {Emojis.BITS} {_fmt(cost)}\n"
-                              f"Use `,generator upgrade`",
-                        inline=False,
-                    )
-            else:
-                e.add_field(name="Tier", value=str(tier))
-                e.add_field(name="Rate", value=f"{_fmt(rate)}/hr")
-                e.add_field(name="Pending", value=f"{Emojis.BITS} {_fmt(pending)}")
-                up = service.generator_upgrade_info(tier)
-                if up:
-                    nt, nr, cost = up
-                    e.add_field(
-                        name="Next tier",
-                        value=f"Tier {nt}: {_fmt(nr)}/hr for {Emojis.BITS} {_fmt(cost)}",
-                        inline=False,
-                    )
-                e.set_footer(text="Use ,generator claim  ·  ,generator upgrade")
-            await ctx.send(embed=e)
-
-    @generator.command(name="claim")
-    async def generator_claim(self, ctx: commands.Context) -> None:
-        """Collect the bits your generator has produced."""
-        amount = await service.claim_generator(ctx.author.id)
-        await ctx.send(
-            embed=embeds.success(f"Collected {Emojis.BITS} **{_fmt(amount)}** from your generator.")
+        """View your passive generator; claim or upgrade it with buttons."""
+        view = econ_views.GeneratorView(ctx.author, invoker=ctx.author)
+        view.message = await ctx.send(
+            embed=await econ_views.render_generator(ctx.author), view=view
         )
 
-    @generator.command(name="upgrade")
-    async def generator_upgrade(self, ctx: commands.Context) -> None:
-        """Buy the next generator tier (auto-collects pending bits first)."""
-        new_tier, new_rate, cost = await service.upgrade_generator(ctx.author.id)
-        await ctx.send(
-            embed=embeds.success(
-                f"Generator upgraded to **tier {new_tier}** ({_fmt(new_rate)}/hr) "
-                f"for {Emojis.BITS} {_fmt(cost)}."
-            )
-        )
-
-
-    # ── steal ───────────────────────────────────────────────────────────────
+    # ── steal ───────────────────────────────────────────────────────────────────
 
     @commands.command(name="steal", extras={"example": "steal @user"})
     @commands.guild_only()
     async def steal(self, ctx: commands.Context, user: discord.User) -> None:
-        """Attempt to steal bits from someone's wallet. Risky."""
-        success, delta = await service.steal(ctx.author.id, user.id)
-        if success:
-            await ctx.send(embed=embeds.success(
-                f"{Emojis.WIN} You stole {Emojis.BITS} **{_fmt(delta)}** from {user.mention}!"
-            ))
-        else:
-            await ctx.send(embed=embeds.error(
-                f"You got caught and paid a fine of {Emojis.BITS} **{_fmt(-delta)}**."
-            ))
+        """Attempt to steal bits from someone's wallet. Confirms before the attempt."""
 
-    # ── gambling ────────────────────────────────────────────────────────────
+        async def _attempt() -> discord.Embed:
+            success, delta = await service.steal(ctx.author.id, user.id)
+            if success:
+                return embeds.success(
+                    f"{Emojis.WIN} You stole {Emojis.BITS} **{_fmt(delta)}** from {user.mention}!"
+                )
+            return embeds.error(
+                f"You got caught and paid a fine of {Emojis.BITS} **{_fmt(-delta)}**."
+            )
+
+        view = econ_views.ConfirmView(
+            ctx.author.id, _attempt, invoker=ctx.author, confirm_label="Attempt"
+        )
+        prompt = embeds.warning(f"Attempt to steal from {user.mention}? It's risky.")
+        view.message = await ctx.send(embed=prompt, view=view)
+
+    # ── one-shot gambling (Play again / Double) ──────────────────────────────────
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.command(
-        name="coinflip", aliases=["cf"], extras={"example": "coinflip all heads"}
-    )
+    @commands.command(name="coinflip", aliases=["cf"], extras={"example": "coinflip all heads"})
     @commands.guild_only()
     async def coinflip(self, ctx: commands.Context, amount: WalletAmount, call: str) -> None:
         """Bet on a coin flip. Call heads or tails."""
-        won, result, net, wallet = await service.coinflip(ctx.author.id, amount, call)
-        verb = "won" if won else "lost"
-        e = (embeds.success if won else embeds.error)(
-            f"{Emojis.COIN_FLIP} It landed **{result}**. You {verb} "
-            f"{Emojis.BITS} **{_fmt(abs(net))}**.\nWallet: {_fmt(wallet)}"
+        embed = await econ_views.play_coinflip(ctx.author.id, amount, call)
+        view = econ_views.RebetView(
+            ctx.author.id, amount,
+            lambda amt: econ_views.play_coinflip(ctx.author.id, amt, call), invoker=ctx.author,
         )
-        await ctx.send(embed=e)
+        view.message = await ctx.send(embed=embed, view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.command(name="slots", extras={"example": "slots 500"})
     @commands.guild_only()
     async def slots(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Spin the slot machine."""
-        reels, net, wallet = await service.slots(ctx.author.id, amount)
-        won = net > 0
-        line = " ".join(reels)
-        e = (embeds.success if won else embeds.error)(
-            f"{Emojis.SLOTS} [ {line} ]\n"
-            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
-               else f"You lost {Emojis.BITS} **{_fmt(abs(net))}**.")
-            + f"\nWallet: {_fmt(wallet)}"
+        embed = await econ_views.play_slots(ctx.author.id, amount)
+        view = econ_views.RebetView(
+            ctx.author.id, amount,
+            lambda amt: econ_views.play_slots(ctx.author.id, amt), invoker=ctx.author,
         )
-        await ctx.send(embed=e)
+        view.message = await ctx.send(embed=embed, view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
-    @commands.command(
-        name="roulette", aliases=["roul"], extras={"example": "roulette 500 red"}
-    )
+    @commands.command(name="roulette", aliases=["roul"], extras={"example": "roulette 500 red"})
     @commands.guild_only()
     async def roulette(self, ctx: commands.Context, amount: WalletAmount, bet: str) -> None:
         """Bet on roulette: red, black, a dozen (1/2/3), or a number (0-36)."""
-        result, color, net, wallet = await service.roulette(ctx.author.id, amount, bet)
-        won = net > 0
-        e = (embeds.success if won else embeds.error)(
-            f"{Emojis.DICE} The ball landed on **{result}** ({color}).\n"
-            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
-               else f"You lost {Emojis.BITS} **{_fmt(amount)}**.")
-            + f"\nWallet: {_fmt(wallet)}"
+        embed = await econ_views.play_roulette(ctx.author.id, amount, bet)
+        view = econ_views.RebetView(
+            ctx.author.id, amount,
+            lambda amt: econ_views.play_roulette(ctx.author.id, amt, bet), invoker=ctx.author,
         )
-        await ctx.send(embed=e)
+        view.message = await ctx.send(embed=embed, view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.command(name="dice", extras={"example": "dice 500 50"})
     @commands.guild_only()
     async def dice(self, ctx: commands.Context, amount: WalletAmount, target: int) -> None:
         """Roll under your target (2-98). Lower target, higher payout."""
-        won, roll, target, net, wallet = await service.dice(ctx.author.id, amount, target)
-        e = (embeds.success if won else embeds.error)(
-            f"{Emojis.DICE} Rolled **{roll}** vs target **{target}**.\n"
-            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
-               else f"You lost {Emojis.BITS} **{_fmt(amount)}**.")
-            + f"\nWallet: {_fmt(wallet)}"
+        embed = await econ_views.play_dice(ctx.author.id, amount, target)
+        view = econ_views.RebetView(
+            ctx.author.id, amount,
+            lambda amt: econ_views.play_dice(ctx.author.id, amt, target), invoker=ctx.author,
         )
-        await ctx.send(embed=e)
+        view.message = await ctx.send(embed=embed, view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.command(name="limbo", extras={"example": "limbo 500 2.5"})
     @commands.guild_only()
     async def limbo(self, ctx: commands.Context, amount: WalletAmount, target: float) -> None:
         """Set a target multiplier. Win if the round reaches it."""
-        won, outcome, target, net, wallet = await service.limbo(ctx.author.id, amount, target)
-        e = (embeds.success if won else embeds.error)(
-            f"{Emojis.DICE} Round hit **{outcome:.2f}x** (target **{target:.2f}x**).\n"
-            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
-               else f"You lost {Emojis.BITS} **{_fmt(amount)}**.")
-            + f"\nWallet: {_fmt(wallet)}"
+        embed = await econ_views.play_limbo(ctx.author.id, amount, target)
+        view = econ_views.RebetView(
+            ctx.author.id, amount,
+            lambda amt: econ_views.play_limbo(ctx.author.id, amt, target), invoker=ctx.author,
         )
-        await ctx.send(embed=e)
+        view.message = await ctx.send(embed=embed, view=view)
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.command(name="plinko", extras={"example": "plinko 500"})
     @commands.guild_only()
     async def plinko(self, ctx: commands.Context, amount: WalletAmount) -> None:
         """Drop a ball down the pegs into a multiplier bucket."""
-        bucket, path, mult, net, wallet = await service.plinko(ctx.author.id, amount)
-        won = net > 0
-        row = " ".join(
-            f"[{m:g}]" if i == bucket else f"{m:g}"
-            for i, m in enumerate(config.PLINKO_MULTIPLIERS)
+        embed = await econ_views.play_plinko(ctx.author.id, amount)
+        view = econ_views.RebetView(
+            ctx.author.id, amount,
+            lambda amt: econ_views.play_plinko(ctx.author.id, amt), invoker=ctx.author,
         )
-        e = (embeds.success if won else embeds.error)(
-            f"{Emojis.SLOTS} {row}\n"
-            f"Path: {' '.join(path)} → **{mult:.2f}x**\n"
-            + (f"You won {Emojis.BITS} **{_fmt(net)}**!" if won
-               else f"You lost {Emojis.BITS} **{_fmt(abs(net))}**.")
-            + f"\nWallet: {_fmt(wallet)}"
-        )
-        await ctx.send(embed=e)
+        view.message = await ctx.send(embed=embed, view=view)
 
-    # ── interactive games ───────────────────────────────────────────────────
+    # ── interactive (multi-step) games ───────────────────────────────────────────
 
     @commands.cooldown(rate=1, per=3.0, type=commands.BucketType.user)
     @commands.command(name="ladder", extras={"example": "ladder 500"})
@@ -356,7 +310,10 @@ class Economy(commands.Cog):
             wallet = await service.payout_winnings(ctx.author.id, payout, session_id)
             for child in view.children:
                 child.disabled = True
-            e = view.embed(reveal_dealer=True, status=f"{Emojis.WIN} Natural blackjack! Paid 3:2.\nWallet: {wallet:,}")
+            e = view.embed(
+                reveal_dealer=True,
+                status=f"{Emojis.WIN} Natural blackjack! Paid 3:2.\nWallet: {wallet:,}",
+            )
             # Mark resolved + stop so on_timeout doesn't log a false forfeit ~90s later.
             view._resolved = True
             view.stop()
@@ -373,8 +330,7 @@ class Economy(commands.Cog):
         view = HiLoView(ctx.author.id, amount, session_id)
         view.message = await ctx.send(embed=view.embed(), view=view)
 
-
-    # ── summaries ───────────────────────────────────────────────────────────
+    # ── summaries ─────────────────────────────────────────────────────────────
 
     @commands.command(name="cooldowns", aliases=["cd"])
     @commands.guild_only()
@@ -383,30 +339,6 @@ class Economy(commands.Cog):
         pairs = await service.get_cooldowns(ctx.author.id)
         lines = [f"{Emojis.CLOCK} **{label}** · {status}" for label, status in pairs]
         await ctx.send(embed=embeds.info("\n".join(lines), "Your Cooldowns"))
-
-    @commands.command(name="profile", aliases=["p"])
-    @commands.guild_only()
-    async def profile(self, ctx: commands.Context, user: discord.User | None = None) -> None:
-        """Your full economy card: balances, wealth rank, streak, generator, cooldowns."""
-        target = user or ctx.author
-        p = await service.get_profile(target.id)
-        rank = f"#{p['rank']}" if p["rank"] else "Unranked"
-        e = embeds.info("", f"{Emojis.RANK} {target.display_name}'s Profile")
-        e.add_field(name="Net Worth", value=f"{Emojis.BITS} {_fmt(p['net_worth'])}")
-        e.add_field(name="Wealth Rank", value=rank)
-        e.add_field(name="Daily Streak", value=f"{Emojis.FIRE} {p['daily_streak']}")
-        e.add_field(name="Wallet", value=f"{Emojis.BITS} {_fmt(p['wallet'])}")
-        vault = f"{Emojis.BANK} {_fmt(p['vault'])} / {_fmt(p['vault_capacity'])}"
-        e.add_field(name="Vault", value=vault)
-        if p["generator_tier"] > 0:
-            e.add_field(
-                name="Generator",
-                value=f"T{p['generator_tier']} · {_fmt(p['generator_rate'])}/hr "
-                      f"(+{_fmt(p['generator_pending'])} pending)",
-            )
-        cd = " · ".join(f"{label}: {status}" for label, status in p["cooldowns"])
-        e.add_field(name="Cooldowns", value=cd, inline=False)
-        await ctx.send(embed=e)
 
 
 async def setup(bot: commands.Bot) -> None:

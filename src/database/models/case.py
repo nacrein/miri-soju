@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlalchemy import BigInteger, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,4 +22,4 @@ class ModCase(Base, IdMixin, TimestampMixin):
     user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     moderator_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     kind: Mapped[str] = mapped_column(String(16), nullable=False)  # warn, note, ban, kick, timeout...
-    reason: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

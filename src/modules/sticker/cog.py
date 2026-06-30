@@ -53,6 +53,8 @@ class Sticker(commands.Cog):
         await ctx.send(embed=embeds.success(f"Added sticker **{created.name}**."))
 
     @sticker.command(name="rename")
+    @commands.has_permissions(manage_expressions=True)
+    @commands.bot_has_permissions(manage_expressions=True)
     async def sticker_rename(self, ctx, old_name: str, new_name: str) -> None:
         """Rename a server sticker."""
         sticker = discord.utils.get(ctx.guild.stickers, name=old_name)
@@ -62,6 +64,8 @@ class Sticker(commands.Cog):
         await ctx.send(embed=embeds.success(f"Renamed to **{new_name}**."))
 
     @sticker.command(name="remove", aliases=["delete", "del"])
+    @commands.has_permissions(manage_expressions=True)
+    @commands.bot_has_permissions(manage_expressions=True)
     async def sticker_remove(self, ctx, *, name: str) -> None:
         """Remove a server sticker."""
         sticker = discord.utils.get(ctx.guild.stickers, name=name)

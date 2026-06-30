@@ -8,9 +8,10 @@ instead, so this static-serving is skipped.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,8 +19,14 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from dashboard.config import get_dashboard_settings
 from dashboard.routers import auth, automod, guilds, leveling, moderation, prefix, serverlog
+from src.core.cache_sync import publish_guild_changed
 
 _FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
+
+# Config endpoints live under /guilds/<id>/...; a successful write to one means the
+# bot's in-process cache for that guild is now stale.
+_GUILD_PATH = re.compile(r"/guilds/(\d+)")
+_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
 def create_app() -> FastAPI:
@@ -53,6 +60,20 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
+
+    @app.middleware("http")
+    async def _invalidate_bot_cache_after_write(request: Request, call_next):
+        """After a successful config write, tell the bot to drop that guild's cache.
+
+        The bot serves config from in-process TTL caches, so a dashboard write would
+        otherwise stay invisible for up to the cache TTL. Best-effort and no-op on
+        SQLite; never affects the response the user gets."""
+        response = await call_next(request)
+        if request.method in _WRITE_METHODS and response.status_code < 400:
+            match = _GUILD_PATH.search(request.url.path)
+            if match:
+                await publish_guild_changed(int(match.group(1)))
+        return response
 
     api_routers = (
         auth.router,

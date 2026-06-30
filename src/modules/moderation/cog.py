@@ -99,17 +99,21 @@ class Moderation(commands.Cog):
 
     @tasks.loop(seconds=60)
     async def _temprole_loop(self) -> None:
+        # Collect the ids we can safely retire and batch-delete them in one session.
+        # A row is kept (retried next cycle) only when Discord removal genuinely failed.
+        done: list[int] = []
         for entry_id, gid, uid, rid in await service.due_temproles():
             guild = self.bot.get_guild(gid)
-            if guild is not None:
-                member = guild.get_member(uid)
-                role = guild.get_role(rid)
-                if member is not None and role is not None and role in member.roles:
-                    try:
-                        await member.remove_roles(role, reason="temprole expired")
-                    except discord.HTTPException:
-                        pass
-            await service.delete_temprole(entry_id)
+            member = guild.get_member(uid) if guild is not None else None
+            role = guild.get_role(rid) if guild is not None else None
+            if member is not None and role is not None and role in member.roles:
+                try:
+                    await member.remove_roles(role, reason="temprole expired")
+                except discord.HTTPException:
+                    continue  # leave the row so it's retried next cycle
+            # Removed, or the guild/member/role/assignment is gone: retire the row.
+            done.append(entry_id)
+        await service.delete_temproles(done)
 
     @_temprole_loop.before_loop
     async def _before_temprole_loop(self) -> None:
@@ -141,7 +145,7 @@ class Moderation(commands.Cog):
         try:
             await ctx.guild.unban(user, reason=f"{ctx.author}: {reason}")
         except discord.NotFound:
-            raise service.ModerationError("That user isn't banned.")
+            raise service.ModerationError("That user isn't banned.") from None
         await service.add_case(ctx.guild.id, user.id, ctx.author.id, "unban", reason)
         await ctx.send(embed=embeds.success(f"Unbanned **{user}**."))
         await self._log(ctx.guild.id, action_embed("Unban", ctx.author, user, reason))
@@ -154,7 +158,7 @@ class Moderation(commands.Cog):
         self, ctx: commands.Context, member: discord.Member, *, reason: str = _DEFAULT_REASON
     ) -> None:
         """Ban then immediately unban to clear a member's recent messages."""
-        check_target(ctx, member)
+        await self._guard(ctx, member)
         await ctx.guild.ban(
             member, reason=f"{ctx.author} (softban): {reason}", delete_message_days=1
         )
@@ -246,6 +250,7 @@ class Moderation(commands.Cog):
         self, ctx: commands.Context, member: discord.Member, *, reason: str = _DEFAULT_REASON
     ) -> None:
         """Remove a member's timeout."""
+        await self._guard(ctx, member)
         await member.timeout(None, reason=f"{ctx.author}: {reason}")
         await service.add_case(ctx.guild.id, member.id, ctx.author.id, "untimeout", reason)
         await ctx.send(embed=embeds.success(f"Removed timeout from **{member}**."))
@@ -831,6 +836,7 @@ class Moderation(commands.Cog):
         if member is None or role is None or duration is None:
             await send_command_browser(ctx, ctx.command)
             return
+        await self._guard(ctx, member)
         self._check_role(ctx, role)
         delta = service.parse_duration(duration, max_delta=timedelta(days=365))
         if role not in member.roles:
@@ -967,6 +973,10 @@ class Moderation(commands.Cog):
         if jail_role is None:
             raise service.ModerationError(
                 "The jail role no longer exists. Set it again with `,jail role <role>`."
+            )
+        if await service.is_jailed(ctx.guild.id, member.id):
+            raise service.ModerationError(
+                f"**{member}** is already jailed. Use `,unjail` to release them first."
             )
         removed = [
             r for r in member.roles
