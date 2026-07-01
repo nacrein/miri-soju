@@ -83,6 +83,7 @@ class Economy(commands.Cog):
 
     # ── faucets ───────────────────────────────────────────────────────────────
 
+    @commands.cooldown(rate=1, per=config.FAUCET_COOLDOWN_SECONDS, type=commands.BucketType.user)
     @commands.hybrid_command(name="daily")
     @commands.guild_only()
     async def daily(self, ctx: commands.Context) -> None:
@@ -96,6 +97,7 @@ class Economy(commands.Cog):
             )
         )
 
+    @commands.cooldown(rate=1, per=config.FAUCET_COOLDOWN_SECONDS, type=commands.BucketType.user)
     @commands.command(name="work")
     @commands.guild_only()
     async def work(self, ctx: commands.Context) -> None:
@@ -105,6 +107,7 @@ class Economy(commands.Cog):
             embed=embeds.success(f"You earned {Emojis.BITS} **{_fmt(amount)}** working.")
         )
 
+    @commands.cooldown(rate=1, per=config.FAUCET_COOLDOWN_SECONDS, type=commands.BucketType.user)
     @commands.command(name="pray")
     @commands.guild_only()
     async def pray(self, ctx: commands.Context) -> None:

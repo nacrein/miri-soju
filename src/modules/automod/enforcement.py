@@ -12,7 +12,7 @@ from datetime import timedelta
 
 import discord
 
-from src.core import checks
+from src.core import checks, embeds
 from src.core.emojis import Emojis
 from src.modules.moderation import service as mod_service
 from src.modules.serverlog.service import log_event
@@ -115,12 +115,11 @@ def action_text(action: str, minutes: int | None) -> str:
 def automod_embed(member, violation, action, minutes, strikes, *, dry_run: bool) -> discord.Embed:
     label = action_text(action, minutes)
     headline = f"[DRY-RUN] would {label.lower()}" if dry_run else label
-    e = discord.Embed(title=f"{Emojis.SHIELD} AutoMod · {headline}", color=discord.Color.dark_red())
-    e.add_field(name="Member", value=f"{member} (`{member.id}`)", inline=False)
-    e.add_field(name="Reason", value=violation.reason, inline=False)
+    e = embeds.audit_log(
+        f"AutoMod · {headline}", target=member, reason=violation.reason, icon=Emojis.SHIELD
+    )
     e.add_field(name="Filter", value=violation.category)
     e.add_field(name="Strike", value=str(strikes))
-    e.timestamp = discord.utils.utcnow()
     return e
 
 
@@ -137,7 +136,7 @@ async def dm_member(member, guild, violation, action, minutes) -> None:
                 f"Your message in **{guild.name}** was removed ({violation.reason}). "
                 f"Action taken: **{action_text(action, minutes).lower()}**."
             ),
-            color=discord.Color.dark_red(),
+            color=embeds.COLOR_ERROR,
         ))
     except discord.HTTPException:
         pass

@@ -16,7 +16,7 @@ server:
 
 lavalink:
   plugins:
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.3"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
       snapshot: false
     - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.3.0"
       snapshot: false
@@ -53,6 +53,13 @@ plugins:
       - ANDROID_VR
       - WEB
       - WEBEMBEDDED
+    # YouTube blocks anonymous datacenter (VPS) IPs and rate-limits hard. To make
+    # playback reliable, enable OAuth and authorize ONCE with a throwaway Google
+    # account: flip enabled to true, restart Lavalink, then watch its logs for a
+    # URL + code, open it, and approve. Lavalink stores the token after that.
+    # oauth:
+    #   enabled: true
+    #   # refreshToken: "paste-a-saved-token-here-to-skip-the-device-flow"
   lavasrc:
     sources:
       # Spotify/Apple/Deezer return metadata that is searched on a playable source.

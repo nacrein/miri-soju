@@ -157,8 +157,7 @@ class Bot(commands.Bot):
         the per-restart global sync rate limit."""
         guild_id = get_settings().dev_guild_id
         if guild_id is None:
-            log.info("DEV_GUILD_ID unset; run `jsk sync` to register slash commands globally")
-            return
+            return  # no dev guild: global commands are registered manually via `jsk sync`
         guild = discord.Object(id=guild_id)
         self.tree.copy_global_to(guild=guild)
         synced = await self.tree.sync(guild=guild)

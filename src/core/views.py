@@ -15,6 +15,7 @@ from __future__ import annotations
 import discord
 
 from src.core import embeds
+from src.core.emojis import Emojis
 
 _TIMEOUT = 180  # panels disable themselves after 3 minutes of inactivity
 
@@ -82,3 +83,71 @@ class WizardView(OwnerView):
     async def refresh(self, interaction: discord.Interaction) -> None:
         await self.load()
         await interaction.response.edit_message(embed=self.render(), view=self)
+
+
+class ConfirmView(OwnerView):
+    """A Confirm/Cancel gate for a destructive action.
+
+    Post it with :func:`confirm_prompt` (which awaits the click and returns a
+    bool) rather than constructing it directly. ``result`` is ``True`` on confirm,
+    ``False`` on cancel, and ``None`` if it timed out unanswered.
+    """
+
+    def __init__(
+        self,
+        author_id: int,
+        *,
+        invoker: discord.abc.User | None = None,
+        confirm_label: str = "Confirm",
+        confirm_style: discord.ButtonStyle = discord.ButtonStyle.danger,
+        timeout: float = 60,
+    ) -> None:
+        super().__init__(author_id, invoker=invoker, timeout=timeout)
+        self.result: bool | None = None
+        self._confirm.label = confirm_label
+        self._confirm.style = confirm_style
+
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.danger)
+    async def _confirm(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        self.result = True
+        await self._close(interaction, None)
+
+    @discord.ui.button(label="Cancel", emoji=Emojis.CLOSE, style=discord.ButtonStyle.secondary)
+    async def _cancel(self, interaction: discord.Interaction, _: discord.ui.Button) -> None:
+        self.result = False
+        await self._close(interaction, embeds.info("Cancelled."))
+
+    async def _close(
+        self, interaction: discord.Interaction, embed: discord.Embed | None
+    ) -> None:
+        for child in self.children:
+            child.disabled = True
+        self.stop()
+        if embed is None:
+            await interaction.response.edit_message(view=self)
+        else:
+            await interaction.response.edit_message(embed=embed, view=self)
+
+
+async def confirm_prompt(
+    ctx,
+    prompt: str,
+    *,
+    confirm_label: str = "Confirm",
+    confirm_style: discord.ButtonStyle = discord.ButtonStyle.danger,
+) -> bool:
+    """Ask the invoker to confirm a destructive action with a button.
+
+    Posts a warning embed with Confirm / Cancel buttons, waits for the click, and
+    returns ``True`` only if confirmed (``False`` on cancel or timeout). Replaces
+    the older ``wait_for("message", "yes")`` text prompts.
+    """
+    view = ConfirmView(
+        ctx.author.id,
+        invoker=ctx.author,
+        confirm_label=confirm_label,
+        confirm_style=confirm_style,
+    )
+    await view.start(ctx, embeds.warning(prompt))
+    await view.wait()
+    return view.result is True

@@ -21,12 +21,20 @@ from dashboard.config import get_dashboard_settings
 from dashboard.routers import (
     auth,
     automod,
+    autoroles,
+    boosterrole,
     guilds,
     leveling,
     moderation,
+    music,
     prefix,
     serverlog,
     staff,
+    starboard,
+    tags,
+    vanity,
+    voicemaster,
+    welcome,
 )
 from src.core.cache_sync import publish_guild_changed
 
@@ -94,6 +102,14 @@ def create_app() -> FastAPI:
         moderation.router,
         automod.router,
         staff.router,
+        welcome.router,
+        starboard.router,
+        vanity.router,
+        music.router,
+        boosterrole.router,
+        voicemaster.router,
+        autoroles.router,
+        tags.router,
     )
     for router in api_routers:
         app.include_router(router, prefix="/api")

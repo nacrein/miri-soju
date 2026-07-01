@@ -26,6 +26,7 @@ PERM_MANAGE_GUILD = 0x20
 
 # Channel types that can receive log/announcement messages.
 TEXT_CHANNEL_TYPES = {0, 5}  # GUILD_TEXT, GUILD_ANNOUNCEMENT
+VOICE_CHANNEL_TYPES = {2, 13}  # GUILD_VOICE, GUILD_STAGE_VOICE
 
 # GET /users/@me/guilds returns at most 200 guilds per page; paginate with the
 # ``after`` cursor (the highest snowflake seen so far) until a short page.
@@ -34,6 +35,7 @@ GUILDS_PAGE_LIMIT = 200
 _bot_guilds_cache: TTLCache[str, set[int]] = TTLCache(ttl_seconds=120)
 _roles_cache: TTLCache[int, list[dict]] = TTLCache(ttl_seconds=60)
 _channels_cache: TTLCache[int, list[dict]] = TTLCache(ttl_seconds=60)
+_voice_channels_cache: TTLCache[int, list[dict]] = TTLCache(ttl_seconds=60)
 
 
 def _bot_headers() -> dict[str, str]:
@@ -187,6 +189,26 @@ async def fetch_guild_channels(guild_id: int) -> list[dict]:
     ]
     channels.sort(key=lambda c: c["position"])
     _channels_cache.set(guild_id, channels)
+    return channels
+
+
+async def fetch_guild_voice_channels(guild_id: int) -> list[dict]:
+    """Voice channels for a guild, in display order (for VoiceMaster's select)."""
+    cached = _voice_channels_cache.get(guild_id)
+    if cached is not None:
+        return cached
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            f"{API_BASE}/guilds/{guild_id}/channels", headers=_bot_headers()
+        )
+    resp.raise_for_status()
+    channels = [
+        {"id": str(c["id"]), "name": c["name"], "position": c.get("position", 0)}
+        for c in resp.json()
+        if c.get("type") in VOICE_CHANNEL_TYPES
+    ]
+    channels.sort(key=lambda c: c["position"])
+    _voice_channels_cache.set(guild_id, channels)
     return channels
 
 

@@ -11,13 +11,17 @@ from discord.ext import commands, tasks
 
 from src.core import embeds
 from src.core.emojis import Emojis
-from src.core.paginator import send_command_browser
+from src.core.paginator import Paginator, paginate_lines, send_command_browser
+from src.core.views import confirm_prompt
 from src.modules.moderation import service
 from src.modules.serverlog.service import log_event
 
 log = logging.getLogger(__name__)
 
 _DEFAULT_REASON = "No reason provided"
+
+# Above this many messages, ,purge asks the invoker to confirm before deleting.
+_PURGE_CONFIRM_THRESHOLD = 100
 
 _ACTION_ICONS = {
     "Ban": Emojis.BAN, "Unban": Emojis.UNBAN, "Kick": Emojis.KICK,
@@ -57,12 +61,9 @@ def action_embed(
 ) -> discord.Embed:
     """Build the mod-action embed posted to the audit channel."""
     icon = _ACTION_ICONS.get(action.split()[0], Emojis.SHIELD)
-    e = discord.Embed(title=f"{icon} {action}", color=discord.Color.dark_red())
-    e.add_field(name="Member", value=f"{target} (`{target.id}`)", inline=False)
-    e.add_field(name="Moderator", value=str(moderator), inline=False)
-    e.add_field(name="Reason", value=reason, inline=False)
-    e.timestamp = discord.utils.utcnow()
-    return e
+    return embeds.audit_log(
+        action, moderator=moderator, target=target, reason=reason, icon=icon
+    )
 
 
 class Moderation(commands.Cog):
@@ -471,11 +472,9 @@ class Moderation(commands.Cog):
     @commands.command(name="modlogs", aliases=["cases"])
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
-    async def modlogs(self, ctx, member: discord.Member, page: int = 1) -> None:
+    async def modlogs(self, ctx, *, member: discord.Member) -> None:
         """Full moderation history for a member (every case type)."""
-        page = max(1, page)
-        per = 15
-        rows, total = await service.list_cases(ctx.guild.id, member.id, limit=per, offset=(page - 1) * per)
+        rows, total = await service.list_cases(ctx.guild.id, member.id, limit=300)
         if not rows:
             await ctx.send(embed=embeds.info(f"**{member}** has no moderation history."))
             return
@@ -484,10 +483,8 @@ class Moderation(commands.Cog):
             f"{discord.utils.format_dt(c.created_at, 'R')}"
             for c in rows
         ]
-        pages = (total + per - 1) // per
-        e = embeds.info("\n".join(lines), f"{member.display_name}'s History ({total})")
-        e.set_footer(text=f"Page {page}/{pages}")
-        await ctx.send(embed=e)
+        pages = paginate_lines(lines, f"{member.display_name}'s History ({total})")
+        await Paginator(ctx.author.id, pages).start(ctx)
 
     @commands.command(name="reason", extras={"example": "reason 12 raiding the server"})
     @commands.has_permissions(kick_members=True)
@@ -591,25 +588,16 @@ class Moderation(commands.Cog):
             raise service.ModerationError("That role is managed by an integration.")
 
     async def _confirm(self, ctx: commands.Context, prompt: str) -> bool:
-        msg = await ctx.send(embed=embeds.warning(f"{prompt} Reply `yes` to confirm."))
-
-        def check(m: discord.Message) -> bool:
-            return (
-                m.author == ctx.author
-                and m.channel == ctx.channel
-                and m.content.lower() == "yes"
-            )
-
-        try:
-            await self.bot.wait_for("message", check=check, timeout=30)
-            return True
-        except TimeoutError:
-            await msg.edit(embed=embeds.info("Cancelled."))
-            return False
+        """Button Confirm/Cancel gate, shared by every destructive mod command."""
+        return await confirm_prompt(ctx, prompt)
 
     async def _purge(self, ctx, amount, *, check=lambda m: True, before=None, after=None) -> None:
         if amount < 1 or amount > 1000:
             raise service.ModerationError("Amount must be between 1 and 1000.")
+        if amount > _PURGE_CONFIRM_THRESHOLD and not await self._confirm(
+            ctx, f"Delete up to **{amount}** messages in this channel?"
+        ):
+            return
         try:
             await ctx.message.delete()
         except discord.HTTPException:
@@ -669,6 +657,8 @@ class Moderation(commands.Cog):
         """Delete a role."""
         self._check_role(ctx, role)
         name = role.name
+        if not await self._confirm(ctx, f"Delete the role **{name}**? This can't be undone."):
+            return
         await role.delete(reason=f"role delete by {ctx.author}")
         await ctx.send(embed=embeds.success(f"Deleted the role **{name}**."))
 

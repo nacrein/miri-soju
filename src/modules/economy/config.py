@@ -28,6 +28,10 @@ PRAY_BLESSING_CHANCE = 0.10   # chance of the big payout
 PRAY_BLESSING_MIN = 800
 PRAY_BLESSING_MAX = 1200
 
+# Short per-user command cooldown for daily/work/pray (spam guard). Their real
+# (hours-long) cooldowns are enforced in the DB; this just stops rapid re-invocation.
+FAUCET_COOLDOWN_SECONDS = 5
+
 # ── give ────────────────────────────────────────────────────────────────────
 GIVE_MIN = 1
 

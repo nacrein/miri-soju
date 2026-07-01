@@ -35,8 +35,10 @@ async def guild_meta(
     info = get_manageable_guilds(request)[str(guild_id)]
     roles = await discord_api.fetch_guild_roles(guild_id)
     channels = await discord_api.fetch_guild_channels(guild_id)
+    voice = await discord_api.fetch_guild_voice_channels(guild_id)
     return GuildMetaOut(
         guild=GuildOut(id=str(guild_id), name=info["name"], icon=info.get("icon")),
         roles=[RoleOut(**r) for r in roles],
         channels=[ChannelOut(id=c["id"], name=c["name"]) for c in channels],
+        voice_channels=[ChannelOut(id=c["id"], name=c["name"]) for c in voice],
     )

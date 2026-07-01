@@ -36,11 +36,12 @@ def _new_error_id() -> str:
 
 
 # User-facing mistakes: friendly message, no error code, not logged as a bug.
+# UserInputError covers MissingRequiredArgument, BadArgument, TooManyArguments,
+# BadUnionArgument, ArgumentParsingError, etc. — anything the user typed wrong.
 _USER_FACING = (
     commands.MissingPermissions,
     commands.BotMissingPermissions,
-    commands.MissingRequiredArgument,
-    commands.BadArgument,
+    commands.UserInputError,
     commands.CommandOnCooldown,
     commands.NotOwner,
     commands.CheckFailure,

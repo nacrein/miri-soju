@@ -13,6 +13,7 @@ from discord.ext import commands
 from src.core import embeds
 from src.core.http import fetch_bytes
 from src.core.paginator import send_command_browser
+from src.core.views import confirm_prompt
 
 _CUSTOM = re.compile(r"<(a?):(\w+):(\d+)>")
 
@@ -94,18 +95,21 @@ class Emoji(commands.Cog):
         """Remove one or more server emojis."""
         if not emojis:
             raise commands.BadArgument("Give one or more server emojis.")
+        targets = [e for e in emojis if e.guild_id == ctx.guild.id]
+        if not targets:
+            raise commands.BadArgument("None of those are emojis from this server.")
+        label = f"`{targets[0].name}`" if len(targets) == 1 else f"{len(targets)} emojis"
+        if not await confirm_prompt(ctx, f"Remove {label}? This can't be undone."):
+            return
         removed = []
-        for emoji in emojis:
-            if emoji.guild_id != ctx.guild.id:
-                continue
-            name = emoji.name
+        for emoji in targets:
             try:
                 await emoji.delete(reason=f"by {ctx.author}")
-                removed.append(name)
+                removed.append(emoji.name)
             except discord.HTTPException:
                 continue
         if not removed:
-            raise commands.BadArgument("None of those are emojis from this server.")
+            raise commands.BadArgument("Couldn't remove those emojis.")
         if len(removed) == 1:
             await ctx.send(embed=embeds.success(f"Removed `{removed[0]}`."))
         else:
