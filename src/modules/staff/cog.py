@@ -4,8 +4,9 @@ Permission tiers (see ``src/core/checks.py``): owner > admin > staff.
   * The serious economy powers — minting (,give) and removing (,take) bits — are
     admin-gated. They exist both as top-level commands (the everyday spelling) and
     as ,staff give / ,staff take (the grouped spelling).
-  * Roster management (,staff promote / demote) and read-only inspection
-    (,staff history / economy / error) live under the ,staff group.
+  * Roster management (,staff promote / demote) is admin-gated.
+  * Everyday moderation — resetting a rule-breaker's balance (,staff reset) and
+    read-only inspection (,staff history / economy / error) — is staff-gated.
 """
 
 from __future__ import annotations
@@ -108,6 +109,24 @@ class Staff(commands.Cog):
     async def staff_take(self, ctx: commands.Context, user: discord.User, amount: int) -> None:
         """Remove bits from a user (staff sink; wallet first, then vault). Admin only."""
         await self._do_deduct(ctx, user, amount)
+
+    @staff.command(name="reset", aliases=["wipe"])
+    @is_staff()
+    async def staff_reset(self, ctx: commands.Context, user: discord.User) -> None:
+        """Wipe a user's balance (wallet + vault) to zero. Staff moderation tool."""
+        if user.bot:
+            raise commands.BadArgument("Bots don't hold bits.")
+        cleared_wallet, cleared_vault = await service.staff_reset(user.id, ctx.author.id)
+        total = cleared_wallet + cleared_vault
+        parts = []
+        if cleared_wallet:
+            parts.append(f"{_fmt(cleared_wallet)} wallet")
+        if cleared_vault:
+            parts.append(f"{_fmt(cleared_vault)} vault")
+        await ctx.send(embed=embeds.success(
+            f"Reset {user.mention}'s balance — cleared {Emojis.BITS} **{_fmt(total)}** "
+            f"({' + '.join(parts)})."
+        ))
 
     @staff.command(name="promote")
     @is_admin()

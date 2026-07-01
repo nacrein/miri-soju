@@ -287,6 +287,26 @@ async def staff_deduct(discord_id: int, amount: int, staff_id: int) -> tuple[int
         return from_wallet, from_vault
 
 
+async def staff_reset(discord_id: int, staff_id: int) -> tuple[int, int]:
+    """Staff moderation: wipe a user's whole balance — wallet and vault — to zero
+    (e.g. bits gained by breaking the rules). Upgrades (vault capacity, generator)
+    are left intact; only the balance is cleared. Returns (cleared_wallet,
+    cleared_vault)."""
+    async with get_session() as session:
+        repo = EconomyRepository(session)
+        player = await repo.get_or_create_for_update(discord_id)
+        cleared_wallet, cleared_vault = player.wallet, player.vault
+        if cleared_wallet + cleared_vault <= 0:
+            raise EconomyError("That user's balance is already empty.")
+        if cleared_wallet:
+            player.wallet = 0
+            _record(session, player, "staff_reset", -cleared_wallet, counterparty_id=staff_id)
+        if cleared_vault:
+            player.vault = 0
+            _record(session, player, "staff_reset_vault", -cleared_vault, counterparty_id=staff_id)
+        return cleared_wallet, cleared_vault
+
+
 # ── vault ───────────────────────────────────────────────────────────────────
 
 async def deposit(discord_id: int, amount: int) -> int:

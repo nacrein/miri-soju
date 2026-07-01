@@ -1,5 +1,5 @@
 {
-  "total": 301,
+  "total": 302,
   "categories": [
     {
       "name": "Economy",
@@ -1241,6 +1241,16 @@
           "aliases": [],
           "description": "Grant a user staff, or `admin` (owner only), e.g. ,staff promote @u admin.",
           "signature": "<user> [tier]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff reset",
+          "aliases": [
+            "wipe"
+          ],
+          "description": "Wipe a user's balance (wallet + vault) to zero. Staff moderation tool.",
+          "signature": "<user>",
           "is_group": false,
           "example": null
         },
