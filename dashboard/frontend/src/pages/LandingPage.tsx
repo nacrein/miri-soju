@@ -152,8 +152,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── coming soon: economy ─────────────────────────────────────────── */}
+      <section className="section">
+        <div className="section__head">
+          <span className="eyebrow">🍳 Coming soon</span>
+          <h2 className="section__title" style={{ marginTop: "var(--space-4)" }}>
+            Miri's cooking something up
+          </h2>
+          <p className="section__desc">
+            A brand-new <span className="hero__accent">economy</span> is simmering on the back
+            burner — bits to earn, a vault to stash them in, and games to (maybe) lose them at.
+            We pulled the old one apart to rebuild it faster, fairer, and a whole lot more fun.
+            Grab a seat; it won't be long.
+          </p>
+        </div>
+      </section>
+
       {/* ── final CTA ────────────────────────────────────────────────────── */}
       <section className="cta-band">
+
         <div className="cta-band__inner">
           <h2 className="section__title">Ready to bring Miri home?</h2>
           <p className="section__desc">Add the bot, open the dashboard, and you're running in minutes.</p>
