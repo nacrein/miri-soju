@@ -126,7 +126,7 @@ class Staff(commands.Cog):
         if cleared_vault:
             parts.append(f"{_fmt(cleared_vault)} vault")
         await ctx.send(embed=embeds.success(
-            f"Reset {user.mention}'s balance — cleared {Emojis.BITS} **{_fmt(total)}** "
+            f"Reset {user.mention}'s balance, clearing {Emojis.BITS} **{_fmt(total)}** "
             f"({' + '.join(parts)})."
         ))
 
@@ -234,7 +234,7 @@ class Staff(commands.Cog):
         legacy = sorted(checks._staff_ids() - {r.discord_id for r in rows})
 
         def _mentions(ids: list[int]) -> str:
-            return ", ".join(f"<@{i}>" for i in ids) if ids else "—"
+            return ", ".join(f"<@{i}>" for i in ids) if ids else "None"
 
         e = embeds.info("", f"{Emojis.SHIELD} Staff Roster")
         e.add_field(name=f"{Emojis.CROWN} Admins", value=_mentions(admins), inline=False)

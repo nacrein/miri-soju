@@ -66,10 +66,10 @@ class ThemedJishaku(*OPTIONAL_FEATURES, *STANDARD_FEATURES, name="Jishaku"):  # 
             f"**{len(self.bot.users)}** users · "
             f"`{self.bot.latency * 1000:.0f}ms` gateway"
         )
-        e = embeds.info(summary, f"{Emojis.SETTINGS} Jishaku — dev toolkit")
+        e = embeds.info(summary, f"{Emojis.SETTINGS} Jishaku dev toolkit")
         p = ctx.clean_prefix
         for name, rows in _SECTIONS:
-            value = "\n".join(f"`{p}jsk {usage}` — {desc}" for usage, desc in rows)
+            value = "\n".join(f"`{p}jsk {usage}` · {desc}" for usage, desc in rows)
             e.add_field(name=name, value=value, inline=False)
         e.set_footer(text="Owner only · everything here runs with full bot privileges")
         await ctx.send(embed=e)

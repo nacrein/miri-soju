@@ -72,7 +72,7 @@ class SetupMenu(OwnerView):
             await interaction.edit_original_response(embed=wizard.render(), view=wizard)
         except Exception:
             await interaction.followup.send(
-                embed=embeds.error("I couldn't open that panel — try again in a moment."),
+                embed=embeds.error("I couldn't open that panel. Try again in a moment."),
                 ephemeral=True,
             )
             return
