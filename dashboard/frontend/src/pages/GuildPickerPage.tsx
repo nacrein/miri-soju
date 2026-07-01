@@ -1,8 +1,10 @@
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 import { useSession } from "../auth/session";
 import { GuildIcon } from "../components/GuildIcon";
 import { Empty } from "../components/ui";
+import { springSnappy, staggerContainer, staggerItem } from "../lib/motion";
 
 export default function GuildPickerPage() {
   const { data: session } = useSession();
@@ -24,16 +26,24 @@ export default function GuildPickerPage() {
           <strong> Manage Server</strong> permission there.
         </Empty>
       ) : (
-        <div className="guild-grid">
+        <motion.div className="guild-grid" variants={staggerContainer} initial="hidden" animate="visible">
           {guilds.map((g) => (
-            <div key={g.id} className="guild-card" onClick={() => navigate(`/guilds/${g.id}`)}>
+            <motion.div
+              key={g.id}
+              className="guild-card"
+              variants={staggerItem}
+              whileHover={{ y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              transition={springSnappy}
+              onClick={() => navigate(`/guilds/${g.id}`)}
+            >
               <GuildIcon guild={g} />
               <div style={{ fontWeight: 700, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {g.name}
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );

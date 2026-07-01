@@ -1,38 +1,42 @@
-/* Design tokens — the single source of the dashboard's look.
- *
- * Everything else styles via these CSS custom properties, so a re-theme happens
- * here and nowhere else. This is also the natural seed of a real design system
- * (the kind claude.ai/design could later sync against). Dark, Discord-adjacent. */
-
 :root {
-  /* ── color: surfaces ── */
-  --bg: #0f1014;
-  --surface-1: #17181f;
-  --surface-2: #1e2029;
-  --surface-3: #262936;
-  --border: #2c2f3a;
-  --border-strong: #3a3e4d;
+  /* ── color: surfaces (translucent white over a near-black base) ── */
+  --bg: #08090c;
+  --surface-1: rgba(255, 255, 255, 0.02);
+  --surface-2: rgba(255, 255, 255, 0.035);
+  --surface-3: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
 
   /* ── color: text ── */
-  --text: #e7e9ee;
-  --text-muted: #9aa0ad;
-  --text-faint: #6b7280;
+  --text: #e9eaee;
+  --text-muted: #9b9fa9;
+  --text-faint: #6b6f78;
 
-  /* ── color: brand + status ── */
-  --primary: #c56b5c;
-  --primary-hover: #d4806f;
-  --primary-soft: rgba(197, 107, 92, 0.16);
-  --success: #6ea05e;
-  --success-soft: rgba(110, 160, 94, 0.16);
-  --danger: #c25560;
-  --danger-hover: #d06773;
-  --danger-soft: rgba(194, 85, 96, 0.14);
-  --warning: #d49a3f;
-  --warning-soft: rgba(212, 154, 63, 0.15);
+  /* ── color: brand accent (sage) + status ── */
+  --primary: #65a084;
+  --primary-hover: #76b395;
+  --primary-soft: rgba(101, 160, 132, 0.16);
+  --primary-foreground: #0a140f;
+  --success: #3ba55d;
+  --success-soft: rgba(59, 165, 93, 0.16);
+  --danger: #ed4245;
+  --danger-hover: #f25457;
+  --danger-soft: rgba(237, 66, 69, 0.14);
+  --warning: #faa61a;
+  --warning-soft: rgba(250, 166, 26, 0.15);
+
+  /* ── card treatment (raised inset highlight + faint sage tint) ── */
+  --card-tint: rgba(101, 160, 132, 0.05);
+  --inset-hi: rgba(186, 214, 199, 0.20);
+
+  /* ── ambient background glow (fixed sage light behind everything) ── */
+  --glow-1: rgba(101, 160, 132, 0.16);
+  --glow-2: rgba(101, 160, 132, 0.07);
+  --glow-3: rgba(118, 179, 149, 0.05);
 
   /* ── radius ── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
   --radius-pill: 999px;
 
@@ -45,8 +49,8 @@
   --space-6: 32px;
   --space-8: 48px;
 
-  /* ── typography ── */
-  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* ── typography (clean system font, no external load) ── */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --text-xs: 12px;
   --text-sm: 13px;
@@ -57,7 +61,7 @@
 
   /* ── effects ── */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.45);
   --ring: 0 0 0 3px var(--primary-soft);
   --transition: 140ms ease;
 }

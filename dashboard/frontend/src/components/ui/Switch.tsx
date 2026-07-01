@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import { motion } from "framer-motion";
+
+import { springSnappy } from "../../lib/motion";
 
 interface SwitchProps {
   checked: boolean;
@@ -15,7 +18,9 @@ export function Switch({ checked, onChange, disabled }: SwitchProps) {
       aria-pressed={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-    />
+    >
+      <motion.span className="switch__knob" animate={{ x: checked ? 18 : 0 }} transition={springSnappy} />
+    </button>
   );
 }
 

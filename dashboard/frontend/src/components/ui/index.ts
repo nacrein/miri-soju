@@ -6,5 +6,5 @@ export { Switch, ToggleRow } from "./Switch";
 export { Field } from "./Field";
 export { TextField, NumberField, TextArea, Select } from "./Inputs";
 export type { SelectOption } from "./Inputs";
-export { Badge, Spinner, CenteredSpinner, Alert, Empty } from "./Feedback";
+export { Badge, Spinner, CenteredSpinner, Skeleton, Alert, Empty } from "./Feedback";
 export { SaveBar } from "./SaveBar";
