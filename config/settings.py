@@ -22,7 +22,10 @@ class Settings(BaseSettings):
     # on startup (instant). Leave unset in production and sync globally via
     # `jsk sync` to avoid the per-restart global sync rate limit.
     dev_guild_id: int | None = Field(None, alias="DEV_GUILD_ID")
-    # Comma-separated trusted staff user IDs (moderation visibility, not owner power).
+    # Comma-separated trusted staff user IDs. Legacy bootstrap: these are always
+    # treated as the `staff` tier. Runtime tiers (staff/admin) now live in the
+    # `staff_members` table, managed with `,staff promote` / `demote`; env ids are
+    # not backfilled into it and resolve purely through the fallback in core/checks.
     staff_ids: str = Field("", alias="STAFF_IDS")
 
     # Anthropic (AI commands). Empty disables the ,ask command at runtime.

@@ -12,9 +12,9 @@ import discord
 from discord.ext import commands
 
 from config.settings import get_settings
-from src.core import cache_sync
+from src.core import blacklist, cache_sync
 from src.core.embeds import apply_author
-from src.core.errors import setup_error_handling
+from src.core.errors import BlacklistedError, setup_error_handling
 
 try:  # the dict discord.py uses for case-insensitive command lookup
     from discord.ext.commands.core import _CaseInsensitiveDict
@@ -108,6 +108,17 @@ class Bot(commands.Bot):
             owner_id=owner_id,  # if None, discord.py derives it from the app
             case_insensitive=True,  # ,Setup == ,setup (top-level; groups handled in add_command)
         )
+        # A blacklisted user is blocked from every command, silently.
+        self.add_check(self._not_blacklisted)
+
+    async def _not_blacklisted(self, ctx: commands.Context) -> bool:
+        """Global check: bot-blacklisted users can run nothing. The owner is exempt so
+        a bad blacklist can always be lifted."""
+        if await self.is_owner(ctx.author):
+            return True
+        if await blacklist.is_blacklisted(ctx.author.id, "bot"):
+            raise BlacklistedError()
+        return True
 
     def add_command(self, command: commands.Command) -> None:
         # Every group becomes case-insensitive as it's registered, so subcommands
@@ -122,7 +133,7 @@ class Bot(commands.Bot):
 
     async def setup_hook(self) -> None:
         setup_error_handling(self)
-        await self.load_extension("jishaku")
+        await self._load_jishaku()
         await self._load_all_cogs()
         await self._sync_app_commands()
         # Hear config writes made by the dashboard (a separate process) and drop the
@@ -151,6 +162,23 @@ class Bot(commands.Bot):
         self.tree.copy_global_to(guild=guild)
         synced = await self.tree.sync(guild=guild)
         log.info("Synced %d app command(s) to dev guild %s", len(synced), guild_id)
+
+    async def _load_jishaku(self) -> None:
+        """Load our themed jishaku (an on-brand ,jsk overview over stock jishaku).
+
+        Falls back to stock jishaku if the themed cog fails to load, so a jishaku
+        API change can degrade the theming but never block startup. Loaded here,
+        before _load_all_cogs, so the auto-discovery walker just sees it as already
+        loaded (it swallows ExtensionAlreadyLoaded)."""
+        try:
+            await self.load_extension("src.modules.owner.jsk")
+            return
+        except Exception:
+            log.exception("Themed jsk failed to load; falling back to stock jishaku")
+        try:
+            await self.load_extension("jishaku")
+        except Exception:
+            log.exception("Stock jishaku also failed to load; dev tools unavailable")
 
     async def _load_all_cogs(self) -> None:
         """Load every submodule of src.modules that exposes setup()."""

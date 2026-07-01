@@ -222,6 +222,28 @@ async def test_staff_deduct_rejects_when_nothing_to_take():
         await service.staff_deduct(uid, 100, staff_id=1)
 
 
+# ── staff_reset: wipe the whole balance, leave upgrades intact ───────────────
+
+async def test_staff_reset_clears_wallet_and_vault():
+    await _schema()
+    uid = 912_500_001
+    await _seed(uid, 1000)
+    await service.deposit(uid, 400)  # wallet 600, vault 400
+    cleared_wallet, cleared_vault = await service.staff_reset(uid, staff_id=1)
+    assert cleared_wallet == 600
+    assert cleared_vault == 400
+    wallet, vault, _cap = await service.get_balance(uid)
+    assert wallet == 0
+    assert vault == 0
+
+
+async def test_staff_reset_rejects_when_already_empty():
+    await _schema()
+    uid = 912_500_002  # fresh: wallet and vault both 0
+    with pytest.raises(service.EconomyError, match="already empty"):
+        await service.staff_reset(uid, staff_id=1)
+
+
 # ── deposit / withdraw: capacity clamping (finding 2) ────────────────────────
 
 async def test_deposit_clamps_to_capacity():

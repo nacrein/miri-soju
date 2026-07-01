@@ -12,6 +12,7 @@ import discord
 from discord.ext import commands
 
 from src.core import embeds
+from src.core.emojis import Emojis
 from src.core.paginator import Paginator, paginate_lines
 
 log = logging.getLogger(__name__)
@@ -27,11 +28,11 @@ class Owner(commands.Cog):
     @commands.command(name="status")
     async def status(self, ctx: commands.Context) -> None:
         """Show bot stats: servers, users, latency, loaded cogs."""
-        e = embeds.info("", "Status")
-        e.add_field(name="Servers", value=str(len(self.bot.guilds)))
-        e.add_field(name="Users", value=str(len(self.bot.users)))
-        e.add_field(name="Latency", value=f"{self.bot.latency * 1000:.0f}ms")
-        e.add_field(name="Cogs", value=str(len(self.bot.cogs)))
+        e = embeds.info("", f"{Emojis.SETTINGS} Status")
+        e.add_field(name=f"{Emojis.CHANNEL} Servers", value=str(len(self.bot.guilds)))
+        e.add_field(name=f"{Emojis.JOIN} Users", value=str(len(self.bot.users)))
+        e.add_field(name=f"{Emojis.ONLINE} Latency", value=f"{self.bot.latency * 1000:.0f}ms")
+        e.add_field(name=f"{Emojis.SETTINGS} Cogs", value=str(len(self.bot.cogs)))
         await ctx.send(embed=e)
 
     @commands.command(name="servers")
@@ -71,7 +72,7 @@ class Owner(commands.Cog):
             await prompt.edit(embed=embeds.info("Cancelled."))
             return
         await guild.leave()
-        await ctx.send(embed=embeds.success(f"Left **{guild.name}**."))
+        await ctx.send(embed=embeds.success(f"{Emojis.LEAVE} Left **{guild.name}**."))
         log.info("Left guild %s (%s) by owner request", guild.name, guild.id)
 
 

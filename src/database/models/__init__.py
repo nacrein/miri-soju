@@ -8,6 +8,7 @@ from src.database.models.automod import (
     AutomodWord,
 )
 from src.database.models.autorole import AutoRole
+from src.database.models.blacklist import Blacklist
 from src.database.models.boosterrole import BoosterRole, BoosterRoleConfig
 from src.database.models.buttonrole import ButtonRole
 from src.database.models.case import ModCase
@@ -23,6 +24,7 @@ from src.database.models.player import Player
 from src.database.models.poll import Poll, PollVote
 from src.database.models.reactionrole import ReactionRole
 from src.database.models.reminder import Reminder
+from src.database.models.staff import StaffMember
 from src.database.models.starboard import StarboardConfig, StarboardEntry
 from src.database.models.sticky import StickyMessage
 from src.database.models.tag import Tag
@@ -48,4 +50,6 @@ __all__ = [
     "VanityConfig", "VanityTracker",
     "ErrorLog",
     "CommandUsage",
+    "StaffMember",
+    "Blacklist",
 ]

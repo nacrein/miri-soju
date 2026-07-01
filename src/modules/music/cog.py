@@ -366,7 +366,7 @@ class Music(commands.Cog):
             result = list(result.tracks)
         tracks = list(result)[:5]
         lines = [
-            f"`{i + 1}.` **{t.title}** — {t.author or 'Unknown'} "
+            f"`{i + 1}.` **{t.title}** · {t.author or 'Unknown'} "
             f"`[{service.format_duration(t.length)}]`"
             for i, t in enumerate(tracks)
         ]
@@ -405,7 +405,7 @@ class Music(commands.Cog):
         needed = service.needs_votes(self._listeners(player))
         if len(votes) >= needed:
             await player.skip(force=True)
-            await ctx.send(embed=embeds.success("Vote passed — skipped."))
+            await ctx.send(embed=embeds.success("Vote passed, skipped."))
         else:
             await ctx.send(
                 embed=embeds.info(f"Skip vote: **{len(votes)}/{needed}**.", "Vote to skip"))
@@ -643,7 +643,7 @@ class Music(commands.Cog):
         """Set (or clear, with no argument) the DJ role."""
         await service.set_dj_role(ctx.guild.id, role.id if role else None)
         msg = (f"DJ role set to {role.mention}." if role
-               else "DJ role cleared — anyone can control playback.")
+               else "DJ role cleared. Anyone can control playback.")
         await ctx.send(embed=embeds.success(msg))
 
     @music.command(name="channel")

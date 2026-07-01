@@ -1,8 +1,8 @@
-"""Economy commands: wallet, faucets, give, vault/generator, gambling, profile.
+"""Economy commands: wallet, faucets, pay, vault/generator, gambling, profile.
 
 Money logic lives in the service; this cog is the Discord surface. Interactive panels
 (re-bet on the one-shot gambles, the profile hub, the vault/generator control panels,
-and the give/steal confirm) live in views.py and are reused here. Vault and generator
+and the pay/steal confirm) live in views.py and are reused here. Vault and generator
 are single commands whose actions are buttons, not subcommands.
 """
 
@@ -13,9 +13,9 @@ import logging
 import discord
 from discord.ext import commands
 
-from src.core import embeds
+from src.core import blacklist, embeds
 from src.core.emojis import Emojis
-from src.core.errors import SilentError
+from src.core.errors import BotError, SilentError
 from src.modules.economy import config, service
 from src.modules.economy import views as econ_views
 from src.modules.economy.agreement import AgreementView, agreement_embed
@@ -50,6 +50,8 @@ class Economy(commands.Cog):
         would open a view/modal never starts until the user has agreed — no half-opened
         state. ``SilentError`` aborts cleanly after the prompt is posted (the error
         handler swallows it, so the prompt is the only message)."""
+        if await blacklist.is_blacklisted(ctx.author.id, "economy"):
+            raise BotError("You're blocked from using the economy.")
         if await service.has_agreed(ctx.author.id):
             return True
         view = AgreementView(ctx.author.id, invoker=ctx.author)
@@ -132,19 +134,19 @@ class Economy(commands.Cog):
 
     # ── transfers ───────────────────────────────────────────────────────────────
 
-    @commands.command(name="give", extras={"example": "give @user all"})
+    @commands.command(name="pay", aliases=["send"], extras={"example": "pay @user all"})
     @commands.guild_only()
-    async def give(self, ctx: commands.Context, user: discord.User, amount: WalletAmount) -> None:
-        """Give bits from your wallet to another player. Confirms before sending."""
+    async def pay(self, ctx: commands.Context, user: discord.User, amount: WalletAmount) -> None:
+        """Pay bits from your wallet to another player. Confirms before sending."""
 
         async def _send() -> discord.Embed:
             await service.give(ctx.author.id, user.id, amount)
             return embeds.success(
-                f"You gave {Emojis.BITS} **{_fmt(amount)}** to {user.mention}."
+                f"You paid {Emojis.BITS} **{_fmt(amount)}** to {user.mention}."
             )
 
         view = econ_views.ConfirmView(ctx.author.id, _send, invoker=ctx.author)
-        prompt = embeds.warning(f"Give {Emojis.BITS} **{_fmt(amount)}** to {user.mention}?")
+        prompt = embeds.warning(f"Pay {Emojis.BITS} **{_fmt(amount)}** to {user.mention}?")
         view.message = await ctx.send(embed=prompt, view=view)
 
     @commands.command(name="deposit", aliases=["dep"], extras={"example": "deposit all"})
