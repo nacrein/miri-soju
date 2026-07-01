@@ -10,6 +10,7 @@ from src.database.models.automod import (
 from src.database.models.boosterrole import BoosterRole, BoosterRoleConfig
 from src.database.models.buttonrole import ButtonRole
 from src.database.models.case import ModCase
+from src.database.models.command_usage import CommandUsage
 from src.database.models.errorlog import ErrorLog
 from src.database.models.guild import GuildConfig
 from src.database.models.immune import ImmuneEntry
@@ -38,4 +39,5 @@ __all__ = [
     "VoiceMasterConfig", "VoiceMasterChannel",
     "VanityConfig", "VanityTracker",
     "ErrorLog",
+    "CommandUsage",
 ]

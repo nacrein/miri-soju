@@ -26,7 +26,7 @@ export default function GuildPickerPage() {
       ) : (
         <div className="guild-grid">
           {guilds.map((g) => (
-            <div key={g.id} className="guild-card" onClick={() => navigate(`/guilds/${g.id}`)}>
+            <div key={g.id} className="guild-card" onClick={() => navigate(`/dashboard/guilds/${g.id}`)}>
               <GuildIcon guild={g} />
               <div style={{ fontWeight: 700, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {g.name}

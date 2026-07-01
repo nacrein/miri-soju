@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import { GuildIcon } from "../components/GuildIcon";
 import { Alert, CenteredSpinner } from "../components/ui";
 import { useDirtyGuardContext } from "../lib/dirtyGuard";
+import { BotIcon } from "../lib/icons";
 import type { GuildMeta } from "../lib/types";
 import { MODULES, defaultModuleKey } from "./modules/registry";
 
@@ -19,8 +20,8 @@ export default function GuildDashboardPage() {
     enabled: !!guildId,
   });
 
-  if (!guildId) return <Navigate to="/" replace />;
-  if (!moduleKey) return <Navigate to={`/guilds/${guildId}/${defaultModuleKey}`} replace />;
+  if (!guildId) return <Navigate to="/dashboard" replace />;
+  if (!moduleKey) return <Navigate to={`/dashboard/guilds/${guildId}/${defaultModuleKey}`} replace />;
   if (isLoading) return <CenteredSpinner />;
   if (isError || !meta) {
     return (
@@ -51,10 +52,13 @@ export default function GuildDashboardPage() {
               className={"modnav__item" + (m.key === active.key ? " modnav__item--active" : "")}
               onClick={() => {
                 if (m.key === active.key) return;
-                if (confirmDiscard()) navigate(`/guilds/${guildId}/${m.key}`);
+                if (confirmDiscard()) navigate(`/dashboard/guilds/${guildId}/${m.key}`);
               }}
             >
-              <span className="modnav__icon">{m.icon}</span> {m.label}
+              <span className="modnav__icon">
+                <BotIcon name={m.emojiName} fallback={m.icon} />
+              </span>{" "}
+              {m.label}
             </div>
           ))}
         </nav>

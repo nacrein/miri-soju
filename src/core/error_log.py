@@ -44,3 +44,22 @@ async def get_error(code: str) -> ErrorLog | None:
     async with get_session() as session:
         stmt = select(ErrorLog).where(ErrorLog.code == code).order_by(ErrorLog.id.desc())
         return (await session.execute(stmt)).scalars().first()
+
+
+async def list_recent_errors(limit: int = 50) -> list[ErrorLog]:
+    """The most recent logged errors, newest first (staff dashboard view)."""
+    async with get_session() as session:
+        stmt = select(ErrorLog).order_by(ErrorLog.id.desc()).limit(limit)
+        return list((await session.execute(stmt)).scalars().all())
+
+
+async def count_errors_since(days: int) -> int:
+    """How many errors were logged in the last ``days`` days."""
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import func
+
+    since = datetime.now(UTC) - timedelta(days=days)
+    async with get_session() as session:
+        stmt = select(func.count()).select_from(ErrorLog).where(ErrorLog.created_at >= since)
+        return int((await session.execute(stmt)).scalar_one())

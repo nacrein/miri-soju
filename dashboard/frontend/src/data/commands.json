@@ -1,0 +1,2620 @@
+{
+  "total": 296,
+  "categories": [
+    {
+      "name": "Economy",
+      "description": "Earn, gamble, and manage your bits.",
+      "commands": [
+        {
+          "name": "beg",
+          "aliases": [],
+          "description": "Beg for a few bits. Sometimes you get nothing.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "blackjack",
+          "aliases": [
+            "bj"
+          ],
+          "description": "Play blackjack against the dealer.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "blackjack 500"
+        },
+        {
+          "name": "coinflip",
+          "aliases": [
+            "cf"
+          ],
+          "description": "Bet on a coin flip. Call heads or tails.",
+          "signature": "<amount> <call>",
+          "is_group": false,
+          "example": "coinflip all heads"
+        },
+        {
+          "name": "cooldowns",
+          "aliases": [
+            "cd"
+          ],
+          "description": "Show all your cooldowns at a glance.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "crash",
+          "aliases": [],
+          "description": "Watch the multiplier climb and cash out before it crashes.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "crash 500"
+        },
+        {
+          "name": "daily",
+          "aliases": [],
+          "description": "Claim your daily bits. Keep a streak for bigger rewards.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "deposit",
+          "aliases": [
+            "dep"
+          ],
+          "description": "Move bits from your wallet into your safe vault. Use `all` to deposit everything.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "deposit all"
+        },
+        {
+          "name": "dice",
+          "aliases": [],
+          "description": "Roll under your target (2-98). Lower target, higher payout.",
+          "signature": "<amount> <target>",
+          "is_group": false,
+          "example": "dice 500 50"
+        },
+        {
+          "name": "generator",
+          "aliases": [
+            "gen"
+          ],
+          "description": "View your passive generator; claim or upgrade it with buttons.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "give",
+          "aliases": [],
+          "description": "Give bits from your wallet to another player. Confirms before sending.",
+          "signature": "<user> <amount>",
+          "is_group": false,
+          "example": "give @user all"
+        },
+        {
+          "name": "hilo",
+          "aliases": [],
+          "description": "Guess higher or lower. Each call climbs the multiplier; cash out before you miss.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "hilo 500"
+        },
+        {
+          "name": "ladder",
+          "aliases": [],
+          "description": "Climb the ladder for rising multipliers. Cash out before you bust.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "ladder 500"
+        },
+        {
+          "name": "leaderboard",
+          "aliases": [
+            "lb",
+            "rich",
+            "networth",
+            "net",
+            "worth"
+          ],
+          "description": "Server-wide rankings. Use the dropdown to switch board.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "limbo",
+          "aliases": [],
+          "description": "Set a target multiplier. Win if the round reaches it.",
+          "signature": "<amount> <target>",
+          "is_group": false,
+          "example": "limbo 500 2.5"
+        },
+        {
+          "name": "plinko",
+          "aliases": [],
+          "description": "Drop a ball down the pegs into a multiplier bucket.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "plinko 500"
+        },
+        {
+          "name": "pray",
+          "aliases": [],
+          "description": "Pray for bits. Sometimes the heavens are generous.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "profile",
+          "aliases": [
+            "p"
+          ],
+          "description": "Your full economy card: balances, wealth rank, streak, generator, cooldowns.",
+          "signature": "[user]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "roulette",
+          "aliases": [
+            "roul"
+          ],
+          "description": "Bet on roulette: red, black, a dozen (1/2/3), or a number (0-36).",
+          "signature": "<amount> <bet>",
+          "is_group": false,
+          "example": "roulette 500 red"
+        },
+        {
+          "name": "slots",
+          "aliases": [],
+          "description": "Spin the slot machine.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "slots 500"
+        },
+        {
+          "name": "steal",
+          "aliases": [],
+          "description": "Attempt to steal bits from someone's wallet. Confirms before the attempt.",
+          "signature": "<user>",
+          "is_group": false,
+          "example": "steal @user"
+        },
+        {
+          "name": "vault",
+          "aliases": [],
+          "description": "View your vault and upgrade its capacity with a button.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "wallet",
+          "aliases": [
+            "bal",
+            "balance"
+          ],
+          "description": "Show your bits, or someone else's.",
+          "signature": "[user]",
+          "is_group": false,
+          "example": "wallet @user"
+        },
+        {
+          "name": "withdraw",
+          "aliases": [
+            "with"
+          ],
+          "description": "Move bits from your vault back into your wallet. Use `all` to withdraw everything.",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": "withdraw all"
+        },
+        {
+          "name": "work",
+          "aliases": [],
+          "description": "Work for some bits.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        }
+      ]
+    },
+    {
+      "name": "Leveling",
+      "description": "XP, ranks, and level rewards.",
+      "commands": [
+        {
+          "name": "levels",
+          "aliases": [],
+          "description": "Leveling settings for this server.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "levels channel",
+          "aliases": [],
+          "description": "Where level-ups post: `here`, `dm`, or a channel.",
+          "signature": "<target>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels cooldown",
+          "aliases": [],
+          "description": "Set the gap between XP-earning messages (0-3600s).",
+          "signature": "<seconds>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels disable",
+          "aliases": [],
+          "description": "Turn leveling off.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels enable",
+          "aliases": [],
+          "description": "Turn leveling on.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels message",
+          "aliases": [],
+          "description": "Set the level-up message. Placeholders: {user} {user.name} {level} {server}.",
+          "signature": "<text>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels multiplier",
+          "aliases": [
+            "mult"
+          ],
+          "description": "Per-channel XP multipliers.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "levels multiplier remove",
+          "aliases": [],
+          "description": "Remove a channel's multiplier.",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels multiplier set",
+          "aliases": [],
+          "description": "Scale XP in a channel (0-10; 0 disables XP there). Works for text and voice.",
+          "signature": "<channel> <rate>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels rate",
+          "aliases": [],
+          "description": "Set XP awarded per message (1-1000).",
+          "signature": "<amount>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels reset",
+          "aliases": [],
+          "description": "Wipe one member's progress.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels resetall",
+          "aliases": [],
+          "description": "Wipe every member's progress in this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels reward",
+          "aliases": [],
+          "description": "Roles granted on reaching a level.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "levels reward add",
+          "aliases": [],
+          "description": "Grant a role when members reach a level.",
+          "signature": "<level> <role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels reward remove",
+          "aliases": [],
+          "description": "Remove a level's reward.",
+          "signature": "<level>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels setlevel",
+          "aliases": [],
+          "description": "Force a member's level (0-1000).",
+          "signature": "<member> <level>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "levels settings",
+          "aliases": [
+            "config"
+          ],
+          "description": "Show this server's current leveling configuration.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "rank",
+          "aliases": [
+            "level",
+            "lvl",
+            "xp"
+          ],
+          "description": "Show your level, rank, and progress to the next level.",
+          "signature": "[member]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "top",
+          "aliases": [
+            "toplevels",
+            "levels_top"
+          ],
+          "description": "This server's level leaderboard (levels are per-server).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        }
+      ]
+    },
+    {
+      "name": "Moderation",
+      "description": "Keep your server safe and tidy.",
+      "commands": [
+        {
+          "name": "automod",
+          "aliases": [
+            "am"
+          ],
+          "description": "Automatic moderation: filters, escalating strikes, and exemptions.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "automod allow",
+          "aliases": [],
+          "description": "Domains the link filter always permits.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "automod allow add",
+          "aliases": [],
+          "description": "Allowlist a domain (e.g. youtube.com).",
+          "signature": "<domain>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod allow remove",
+          "aliases": [
+            "rm"
+          ],
+          "description": "Remove a domain from the allowlist.",
+          "signature": "<domain>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod ban",
+          "aliases": [],
+          "description": "Strike count that triggers a ban (0 = off).",
+          "signature": "<at>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod caps",
+          "aliases": [],
+          "description": "Caps filter: % uppercase to trip, and the min message length to check.",
+          "signature": "<percent> <min_len>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod disable",
+          "aliases": [],
+          "description": "Turn automod off.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod dm",
+          "aliases": [],
+          "description": "Toggle DMing a member when automod actions them.",
+          "signature": "<state>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod dryrun",
+          "aliases": [
+            "logonly"
+          ],
+          "description": "Return to dry-run: automod logs violations but takes no action.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod duplicates",
+          "aliases": [
+            "dupes"
+          ],
+          "description": "How many identical messages in a row trip the duplicate filter.",
+          "signature": "<count>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod emoji",
+          "aliases": [],
+          "description": "Max emoji allowed in one message.",
+          "signature": "<limit>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod enable",
+          "aliases": [],
+          "description": "Turn automod on (starts in dry-run, where it logs but takes no action).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod everyone",
+          "aliases": [],
+          "description": "Toggle blocking @everyone/@here from members who lack the permission.",
+          "signature": "<state>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod exempt",
+          "aliases": [],
+          "description": "Roles and channels the automod never acts on.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "automod exempt channel",
+          "aliases": [],
+          "description": "`add` or `remove` an exempt channel.",
+          "signature": "<action> <channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod exempt role",
+          "aliases": [],
+          "description": "`add` or `remove` an exempt role.",
+          "signature": "<action> <role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod exemptmods",
+          "aliases": [],
+          "description": "Toggle exempting members with moderator permissions (recommended on).",
+          "signature": "<state>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod filter",
+          "aliases": [],
+          "description": "Toggle a filter: invites, links, spam, mentions, words, caps, emoji.",
+          "signature": "<name> <state>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod kick",
+          "aliases": [],
+          "description": "Strike count that triggers a kick (0 = off).",
+          "signature": "<at>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod live",
+          "aliases": [],
+          "description": "Leave dry-run: automod will start enforcing actions.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod mentions",
+          "aliases": [],
+          "description": "Max user/role mentions allowed in one message.",
+          "signature": "<limit>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod spam",
+          "aliases": [],
+          "description": "Flood filter: trip on `count` messages within `interval` seconds.",
+          "signature": "<count> <interval>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod status",
+          "aliases": [],
+          "description": "Show this server's automod configuration.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod timeout",
+          "aliases": [],
+          "description": "Set a timeout tier: `,automod timeout 1 2 10m` = at 2 strikes, time out 10m.",
+          "signature": "<tier> <at> <duration>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod window",
+          "aliases": [],
+          "description": "How long strikes count toward escalation (hours).",
+          "signature": "<hours>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod words",
+          "aliases": [],
+          "description": "The banned-word list (matching resists leetspeak and spacing).",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "automod words add",
+          "aliases": [],
+          "description": "Add one or more banned words (comma- or newline-separated).",
+          "signature": "<words>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "automod words remove",
+          "aliases": [
+            "rm"
+          ],
+          "description": "Remove a banned word.",
+          "signature": "<word>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "ban",
+          "aliases": [],
+          "description": "Ban a user by mention or ID (works even if they aren't in the server).",
+          "signature": "<user> [reason]",
+          "is_group": false,
+          "example": "ban 123456789012345678 spamming"
+        },
+        {
+          "name": "cleanup",
+          "aliases": [],
+          "description": "Remove recent bot messages and command invocations.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "clearwarnings",
+          "aliases": [
+            "clearwarns"
+          ],
+          "description": "Clear all of a member's warnings in this server.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "clearwarnings @user"
+        },
+        {
+          "name": "immune",
+          "aliases": [],
+          "description": "Protect a member or role from moderation actions.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "immune add",
+          "aliases": [],
+          "description": "Add a member or role to the immune list.",
+          "signature": "<target>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "immune list",
+          "aliases": [],
+          "description": "Show the immune list.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "immune remove",
+          "aliases": [],
+          "description": "Remove a member or role from the immune list.",
+          "signature": "<target>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "jail",
+          "aliases": [],
+          "description": "Jail a member: strip their roles and apply the jail role.",
+          "signature": "[member] [reason]",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "jail list",
+          "aliases": [],
+          "description": "List currently jailed members.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "jail role",
+          "aliases": [],
+          "description": "Set the role used for jailing. Configure its channel permissions yourself.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "kick",
+          "aliases": [],
+          "description": "Kick a member from the server.",
+          "signature": "<member> [reason]",
+          "is_group": false,
+          "example": "kick @user breaking rules"
+        },
+        {
+          "name": "lock",
+          "aliases": [],
+          "description": "Stop @everyone from sending messages in this channel.",
+          "signature": "[reason]",
+          "is_group": false,
+          "example": "lock raid in progress"
+        },
+        {
+          "name": "lockdown",
+          "aliases": [],
+          "description": "Lock or unlock every channel at once.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "lockdown all",
+          "aliases": [],
+          "description": "Stop @everyone sending in every text channel.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "lockdown end",
+          "aliases": [
+            "lift"
+          ],
+          "description": "Lift the lockdown across every text channel.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "massban",
+          "aliases": [],
+          "description": "Ban many users by ID at once (asks for confirmation).",
+          "signature": "[user_ids...]",
+          "is_group": false,
+          "example": "massban 123 456 789"
+        },
+        {
+          "name": "modlogs",
+          "aliases": [
+            "cases"
+          ],
+          "description": "Full moderation history for a member (every case type).",
+          "signature": "<member> [page]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "newusers",
+          "aliases": [
+            "newmembers"
+          ],
+          "description": "List the newest members (raid / suspicious check). Max 100.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "nickname",
+          "aliases": [
+            "nick"
+          ],
+          "description": "Set a member's nickname, or omit the name to reset it.",
+          "signature": "[member] [name]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "note",
+          "aliases": [],
+          "description": "Staff notes on a member.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "note add",
+          "aliases": [],
+          "description": "Record a private note on a member.",
+          "signature": "<member> <text>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "note list",
+          "aliases": [],
+          "description": "Show a member's notes.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "note remove",
+          "aliases": [
+            "del"
+          ],
+          "description": "Remove a case by id.",
+          "signature": "<case_id>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "pin",
+          "aliases": [],
+          "description": "Pin a message: reply to it, or give its ID or link.",
+          "signature": "[message]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge",
+          "aliases": [
+            "clear",
+            "prune"
+          ],
+          "description": "Delete the last n messages. Subcommands filter by type.",
+          "signature": "[amount]",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "purge after",
+          "aliases": [],
+          "description": "Messages after a target message.",
+          "signature": "<message> [amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge before",
+          "aliases": [],
+          "description": "Messages before a target message.",
+          "signature": "<message> [amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge between",
+          "aliases": [],
+          "description": "Messages between two target messages.",
+          "signature": "<start> <end> [amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge bots",
+          "aliases": [],
+          "description": "Messages from bots.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge contains",
+          "aliases": [],
+          "description": "Messages containing a substring (min 3 chars).",
+          "signature": "<text>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge embeds",
+          "aliases": [],
+          "description": "Messages with embeds.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge endswith",
+          "aliases": [
+            "suffix"
+          ],
+          "description": "Messages ending with a substring (min 3 chars).",
+          "signature": "<text>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge files",
+          "aliases": [],
+          "description": "Messages with any attachment.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge humans",
+          "aliases": [],
+          "description": "Messages not from bots.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge images",
+          "aliases": [],
+          "description": "Messages with image attachments.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge invites",
+          "aliases": [],
+          "description": "Messages with server invites.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge links",
+          "aliases": [],
+          "description": "Messages containing links.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge mentions",
+          "aliases": [],
+          "description": "Messages with mentions.",
+          "signature": "[amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge startswith",
+          "aliases": [
+            "prefix"
+          ],
+          "description": "Messages starting with a substring (min 3 chars).",
+          "signature": "<text>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "purge user",
+          "aliases": [
+            "member"
+          ],
+          "description": "Messages from one member.",
+          "signature": "<user> [amount]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "reason",
+          "aliases": [],
+          "description": "Edit the reason on an existing case by its id.",
+          "signature": "<case_id> <reason>",
+          "is_group": false,
+          "example": "reason 12 raiding the server"
+        },
+        {
+          "name": "role",
+          "aliases": [],
+          "description": "Role management. Bare command lists the subcommands.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "role bots",
+          "aliases": [],
+          "description": "Add a role to every bot.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role color",
+          "aliases": [
+            "colour"
+          ],
+          "description": "Change a role's color (hex).",
+          "signature": "<role> <color>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role create",
+          "aliases": [
+            "make"
+          ],
+          "description": "Create a role. Quote multi-word names.",
+          "signature": "<name> [color]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role delete",
+          "aliases": [
+            "del"
+          ],
+          "description": "Delete a role.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role everyone",
+          "aliases": [],
+          "description": "Add a role to every member.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role give",
+          "aliases": [
+            "add"
+          ],
+          "description": "Add a role to a member.",
+          "signature": "<member> <role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role has",
+          "aliases": [],
+          "description": "Give everyone who has one role another role.",
+          "signature": "<source> <target>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role hoist",
+          "aliases": [],
+          "description": "Toggle whether a role shows in the sidebar.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role humans",
+          "aliases": [],
+          "description": "Add a role to every non-bot member.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role info",
+          "aliases": [],
+          "description": "Show details about a role. (No permission required.)",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role mentionable",
+          "aliases": [
+            "mention"
+          ],
+          "description": "Toggle whether a role can be pinged.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role rename",
+          "aliases": [
+            "name"
+          ],
+          "description": "Rename a role.",
+          "signature": "<role> <name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role strip",
+          "aliases": [],
+          "description": "Remove a role from everyone who has it.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "role take",
+          "aliases": [],
+          "description": "Remove a role from a member.",
+          "signature": "<member> <role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "serverlog",
+          "aliases": [],
+          "description": "Configure audit logging for this server.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "serverlog channel",
+          "aliases": [],
+          "description": "Set the audit log channel (enables logging).",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "serverlog disable",
+          "aliases": [],
+          "description": "Turn off all audit logging for this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "serverlog status",
+          "aliases": [],
+          "description": "Show this server's logging configuration.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "serverlog toggle",
+          "aliases": [],
+          "description": "Toggle an event: joins, leaves, deletes, edits, mod.",
+          "signature": "<event> <on>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "slowmode",
+          "aliases": [
+            "slow"
+          ],
+          "description": "Set this channel's slowmode delay in seconds (0 to disable, max 21600).",
+          "signature": "<seconds>",
+          "is_group": false,
+          "example": "slowmode 10"
+        },
+        {
+          "name": "softban",
+          "aliases": [],
+          "description": "Ban then immediately unban to clear a member's recent messages.",
+          "signature": "<member> [reason]",
+          "is_group": false,
+          "example": "softban @user clearing spam"
+        },
+        {
+          "name": "staff",
+          "aliases": [],
+          "description": "Staff tools.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "staff economy",
+          "aliases": [
+            "eco"
+          ],
+          "description": "Server-wide economy totals: circulation, holdings, player count.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff error",
+          "aliases": [
+            "err",
+            "diagnose"
+          ],
+          "description": "Diagnose a logged error by its code, e.g. ,staff error 7187AE.",
+          "signature": "<code>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff give",
+          "aliases": [
+            "grant",
+            "add"
+          ],
+          "description": "Mint bits straight into a user's wallet (staff faucet).",
+          "signature": "<user> <amount>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff history",
+          "aliases": [],
+          "description": "A user's economy transaction history.",
+          "signature": "<user> [page]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff take",
+          "aliases": [
+            "remove",
+            "deduct"
+          ],
+          "description": "Remove bits from a user (staff sink; takes wallet first, then vault).",
+          "signature": "<user> <amount>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "temprole",
+          "aliases": [
+            "tr"
+          ],
+          "description": "Give a role that lifts itself after a duration (max 1 year).",
+          "signature": "[member] [role] [duration]",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "temprole list",
+          "aliases": [],
+          "description": "Show active temp roles.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "temprole remove",
+          "aliases": [],
+          "description": "Lift a temp role early.",
+          "signature": "<member> <role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "timeout",
+          "aliases": [],
+          "description": "Timeout a member for a duration like 10m, 2h, 1d.",
+          "signature": "<member> <duration> [reason]",
+          "is_group": false,
+          "example": "timeout @user 10m spam"
+        },
+        {
+          "name": "unban",
+          "aliases": [],
+          "description": "Unban a previously banned user by ID or mention.",
+          "signature": "<user> [reason]",
+          "is_group": false,
+          "example": "unban 123456789012345678"
+        },
+        {
+          "name": "unjail",
+          "aliases": [],
+          "description": "Release a jailed member and restore their roles.",
+          "signature": "<member> [reason]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "unlock",
+          "aliases": [],
+          "description": "Restore @everyone's ability to send messages in this channel.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "unpin",
+          "aliases": [],
+          "description": "Unpin a message: reply to it, or give its ID or link.",
+          "signature": "[message]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "untimeout",
+          "aliases": [],
+          "description": "Remove a member's timeout.",
+          "signature": "<member> [reason]",
+          "is_group": false,
+          "example": "untimeout @user"
+        },
+        {
+          "name": "warn",
+          "aliases": [],
+          "description": "Warn a member. The warning is recorded for this server.",
+          "signature": "<member> [reason]",
+          "is_group": false,
+          "example": "warn @user spamming"
+        },
+        {
+          "name": "warnings",
+          "aliases": [
+            "warns"
+          ],
+          "description": "List a member's warnings in this server.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "warnings @user"
+        }
+      ]
+    },
+    {
+      "name": "Server Setup",
+      "description": "Configure the bot for your server.",
+      "commands": [
+        {
+          "name": "boosterrole",
+          "aliases": [
+            "br",
+            "brole"
+          ],
+          "description": "Booster custom roles: boosters make and style one personal role.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "boosterrole anchor",
+          "aliases": [],
+          "description": "Set the role the booster-role cohort is positioned relative to.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole create",
+          "aliases": [],
+          "description": "Create your booster role: name, hex color, optional emoji (quote spaced names).",
+          "signature": "<name> <color> [emoji]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole disable",
+          "aliases": [],
+          "description": "Turn booster roles off.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole edit",
+          "aliases": [],
+          "description": "Change your booster role's name, color, or emoji.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "boosterrole edit color",
+          "aliases": [
+            "colour"
+          ],
+          "description": "Recolor your booster role (hex).",
+          "signature": "<color>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole edit emoji",
+          "aliases": [
+            "icon"
+          ],
+          "description": "Set your booster role's icon (needs the server's role-icon perk).",
+          "signature": "<emoji>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole edit name",
+          "aliases": [],
+          "description": "Rename your booster role.",
+          "signature": "<name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole enable",
+          "aliases": [],
+          "description": "Turn booster roles on.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole gradient",
+          "aliases": [],
+          "description": "Give your booster role a two-color gradient (needs Enhanced Role Colors).",
+          "signature": "<color1> <color2>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole hoist",
+          "aliases": [],
+          "description": "Whether custom roles sit above or below the anchor role.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "boosterrole hoist above",
+          "aliases": [],
+          "description": "Place booster roles above the anchor.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole hoist below",
+          "aliases": [],
+          "description": "Place booster roles below the anchor.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole holo",
+          "aliases": [
+            "holographic"
+          ],
+          "description": "Make your booster role holographic (needs Enhanced Role Colors).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole reset",
+          "aliases": [],
+          "description": "Reset booster-role config to defaults (disabled, no anchor).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "boosterrole status",
+          "aliases": [],
+          "description": "Show config plus which boost-gated perks the guild currently has.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "buttonrole",
+          "aliases": [],
+          "description": "Roles granted by buttons on a bot message.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "buttonrole add",
+          "aliases": [],
+          "description": "Add a button to a bot message that toggles a role.",
+          "signature": "<message> <role> [style] [emoji] [label]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "buttonrole list",
+          "aliases": [],
+          "description": "List button roles in this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "buttonrole remove",
+          "aliases": [],
+          "description": "Remove one button by its index (see `,buttonrole list`).",
+          "signature": "<message> <index>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "buttonrole removeall",
+          "aliases": [],
+          "description": "Remove all buttons from a message.",
+          "signature": "<message>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "buttonrole wipe",
+          "aliases": [
+            "reset"
+          ],
+          "description": "Remove ALL button roles in this server (records only). Asks to confirm.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "createembed",
+          "aliases": [
+            "embed",
+            "ce"
+          ],
+          "description": "Open the interactive embed builder, or post one straight from JSON.",
+          "signature": "[code]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "embedcopy",
+          "aliases": [
+            "ec"
+          ],
+          "description": "Copy a message's first embed as a JSON script (paste it into `,ce`).",
+          "signature": "<message>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "prefix",
+          "aliases": [],
+          "description": "Show this server's prefix, or set a new one (server owner only).",
+          "signature": "[new]",
+          "is_group": false,
+          "example": "prefix !"
+        },
+        {
+          "name": "reactionrole",
+          "aliases": [
+            "rr"
+          ],
+          "description": "Roles granted by reacting to a message.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "reactionrole add",
+          "aliases": [],
+          "description": "Bind an emoji on a message to a role.",
+          "signature": "<message> <emoji> <role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "reactionrole clear",
+          "aliases": [],
+          "description": "Remove all reaction roles in this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "reactionrole list",
+          "aliases": [],
+          "description": "List reaction roles in this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "reactionrole remove",
+          "aliases": [],
+          "description": "Unbind an emoji on a message.",
+          "signature": "<message> <emoji>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "setup",
+          "aliases": [],
+          "description": "Open an interactive control panel to configure a module.",
+          "signature": "[module]",
+          "is_group": false,
+          "example": "setup levels"
+        },
+        {
+          "name": "stickymessage",
+          "aliases": [
+            "sticky"
+          ],
+          "description": "A message pinned to the bottom of a channel by reposting.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "stickymessage add",
+          "aliases": [],
+          "description": "Set the sticky message for a channel.",
+          "signature": "<channel> <content>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "stickymessage list",
+          "aliases": [],
+          "description": "List channels with sticky messages.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "stickymessage remove",
+          "aliases": [],
+          "description": "Remove a channel's sticky message.",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "stickymessage view",
+          "aliases": [],
+          "description": "Show a channel's sticky message content.",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vanity",
+          "aliases": [],
+          "description": "Reward members who rep the server's vanity URL in their custom status.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "vanity channel",
+          "aliases": [],
+          "description": "Set the channel for thank-you messages.",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vanity disable",
+          "aliases": [],
+          "description": "Turn vanity rep off (existing roles stay until removed).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vanity enable",
+          "aliases": [],
+          "description": "Turn vanity rep on (needs a Boost Level 3 / Partner vanity URL).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vanity list",
+          "aliases": [],
+          "description": "List the members currently repping the vanity.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vanity message",
+          "aliases": [],
+          "description": "Set the thank-you template. Placeholders: {user} {vanity}.",
+          "signature": "<template>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vanity role",
+          "aliases": [],
+          "description": "Set the role granted to members repping the vanity.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vanity status",
+          "aliases": [],
+          "description": "Show config plus the active rep count.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vm",
+          "aliases": [
+            "voicemaster"
+          ],
+          "description": "Temporary voice channels members control with a button panel.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "vm disable",
+          "aliases": [],
+          "description": "Turn VoiceMaster off (existing channels stay until they empty).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vm enable",
+          "aliases": [],
+          "description": "Turn VoiceMaster on.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vm reset",
+          "aliases": [],
+          "description": "Delete all active VoiceMaster channels and reset the config.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "vm setup",
+          "aliases": [],
+          "description": "Pick the create channel and post the control panel (also enables VoiceMaster).",
+          "signature": "<create_channel> <panel_channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "webhook",
+          "aliases": [],
+          "description": "Manage webhooks the bot owns.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "webhook avatar",
+          "aliases": [],
+          "description": "Set a managed webhook's avatar from a URL or an attachment.",
+          "signature": "<short_id> [url]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "webhook create",
+          "aliases": [],
+          "description": "Create a webhook in this channel.",
+          "signature": "<name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "webhook delete",
+          "aliases": [
+            "del"
+          ],
+          "description": "Delete a managed webhook.",
+          "signature": "<short_id>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "webhook edit",
+          "aliases": [],
+          "description": "Edit a message a managed webhook sent in a channel.",
+          "signature": "<channel> <message_id> <content>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "webhook list",
+          "aliases": [],
+          "description": "List managed webhooks.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "webhook send",
+          "aliases": [],
+          "description": "Send a message through a managed webhook.",
+          "signature": "<short_id> <content>",
+          "is_group": false,
+          "example": null
+        }
+      ]
+    },
+    {
+      "name": "Utility",
+      "description": "Everyday tools and information.",
+      "commands": [
+        {
+          "name": "afk",
+          "aliases": [],
+          "description": "Mark yourself AFK. I'll tell anyone who pings you.",
+          "signature": "[reason]",
+          "is_group": false,
+          "example": "afk lunch, back soon"
+        },
+        {
+          "name": "ask",
+          "aliases": [
+            "ai",
+            "gpt"
+          ],
+          "description": "Ask the AI a question.",
+          "signature": "<prompt>",
+          "is_group": false,
+          "example": "ask what's the capital of France?"
+        },
+        {
+          "name": "avatar",
+          "aliases": [
+            "av",
+            "pfp"
+          ],
+          "description": "Show a user's avatar full size.",
+          "signature": "[user]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "banner",
+          "aliases": [],
+          "description": "Show a user's profile banner.",
+          "signature": "[user]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "channelinfo",
+          "aliases": [
+            "ci"
+          ],
+          "description": "Show details about a channel (defaults to this one).",
+          "signature": "[channel]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "editsnipe",
+          "aliases": [
+            "esnipe",
+            "es"
+          ],
+          "description": "Show the last edited message in this channel, before and after.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "emoji",
+          "aliases": [],
+          "description": "Custom emoji management. Bare command lists the subcommands.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "emoji add",
+          "aliases": [
+            "create",
+            "steal",
+            "addmany",
+            "stealmany"
+          ],
+          "description": "Add one or more emojis.",
+          "signature": "[emojis]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "emoji enlarge",
+          "aliases": [
+            "jumbo"
+          ],
+          "description": "Show a custom emoji at full size. (No permission required.)",
+          "signature": "<emoji>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "emoji list",
+          "aliases": [
+            "all"
+          ],
+          "description": "List the server's custom emojis. (No permission required.)",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "emoji remove",
+          "aliases": [
+            "delete",
+            "del",
+            "removemany"
+          ],
+          "description": "Remove one or more server emojis.",
+          "signature": "<emojis>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "emoji rename",
+          "aliases": [],
+          "description": "Rename a server emoji.",
+          "signature": "<emoji> <new_name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "emojiinfo",
+          "aliases": [
+            "ei"
+          ],
+          "description": "Show details about a custom emoji.",
+          "signature": "<emoji>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "inrole",
+          "aliases": [],
+          "description": "List the members who have a role.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": "inrole Moderator"
+        },
+        {
+          "name": "membercount",
+          "aliases": [
+            "members",
+            "mc"
+          ],
+          "description": "Show how many members are in this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "remind",
+          "aliases": [
+            "remindme"
+          ],
+          "description": "Remind yourself after a duration, e.g. `,remind 2h check the oven`.",
+          "signature": "<duration> <message>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "reminder",
+          "aliases": [],
+          "description": "Your reminders.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "reminder list",
+          "aliases": [],
+          "description": "List your reminders.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "reminder remove",
+          "aliases": [
+            "del"
+          ],
+          "description": "Remove a reminder by its index.",
+          "signature": "<index>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "roles",
+          "aliases": [],
+          "description": "List every role in this server, highest first.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "serverinfo",
+          "aliases": [
+            "guildinfo",
+            "si"
+          ],
+          "description": "Show details about this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "snipe",
+          "aliases": [
+            "s"
+          ],
+          "description": "Show the last deleted message in this channel.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "sticker",
+          "aliases": [],
+          "description": "Custom sticker management. Bare command lists the subcommands.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "sticker add",
+          "aliases": [
+            "create"
+          ],
+          "description": "Add a sticker from a URL or an attachment (PNG/APNG, 320x320).",
+          "signature": "[url] [name]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "sticker list",
+          "aliases": [
+            "all"
+          ],
+          "description": "List the server's custom stickers. (No permission required.)",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "sticker remove",
+          "aliases": [
+            "delete",
+            "del"
+          ],
+          "description": "Remove a server sticker.",
+          "signature": "<name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "sticker rename",
+          "aliases": [],
+          "description": "Rename a server sticker.",
+          "signature": "<old_name> <new_name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "timer",
+          "aliases": [],
+          "description": "Send a message to a channel on an interval.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "timer add",
+          "aliases": [],
+          "description": "Add a timer (one timer per channel).",
+          "signature": "<channel> <interval> <message>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "timer list",
+          "aliases": [],
+          "description": "List timers in this server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "timer remove",
+          "aliases": [],
+          "description": "Remove a channel's timer.",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "timer view",
+          "aliases": [],
+          "description": "Show a channel's timer.",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "userinfo",
+          "aliases": [
+            "whois",
+            "ui"
+          ],
+          "description": "Show details about a user.",
+          "signature": "[user]",
+          "is_group": false,
+          "example": null
+        }
+      ]
+    },
+    {
+      "name": "Music",
+      "description": "Play music in voice channels.",
+      "commands": [
+        {
+          "name": "music",
+          "aliases": [
+            "m"
+          ],
+          "description": "Play music in voice channels. Try `,m play <song>`.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "music bass",
+          "aliases": [],
+          "description": "Boost the low end (0-100, 0 = flat).",
+          "signature": "<level>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music channel",
+          "aliases": [],
+          "description": "Restrict music commands to one channel (no argument clears it).",
+          "signature": "[channel]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music clear",
+          "aliases": [],
+          "description": "Clear the queue without stopping the current track.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music defaultvolume",
+          "aliases": [
+            "defaultvol"
+          ],
+          "description": "Set the volume new players start at (0-100).",
+          "signature": "<level>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music disconnect",
+          "aliases": [
+            "dc",
+            "leave"
+          ],
+          "description": "Disconnect from voice.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music dj",
+          "aliases": [],
+          "description": "Set (or clear, with no argument) the DJ role.",
+          "signature": "[role]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music filters",
+          "aliases": [],
+          "description": "Reset all audio filters: `,m filters reset`.",
+          "signature": "[action]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music history",
+          "aliases": [
+            "hist"
+          ],
+          "description": "Show the tracks played this session.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music loop",
+          "aliases": [
+            "repeat"
+          ],
+          "description": "Cycle loop mode: off -> track -> queue.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music move",
+          "aliases": [],
+          "description": "Move a queued track from one position to another.",
+          "signature": "<from_pos> <to_pos>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music nightcore",
+          "aliases": [],
+          "description": "Toggle the nightcore (speed + pitch) filter.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music nowplaying",
+          "aliases": [
+            "np"
+          ],
+          "description": "Post the persistent now-playing panel.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music pause",
+          "aliases": [],
+          "description": "Pause playback.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music play",
+          "aliases": [
+            "p"
+          ],
+          "description": "Play a track (search terms or a URL). Queues it if something's already playing.",
+          "signature": "<query>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music queue",
+          "aliases": [
+            "q"
+          ],
+          "description": "Show the queue (paginated).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music remove",
+          "aliases": [
+            "rm"
+          ],
+          "description": "Remove a track from the queue by position.",
+          "signature": "<position>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music replay",
+          "aliases": [],
+          "description": "Re-queue the most recently played track.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music resume",
+          "aliases": [
+            "unpause"
+          ],
+          "description": "Resume playback.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music search",
+          "aliases": [],
+          "description": "Show up to 5 results to pick from.",
+          "signature": "<query>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music seek",
+          "aliases": [],
+          "description": "Seek the current track to a timestamp, e.g. `1:30`.",
+          "signature": "<timestamp>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music shuffle",
+          "aliases": [],
+          "description": "Shuffle the queue.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music skip",
+          "aliases": [
+            "s"
+          ],
+          "description": "Skip the current track. DJs skip instantly; everyone else votes.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music skipto",
+          "aliases": [
+            "jump"
+          ],
+          "description": "Jump to a queue position (skips everything before it).",
+          "signature": "<position>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music status",
+          "aliases": [],
+          "description": "Show this server's music configuration.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music stop",
+          "aliases": [],
+          "description": "Clear the queue and disconnect.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "music volume",
+          "aliases": [
+            "vol"
+          ],
+          "description": "Set playback volume (0-100).",
+          "signature": "<level>",
+          "is_group": false,
+          "example": null
+        }
+      ]
+    },
+    {
+      "name": "Fun",
+      "description": "Reaction gifs and internet-culture nonsense.",
+      "commands": [
+        {
+          "name": "aura",
+          "aliases": [],
+          "description": "Read someone's aura points, which can go negative. Resets daily.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "aura @user"
+        },
+        {
+          "name": "based",
+          "aliases": [],
+          "description": "Get your own based rating for the day.",
+          "signature": "",
+          "is_group": false,
+          "example": "based"
+        },
+        {
+          "name": "bite",
+          "aliases": [],
+          "description": "Bite someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "bite @user"
+        },
+        {
+          "name": "bonk",
+          "aliases": [],
+          "description": "Bonk someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "bonk @user"
+        },
+        {
+          "name": "caught",
+          "aliases": [],
+          "description": "Catch someone in 4K, with the evidence. Stays random.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "caught @user"
+        },
+        {
+          "name": "cuddle",
+          "aliases": [],
+          "description": "Cuddle someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "cuddle @user"
+        },
+        {
+          "name": "delulu",
+          "aliases": [],
+          "description": "Measure someone's delulu percentage. Resets daily.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "delulu @user"
+        },
+        {
+          "name": "glazing",
+          "aliases": [],
+          "description": "Measure how hard someone is glazing, and over what. Resets daily.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "glazing @user"
+        },
+        {
+          "name": "hug",
+          "aliases": [],
+          "description": "Hug someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "hug @user"
+        },
+        {
+          "name": "ick",
+          "aliases": [],
+          "description": "Reveal someone's ick of the day.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "ick @user"
+        },
+        {
+          "name": "kiss",
+          "aliases": [],
+          "description": "Kiss someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "kiss @user"
+        },
+        {
+          "name": "npc",
+          "aliases": [],
+          "description": "Declare someone a certified NPC, with their trait of the day.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "npc @user"
+        },
+        {
+          "name": "pat",
+          "aliases": [],
+          "description": "Pat someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "pat @user"
+        },
+        {
+          "name": "pinch",
+          "aliases": [],
+          "description": "Pinch someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "pinch @user"
+        },
+        {
+          "name": "poke",
+          "aliases": [],
+          "description": "Poke someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "poke @user"
+        },
+        {
+          "name": "punch",
+          "aliases": [],
+          "description": "Punch someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "punch @user"
+        },
+        {
+          "name": "ratio",
+          "aliases": [],
+          "description": "Hit someone with a fake ratio. Stays random.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "ratio @user"
+        },
+        {
+          "name": "rizz",
+          "aliases": [],
+          "description": "Rate someone's rizz out of 100. Resets daily.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "rizz @user"
+        },
+        {
+          "name": "sigma",
+          "aliases": [],
+          "description": "Measure someone's sigma grindset, with a quote. Resets daily.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "sigma @user"
+        },
+        {
+          "name": "skill",
+          "aliases": [],
+          "description": "Diagnose a skill issue, with severity. Resets daily.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "skill @user"
+        },
+        {
+          "name": "slap",
+          "aliases": [],
+          "description": "Slap someone.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "slap @user"
+        },
+        {
+          "name": "sus",
+          "aliases": [],
+          "description": "Accuse someone of being the impostor. Stays random.",
+          "signature": "<member>",
+          "is_group": false,
+          "example": "sus @user"
+        }
+      ]
+    },
+    {
+      "name": "Bot",
+      "description": "About the bot and owner tools.",
+      "commands": [
+        {
+          "name": "botinfo",
+          "aliases": [
+            "about"
+          ],
+          "description": "Show bot stats: commands, servers, and users.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "help",
+          "aliases": [
+            "h"
+          ],
+          "description": "Show the command menu, or detailed help for one command.",
+          "signature": "[command]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "invite",
+          "aliases": [],
+          "description": "Get a link to add me to another server.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "leaveserver",
+          "aliases": [],
+          "description": "Make the bot leave a server by id (asks for confirmation).",
+          "signature": "<guild_id>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "ping",
+          "aliases": [],
+          "description": "Show gateway latency and round-trip time.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "servers",
+          "aliases": [],
+          "description": "List servers the bot is in.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "status",
+          "aliases": [],
+          "description": "Show bot stats: servers, users, latency, loaded cogs.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        }
+      ]
+    }
+  ]
+}

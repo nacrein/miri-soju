@@ -18,7 +18,16 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from dashboard.config import get_dashboard_settings
-from dashboard.routers import auth, automod, guilds, leveling, moderation, prefix, serverlog
+from dashboard.routers import (
+    auth,
+    automod,
+    guilds,
+    leveling,
+    moderation,
+    prefix,
+    serverlog,
+    staff,
+)
 from src.core.cache_sync import publish_guild_changed
 
 _FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
@@ -44,8 +53,9 @@ def create_app() -> FastAPI:
         same_site="lax",
         https_only=https_only,
         # Authorization (the manageable-guild set) is snapshotted at login, so cap
-        # how long a stale snapshot can live — a re-login re-checks Discord. 8 hours.
-        max_age=8 * 3600,
+        # how long a stale snapshot can live — a re-login re-checks Discord. Tunable
+        # via DASHBOARD_SESSION_MAX_AGE (default 8h); shorten to tighten revocation.
+        max_age=settings.session_max_age,
     )
 
     # Only needed if the frontend is served from a *different* origin than this API
@@ -83,6 +93,7 @@ def create_app() -> FastAPI:
         prefix.router,
         moderation.router,
         automod.router,
+        staff.router,
     )
     for router in api_routers:
         app.include_router(router, prefix="/api")
@@ -90,6 +101,35 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     async def health() -> dict:
         return {"status": "ok"}
+
+    @app.get("/api/meta")
+    async def meta() -> dict:
+        """Public bot metadata for the landing page (the OAuth app / invite link).
+
+        The client id is the bot's application id, so we can build a real
+        "Add to Discord" invite without shipping it into the bundle at build time."""
+        client_id = settings.discord_client_id
+        invite_url = (
+            f"https://discord.com/oauth2/authorize?client_id={client_id}"
+            "&permissions=8&scope=bot+applications.commands"
+        )
+        return {"client_id": client_id, "invite_url": invite_url}
+
+    @app.get("/api/emojis")
+    async def emojis() -> dict:
+        """The bot's emoji registry, so the website uses Miri's real brand art.
+
+        Returns ``{name: token}`` where token is either a unicode fallback or a
+        custom-emoji mention like ``<:bits:123…>``. The frontend renders the custom
+        image when an id is present — so uploading art and setting the id in
+        ``src/core/emojis.py`` updates the site with no frontend change."""
+        from src.core.emojis import Emojis
+
+        return {
+            name.lower(): value
+            for name, value in vars(Emojis).items()
+            if name.isupper() and isinstance(value, str)
+        }
 
     _mount_frontend(app)
     return app
