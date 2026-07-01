@@ -37,6 +37,36 @@ class ModerationRepository:
         )
         return int((await self.session.execute(stmt)).scalar_one())
 
+    # ── staff-wide aggregates (dashboard analytics; not guild-scoped) ──
+
+    async def total_cases(self) -> int:
+        """Every moderation case ever logged, across all guilds."""
+        stmt = select(func.count()).select_from(ModCase)
+        return int((await self.session.execute(stmt)).scalar_one())
+
+    async def action_breakdown(self) -> list[tuple[str, int]]:
+        """Cases grouped by kind (ban/kick/timeout/warn…), most frequent first."""
+        stmt = (
+            select(ModCase.kind, func.count(ModCase.id))
+            .group_by(ModCase.kind)
+            .order_by(func.count(ModCase.id).desc())
+        )
+        return [(k, int(n)) for k, n in (await self.session.execute(stmt)).all()]
+
+    async def actions_by_day(self, days: int = 14) -> list[tuple[str, int]]:
+        """Moderation cases per calendar day for the last ``days`` days."""
+        from datetime import UTC, timedelta
+
+        since = datetime.now(UTC) - timedelta(days=days)
+        day = func.date(ModCase.created_at)
+        stmt = (
+            select(day.label("day"), func.count(ModCase.id))
+            .where(ModCase.created_at >= since)
+            .group_by(day)
+            .order_by(day)
+        )
+        return [(str(d), int(n)) for d, n in (await self.session.execute(stmt)).all()]
+
     async def count_recent_cases(
         self, guild_id: int, user_id: int, kind: str, since: datetime
     ) -> int:

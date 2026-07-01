@@ -1,39 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 
 import { api } from "../api/client";
 import { GuildIcon } from "../components/GuildIcon";
-import { Alert, Skeleton } from "../components/ui";
+import { Alert, CenteredSpinner } from "../components/ui";
 import { useDirtyGuardContext } from "../lib/dirtyGuard";
-import { springSoft } from "../lib/motion";
+import { BotIcon } from "../lib/icons";
 import type { GuildMeta } from "../lib/types";
 import { MODULES, defaultModuleKey } from "./modules/registry";
-
-function DashboardSkeleton() {
-  return (
-    <div className="container">
-      <div className="page-header row" style={{ gap: 16 }}>
-        <Skeleton width={44} height={44} radius="50%" />
-        <div className="stack stack--sm">
-          <Skeleton width={200} height={22} />
-          <Skeleton width={140} height={13} />
-        </div>
-      </div>
-      <div className="dash-layout">
-        <div className="modnav">
-          {MODULES.map((m) => (
-            <Skeleton key={m.key} height={38} radius="var(--radius-md)" />
-          ))}
-        </div>
-        <div className="stack">
-          <Skeleton height={190} radius="var(--radius-lg)" />
-          <Skeleton height={230} radius="var(--radius-lg)" />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function GuildDashboardPage() {
   const { guildId, moduleKey } = useParams();
@@ -46,9 +20,9 @@ export default function GuildDashboardPage() {
     enabled: !!guildId,
   });
 
-  if (!guildId) return <Navigate to="/" replace />;
-  if (!moduleKey) return <Navigate to={`/guilds/${guildId}/${defaultModuleKey}`} replace />;
-  if (isLoading) return <DashboardSkeleton />;
+  if (!guildId) return <Navigate to="/dashboard" replace />;
+  if (!moduleKey) return <Navigate to={`/dashboard/guilds/${guildId}/${defaultModuleKey}`} replace />;
+  if (isLoading) return <CenteredSpinner />;
   if (isError || !meta) {
     return (
       <div className="container">
@@ -72,43 +46,24 @@ export default function GuildDashboardPage() {
 
       <div className="dash-layout">
         <nav className="modnav">
-          {MODULES.map((m) => {
-            const isActive = m.key === active.key;
-            return (
-              <div
-                key={m.key}
-                className={"modnav__item" + (isActive ? " modnav__item--active" : "")}
-                onClick={() => {
-                  if (isActive) return;
-                  if (confirmDiscard()) navigate(`/guilds/${guildId}/${m.key}`);
-                }}
-              >
-                {isActive && (
-                  <motion.span className="modnav__indicator" layoutId="modnav-active" transition={springSoft} />
-                )}
-                <span className="modnav__label">
-                  <span className="modnav__icon">{m.icon}</span> {m.label}
-                </span>
-              </div>
-            );
-          })}
-        </nav>
-        <main className="panel-stage">
-          {/* No mode="wait": the incoming panel mounts immediately so its
-              useDirtyGuard clears the guard flag at once (no lingering prompt),
-              while the outgoing panel crossfades away on the shared stage. */}
-          <AnimatePresence>
-            <motion.div
-              key={active.key}
-              className="panel-layer"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
+          {MODULES.map((m) => (
+            <div
+              key={m.key}
+              className={"modnav__item" + (m.key === active.key ? " modnav__item--active" : "")}
+              onClick={() => {
+                if (m.key === active.key) return;
+                if (confirmDiscard()) navigate(`/dashboard/guilds/${guildId}/${m.key}`);
+              }}
             >
-              <Panel guildId={guildId} meta={meta} />
-            </motion.div>
-          </AnimatePresence>
+              <span className="modnav__icon">
+                <BotIcon name={m.emojiName} fallback={m.icon} />
+              </span>{" "}
+              {m.label}
+            </div>
+          ))}
+        </nav>
+        <main>
+          <Panel guildId={guildId} meta={meta} />
         </main>
       </div>
     </div>

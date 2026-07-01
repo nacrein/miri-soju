@@ -11,6 +11,7 @@ from src.database.models.autorole import AutoRole
 from src.database.models.boosterrole import BoosterRole, BoosterRoleConfig
 from src.database.models.buttonrole import ButtonRole
 from src.database.models.case import ModCase
+from src.database.models.command_usage import CommandUsage
 from src.database.models.errorlog import ErrorLog
 from src.database.models.giveaway import Giveaway, GiveawayEntry
 from src.database.models.guild import GuildConfig
@@ -46,4 +47,5 @@ __all__ = [
     "VoiceMasterConfig", "VoiceMasterChannel",
     "VanityConfig", "VanityTracker",
     "ErrorLog",
+    "CommandUsage",
 ]

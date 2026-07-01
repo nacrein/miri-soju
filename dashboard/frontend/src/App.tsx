@@ -1,60 +1,77 @@
 import type { ReactNode } from "react";
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 
 import { useSession } from "./auth/session";
 import { Layout } from "./components/Layout";
 import { CenteredSpinner } from "./components/ui";
-import { pageTransition } from "./lib/motion";
+import CommandsPage from "./pages/CommandsPage";
+import EmbedBuilderPage from "./pages/EmbedBuilderPage";
 import GuildDashboardPage from "./pages/GuildDashboardPage";
 import GuildPickerPage from "./pages/GuildPickerPage";
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import StaffPage from "./pages/StaffPage";
 
-export default function App() {
+/** Gate app routes behind a session; unauthenticated users see the login prompt. */
+function RequireAuth({ children }: { children: ReactNode }) {
   const { data: session, isLoading } = useSession();
-  const location = useLocation();
+  if (isLoading) return <CenteredSpinner />;
+  if (!session) return <LoginPage />;
+  return <>{children}</>;
+}
 
-  // Coarse transition key: swap between top-level views (loading → login →
-  // picker → a given guild) animates, but navigating *between modules* of the
-  // same guild keeps the same key, so the dashboard doesn't remount — the panel
-  // cross-fade + sliding nav indicator handle intra-guild motion instead.
-  const seg = location.pathname.split("/").filter(Boolean);
-  let key: string;
-  let content: ReactNode;
-  if (isLoading) {
-    key = "loading";
-    content = <CenteredSpinner />;
-  } else if (!session) {
-    key = "login";
-    content = <LoginPage />;
-  } else {
-    key = seg[0] === "guilds" ? `guild:${seg[1] ?? ""}` : "picker";
-    content = (
-      <Routes location={location}>
-        <Route path="/" element={<GuildPickerPage />} />
-        <Route path="/guilds/:guildId" element={<GuildDashboardPage />} />
-        <Route path="/guilds/:guildId/:moduleKey" element={<GuildDashboardPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+/** Gate the staff area behind the bot's owner/staff ids. */
+function RequireStaff({ children }: { children: ReactNode }) {
+  const { data: session, isLoading } = useSession();
+  if (isLoading) return <CenteredSpinner />;
+  if (!session) return <LoginPage />;
+  if (!session.is_staff) {
+    return (
+      <div className="container">
+        <div className="empty" style={{ marginTop: 40 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+          <div style={{ fontWeight: 700, fontSize: 18, color: "var(--text)" }}>
+            Staff only
+          </div>
+          <p className="muted" style={{ marginTop: 8 }}>
+            This area is limited to Miri's bot staff. If that should be you, ask an
+            owner to add your Discord id to <span className="mono">STAFF_IDS</span>.
+          </p>
+          <Link to="/dashboard" className="btn btn--ghost" style={{ marginTop: 16 }}>
+            Back to dashboard
+          </Link>
+        </div>
+      </div>
     );
   }
+  return <>{children}</>;
+}
 
+export default function App() {
   return (
-    <MotionConfig reducedMotion="user">
-      <Layout>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={key}
-            className="page-viewport"
-            variants={pageTransition}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-          >
-            {content}
-          </motion.div>
-        </AnimatePresence>
-      </Layout>
-    </MotionConfig>
+    <Layout>
+      <Routes>
+        {/* public marketing surface */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/commands" element={<CommandsPage />} />
+        <Route path="/embed" element={<EmbedBuilderPage />} />
+
+        {/* the manage-servers app (login required) */}
+        <Route path="/dashboard" element={<RequireAuth><GuildPickerPage /></RequireAuth>} />
+        <Route
+          path="/dashboard/guilds/:guildId"
+          element={<RequireAuth><GuildDashboardPage /></RequireAuth>}
+        />
+        <Route
+          path="/dashboard/guilds/:guildId/:moduleKey"
+          element={<RequireAuth><GuildDashboardPage /></RequireAuth>}
+        />
+
+        {/* bot-staff-only analytics */}
+        <Route path="/staff" element={<RequireStaff><StaffPage /></RequireStaff>} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Layout>
   );
 }

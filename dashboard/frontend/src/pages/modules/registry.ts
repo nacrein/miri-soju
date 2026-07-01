@@ -18,17 +18,18 @@ import type { PanelProps } from "./types";
 export interface ModuleDef {
   key: string; // matches the URL segment and the API path prefix
   label: string;
-  icon: string;
+  icon: string; // unicode fallback
+  emojiName?: string; // bot emoji registry key (src/core/emojis.py) for custom art
   component: ComponentType<PanelProps>;
 }
 
 // Order here = order in the left nav. Add a module by writing its panel + router
 // and adding one line here (the dashboard is intentionally not auto-generated).
 export const MODULES: ModuleDef[] = [
-  { key: "leveling", label: "Leveling", icon: "📈", component: LevelingPanel },
-  { key: "automod", label: "AutoMod", icon: "🛡️", component: AutomodPanel },
-  { key: "serverlog", label: "Server Log", icon: "📜", component: ServerlogPanel },
-  { key: "moderation", label: "Moderation", icon: "🔨", component: ModerationPanel },
+  { key: "leveling", label: "Leveling", icon: "📈", emojiName: "xp", component: LevelingPanel },
+  { key: "automod", label: "AutoMod", icon: "🛡️", emojiName: "shield", component: AutomodPanel },
+  { key: "serverlog", label: "Server Log", icon: "📜", emojiName: "message_edit", component: ServerlogPanel },
+  { key: "moderation", label: "Moderation", icon: "🔨", emojiName: "ban", component: ModerationPanel },
   { key: "prefix", label: "Prefix", icon: "⌨️", component: PrefixPanel },
   { key: "welcome", label: "Welcome", icon: "👋", component: WelcomePanel },
   { key: "starboard", label: "Starboard", icon: "⭐", component: StarboardPanel },

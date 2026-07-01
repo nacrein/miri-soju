@@ -41,6 +41,12 @@ class DashboardSettings(BaseSettings):
     # Set cookies with Secure (HTTPS only). Turn on in production.
     cookie_secure: bool = Field(False, alias="DASHBOARD_COOKIE_SECURE")
 
+    # How long a session (and the manageable-guild snapshot taken at login) stays
+    # valid before a re-login re-checks Discord. This is the window in which someone
+    # whose Manage Server was revoked can still reach the dashboard, so shorten it to
+    # tighten revocation (e.g. 7200 = 2h). Default 8h. In seconds.
+    session_max_age: int = Field(8 * 3600, alias="DASHBOARD_SESSION_MAX_AGE")
+
 
 @lru_cache
 def get_dashboard_settings() -> DashboardSettings:
