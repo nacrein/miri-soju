@@ -14,6 +14,7 @@ from functools import lru_cache
 from fastapi import Depends, HTTPException, Path, Request, status
 
 from config.settings import get_settings
+from src.core import staff_roster
 
 SESSION_USER_KEY = "user"
 SESSION_GUILDS_KEY = "guilds"  # {guild_id(str): {"name", "icon"}}
@@ -21,11 +22,13 @@ SESSION_GUILDS_KEY = "guilds"  # {guild_id(str): {"name", "icon"}}
 
 @lru_cache
 def staff_user_ids() -> frozenset[int]:
-    """The Discord user ids allowed into the staff area.
+    """The env *bootstrap floor* for staff access: ``OWNER_ID`` + ``STAFF_IDS``.
 
-    Reuses the *bot's* own trust config (``OWNER_ID`` + ``STAFF_IDS``) so the web
-    staff area and the in-Discord ``,staff`` commands admit exactly the same people
-    and can't drift. Cached: the env is fixed for the process's life."""
+    Runtime staff live in the DB ``staff_members`` roster (managed with
+    ``,staff promote`` / ``demote``); this env set is unioned on top so the owner and
+    any pinned ids always have web access — even against an empty table or a brand-new
+    deploy — mirroring how the bot exempts the owner and treats ``STAFF_IDS`` as a
+    legacy floor. Cached: the env is fixed for the process's life."""
     settings = get_settings()
     ids: set[int] = set()
     if settings.owner_id is not None:
@@ -37,8 +40,19 @@ def staff_user_ids() -> frozenset[int]:
     return frozenset(ids)
 
 
-def is_staff_user(user_id: int | str) -> bool:
-    return int(user_id) in staff_user_ids()
+async def is_staff_user(user_id: int | str) -> bool:
+    """Whether a user may enter the staff area: the env floor OR the DB roster.
+
+    Checks the cheap env floor first — no DB round-trip and still lets the owner in if
+    the database is briefly down — then falls back to the runtime ``staff_members``
+    roster via the *same* repository the bot uses for ``,staff`` (``staff_roster``), so
+    there is one source of truth and a Discord ``,staff promote`` grants web access with
+    no restart. The roster read is uncached (see ``staff_roster.is_staff_member``), so a
+    ``,staff demote`` revokes access on the very next request."""
+    uid = int(user_id)
+    if uid in staff_user_ids():
+        return True
+    return await staff_roster.is_staff_member(uid)
 
 
 def get_current_user(request: Request) -> dict:
@@ -74,13 +88,14 @@ async def require_guild(
     return guild_id
 
 
-def require_staff(user: dict = Depends(get_current_user)) -> dict:
+async def require_staff(user: dict = Depends(get_current_user)) -> dict:
     """Authorize a bot-staff-only endpoint and return the staff user.
 
-    401 if not logged in (via ``get_current_user``); 403 if logged in but not one
-    of the bot's owner/staff ids. Recomputed from the user's id against the live
-    config on every call — the session's ``is_staff`` flag is only a UI hint."""
-    if not is_staff_user(user["id"]):
+    401 if not logged in (via ``get_current_user``); 403 unless the user is on the
+    bot's DB staff roster or the env floor (``is_staff_user``). Recomputed against the
+    live roster on every request — a promote/demote in Discord takes effect here with
+    no restart, and the session's ``is_staff`` flag is only a UI hint."""
+    if not await is_staff_user(user["id"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Staff only.",

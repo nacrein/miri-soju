@@ -42,6 +42,18 @@ async def get_tier(discord_id: int) -> str | None:
     return _tier_cache.get(discord_id)
 
 
+async def is_staff_member(discord_id: int) -> bool:
+    """Fresh, uncached check: is this user on the roster at any tier?
+
+    Deliberately bypasses ``_tier_cache``. It exists for OTHER processes — the web
+    dashboard runs separately from the bot and never calls this module's writers, so
+    it can't trust the bot's in-process cache; a cached read there would miss a
+    ``,staff promote`` until restart. A single indexed PK lookup, hit only on
+    staff-area access (not per command), so the bot itself keeps using ``get_tier``."""
+    async with get_session() as session:
+        return await session.get(StaffMember, discord_id) is not None
+
+
 async def list_roster() -> list[StaffMember]:
     """All roster rows, admins before staff, newest first within a tier."""
     async with get_session() as session:

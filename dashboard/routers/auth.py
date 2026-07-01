@@ -85,7 +85,7 @@ async def me(request: Request) -> SessionOut:
             GuildOut(id=gid, name=g["name"], icon=g.get("icon"))
             for gid, g in guilds.items()
         ],
-        is_staff=is_staff_user(user["id"]),
+        is_staff=await is_staff_user(user["id"]),
     )
 
 

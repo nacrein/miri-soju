@@ -170,7 +170,7 @@ run behind HTTPS (e.g. `uvicorn dashboard.app:app --host 0.0.0.0 --port 8000`).
 | `deps.py` | `get_current_user`, `require_guild` (the auth gate). |
 | `schemas.py` | The wire contract. Snowflakes are strings; validation ranges are imported from the bot's own config modules so web + commands can't drift. |
 | `routers/` | One router per module; each reuses that module's existing repository/service. `leveling.py` is the reference shape. `staff.py` is the bot-wide analytics router (gated by `require_staff`). |
-| `deps.py` | `get_current_user`, `require_guild` (guild gate), `require_staff` (owner/staff gate — reuses the bot's `OWNER_ID`/`STAFF_IDS`). |
+| `deps.py` | `get_current_user`, `require_guild` (guild gate), `require_staff` (staff gate — reads the bot's DB `staff_members` roster via `staff_roster`, with `OWNER_ID`/`STAFF_IDS` as an env floor). |
 | `app.py` | App factory: session middleware, mounts `/api/*`, `/api/meta` (public invite link), serves the built SPA. |
 | `frontend/src/components/ui/` | The design-system component library (tokens in `styles/tokens.css`). |
 | `frontend/src/lib/useConfigForm.ts` | The shared load→edit→save hook every panel uses. |
