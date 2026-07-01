@@ -242,13 +242,6 @@ class AutomodConfigIn(BaseModel):
 # ── staff analytics (bot owner/staff only) ───────────────────────────────────
 
 
-class EconomyTotalsOut(BaseModel):
-    players: int
-    wallet_total: int
-    vault_total: int
-    circulation: int
-
-
 class CommandTotalsOut(BaseModel):
     invocations: int
     unique_users: int
@@ -258,8 +251,6 @@ class CommandTotalsOut(BaseModel):
 class StaffSummaryOut(BaseModel):
     """The headline cards at the top of the staff area."""
 
-    economy: EconomyTotalsOut
-    ledger_rows: int
     commands: CommandTotalsOut
     mod_cases: int
     errors_24h: int
@@ -287,44 +278,6 @@ class CommandAnalyticsOut(BaseModel):
     top_30d: list[TopCommandOut]
     by_day: list[UsageDayOut]
     by_hour: list[UsageHourOut]
-
-
-class LedgerKindOut(BaseModel):
-    kind: str
-    count: int
-    net: int  # signed sum: faucets positive, sinks negative
-
-
-class TopPlayerOut(BaseModel):
-    user_id: str
-    net_worth: int
-    wallet: int
-    vault: int
-
-
-class LedgerRowOut(BaseModel):
-    user_id: str
-    kind: str
-    amount: int
-    balance_after: int
-    created_at: str
-
-
-class FlowDayOut(BaseModel):
-    day: str
-    minted: int  # sum of positive ledger moves that day
-    burned: int  # sum of negative moves that day (<= 0)
-
-
-class EconomyAnalyticsOut(BaseModel):
-    totals: EconomyTotalsOut
-    ledger_rows: int
-    breakdown: list[LedgerKindOut]
-    flow: list[FlowDayOut]
-    gambling_net: int  # players' net P/L across all games (negative = house ahead)
-    top_net_worth: list[TopPlayerOut]
-    top_wallet: list[TopPlayerOut]
-    recent: list[LedgerRowOut]
 
 
 class ModActionOut(BaseModel):

@@ -166,7 +166,7 @@ def _category_map() -> tuple[dict[str, str], dict[str, str], list[str]]:
     """Read categories.py without importing it (it pulls in Discord via Emojis).
 
     Returns (cog_name -> category, category -> description, ordered categories)."""
-    tree = ast.parse(CATEGORIES_FILE.read_text())
+    tree = ast.parse(CATEGORIES_FILE.read_text(encoding="utf-8"))
     cog_to_cat: dict[str, str] = {}
     cat_desc: dict[str, str] = {}
     order: list[str] = []
@@ -203,7 +203,7 @@ def main() -> None:
     buckets: dict[str, list[dict]] = {c: [] for c in order}
 
     for cog_file in sorted(MODULES.glob("*/cog.py")):
-        tree = ast.parse(cog_file.read_text())
+        tree = ast.parse(cog_file.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef) and _is_cog(node):
                 cog_name = _cog_display_name(node)
@@ -224,7 +224,7 @@ def main() -> None:
 
     payload = {"total": total, "categories": categories}
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
+    OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"Wrote {OUT.relative_to(ROOT)} — {total} commands in {len(categories)} categories.")
 
 

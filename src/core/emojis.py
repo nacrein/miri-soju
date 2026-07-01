@@ -68,32 +68,9 @@ class Emojis:
     CHANNEL = _emoji("channel", id=0, fallback="📺")
     ROLE = _emoji("role", id=0, fallback="🎭")
 
-    # ── economy / currency ──────────────────────────────────────────────────
-    BITS = _emoji("bits", id=0, fallback="🪙")
-    GEM = _emoji("gem", id=0, fallback="💎")
-    BANK = _emoji("bank", id=0, fallback="🏦")
-    DAILY = _emoji("daily", id=0, fallback="📅")
-    GIFT = _emoji("gift", id=0, fallback="🎁")
-    SHOP = _emoji("shop", id=0, fallback="🛒")
-
-    # ── gambling ────────────────────────────────────────────────────────────
-    DICE = _emoji("dice", id=0, fallback="🎲")
-    SLOTS = _emoji("slots", id=0, fallback="🎰")
-    COIN_FLIP = _emoji("coin_flip", id=0, fallback="🪙")
-    CARD = _emoji("card", id=0, fallback="🃏")
-    WIN = _emoji("win", id=0, fallback="🎉")
-    LOSE = _emoji("lose", id=0, fallback="💀")
-    LADDER = _emoji("ladder", id=0, fallback="🪜")
-    CRASH = _emoji("crash", id=0, fallback="📈")
-    # slot-machine reel faces (the jackpot/diamond reels reuse SLOTS/GEM above)
-    CHERRY = _emoji("cherry", id=0, fallback="🍒")
-    LEMON = _emoji("lemon", id=0, fallback="🍋")
-    BELL = _emoji("bell", id=0, fallback="🔔")
-    # playing-card suits (cosmetic; rank decides the hand)
-    SUIT_SPADE = _emoji("suit_spade", id=0, fallback="♠")
-    SUIT_HEART = _emoji("suit_heart", id=0, fallback="♥")
-    SUIT_DIAMOND = _emoji("suit_diamond", id=0, fallback="♦")
-    SUIT_CLUB = _emoji("suit_club", id=0, fallback="♣")
+    # ── cosmetic ────────────────────────────────────────────────────────────
+    GEM = _emoji("gem", id=0, fallback="💎")  # boosterrole / vanity premium marker
+    WIN = _emoji("win", id=0, fallback="🎉")  # help "Fun" category icon
 
     # ── activity / leveling ─────────────────────────────────────────────────
     XP = _emoji("xp", id=0, fallback="⭐")

@@ -1,11 +1,10 @@
-"""Blacklist reads/writes: the bot-wide and economy-only user gates.
+"""Blacklist reads/writes: the bot-wide user gate.
 
-Lives in core (like ``staff_roster``) so ``core/bot.py``'s global check and the
-Economy cog can both reach it without core importing a feature module. Owns its
-own database access.
+Lives in core (like ``staff_roster``) so ``core/bot.py``'s global check can reach
+it without core importing a feature module. Owns its own database access.
 
-Caching: two in-process sets, loaded lazily and kept in sync because every write
-goes through here. Correct for a single-process bot; in a sharded/multi-instance
+Caching: an in-process set per scope, loaded lazily and kept in sync because every
+write goes through here. Correct for a single-process bot; in a sharded/multi-instance
 deployment the cache would drift between processes until restart (see the same
 note on ``core/staff_roster``).
 """
@@ -18,7 +17,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from src.database.models.blacklist import Blacklist
 from src.database.session import get_session
 
-SCOPES = ("bot", "economy")
+SCOPES = ("bot",)
 
 _cache: dict[str, set[int]] = {scope: set() for scope in SCOPES}
 _loaded = False
@@ -38,7 +37,7 @@ async def _ensure_loaded() -> None:
 
 
 async def is_blacklisted(discord_id: int, scope: str) -> bool:
-    """Whether the user is blacklisted for ``scope`` ('bot' or 'economy')."""
+    """Whether the user is blacklisted for ``scope`` (currently only 'bot')."""
     await _ensure_loaded()
     return discord_id in _cache.get(scope, set())
 

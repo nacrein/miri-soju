@@ -8,13 +8,12 @@ import { BotIcon } from "../lib/icons";
 import { useCountUp, useGrow } from "../lib/reveal";
 import type {
   CommandAnalytics,
-  EconomyAnalytics,
   ErrorAnalytics,
   ModerationAnalytics,
   StaffSummary,
 } from "../lib/types";
 
-type Tab = "commands" | "economy" | "moderation" | "errors";
+type Tab = "commands" | "moderation" | "errors";
 
 const fmt = (n: number) => n.toLocaleString();
 const when = (iso: string) => {
@@ -38,8 +37,7 @@ export default function StaffPage() {
           <span className="badge badge--primary">bot-wide</span>
         </div>
         <div className="page-header__desc">
-          Global, cross-server insight for Miri's staff — economy health, command usage, moderation,
-          and errors.
+          Global, cross-server insight for Miri's staff — command usage, moderation, and errors.
         </div>
       </div>
 
@@ -49,25 +47,21 @@ export default function StaffPage() {
         <Alert tone="danger">{(summary.error as Error)?.message || "Couldn't load analytics."}</Alert>
       ) : summary.data ? (
         <div className="stat-cards">
-          <CountCard label="Bits in circulation" value={summary.data.economy.circulation} accent />
-          <CountCard label="Economy players" value={summary.data.economy.players} />
-          <CountCard label="Commands run" value={summary.data.commands.invocations} sub={`${fmt(summary.data.commands.unique_users)} users`} />
+          <CountCard label="Commands run" value={summary.data.commands.invocations} sub={`${fmt(summary.data.commands.unique_users)} users`} accent />
+          <CountCard label="Distinct commands" value={summary.data.commands.distinct_commands} />
           <CountCard label="Mod cases" value={summary.data.mod_cases} />
-          <CountCard label="Ledger rows" value={summary.data.ledger_rows} />
           <CountCard label="Errors (24h)" value={summary.data.errors_24h} sub={`${fmt(summary.data.errors_total)} all-time`} danger={summary.data.errors_24h > 0} />
         </div>
       ) : null}
 
       <div className="cmd-chips" style={{ marginTop: 24 }}>
         <TabButton icon="rank" fallback="📊" label="Command usage" active={tab === "commands"} onClick={() => setTab("commands")} />
-        <TabButton icon="bits" fallback="🪙" label="Economy" active={tab === "economy"} onClick={() => setTab("economy")} />
         <TabButton icon="shield" fallback="🛡️" label="Moderation" active={tab === "moderation"} onClick={() => setTab("moderation")} />
         <TabButton icon="warning" fallback="⚠️" label="Errors" active={tab === "errors"} onClick={() => setTab("errors")} />
       </div>
 
       <div style={{ marginTop: 20 }}>
         {tab === "commands" && <CommandsTab />}
-        {tab === "economy" && <EconomyTab />}
         {tab === "moderation" && <ModerationTab />}
         {tab === "errors" && <ErrorsTab />}
       </div>
@@ -110,104 +104,6 @@ function CommandsTab() {
           <BarList items={d.top_30d.map((t) => ({ label: t.command, value: t.count }))} unit="runs" />
         </Panel>
       </div>
-    </div>
-  );
-}
-
-// ── economy ──────────────────────────────────────────────────────────────────
-function EconomyTab() {
-  const q = useQuery<EconomyAnalytics>({
-    queryKey: ["staff", "economy"],
-    queryFn: () => api.get<EconomyAnalytics>("/staff/economy"),
-  });
-  if (q.isLoading) return <CenteredSpinner />;
-  if (q.isError || !q.data) return <Alert tone="danger">Couldn't load economy analytics.</Alert>;
-  const d = q.data;
-  const houseNet = -d.gambling_net;
-
-  return (
-    <div className="analytics-grid">
-      <div className="grid-2">
-        <Panel title="Bit flow — minted vs burned (14 days)">
-          <FlowBars data={d.flow} />
-          <div className="flow-legend faint">
-            <span><i className="dot dot--pos" /> minted (faucets, wins)</span>
-            <span><i className="dot dot--neg" /> burned (sinks, losses)</span>
-          </div>
-        </Panel>
-        <Panel title="Casino ledger">
-          <div className="casino">
-            <div className="casino__row">
-              <span className="muted">Players' net P/L</span>
-              <span className={d.gambling_net >= 0 ? "pos" : "neg"}>
-                {d.gambling_net >= 0 ? "+" : ""}{fmt(d.gambling_net)} bits
-              </span>
-            </div>
-            <div className="casino__row">
-              <span className="muted">House net (edge realized)</span>
-              <span className={houseNet >= 0 ? "pos" : "neg"}>
-                {houseNet >= 0 ? "+" : ""}{fmt(houseNet)} bits
-              </span>
-            </div>
-            <p className="faint" style={{ marginTop: 8 }}>
-              {houseNet >= 0
-                ? "The house is ahead — games are net-draining bits from players."
-                : "Players are ahead — the games are paying out more than they take."}
-            </p>
-          </div>
-        </Panel>
-      </div>
-      <div className="grid-2">
-        <Panel title="Where bits flow (by transaction kind)">
-          {d.breakdown.length === 0 ? (
-            <div className="muted">No transactions yet.</div>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr><th>Kind</th><th className="num">Count</th><th className="num">Net bits</th></tr>
-              </thead>
-              <tbody>
-                {d.breakdown.map((b) => (
-                  <tr key={b.kind}>
-                    <td className="mono">{b.kind}</td>
-                    <td className="num">{fmt(b.count)}</td>
-                    <td className={"num " + (b.net >= 0 ? "pos" : "neg")}>
-                      {b.net >= 0 ? "+" : ""}{fmt(b.net)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Panel>
-        <Panel title="Richest players (net worth)">
-          <BarList items={d.top_net_worth.map((p) => ({ label: p.user_id, value: p.net_worth, mono: true }))} unit="bits" />
-        </Panel>
-      </div>
-      <Panel title="Recent activity">
-        {d.recent.length === 0 ? (
-          <div className="muted">No activity yet.</div>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr><th>When</th><th>User</th><th>Kind</th><th className="num">Amount</th><th className="num">Balance</th></tr>
-            </thead>
-            <tbody>
-              {d.recent.map((r, i) => (
-                <tr key={i}>
-                  <td className="muted nowrap">{when(r.created_at)}</td>
-                  <td className="mono">{r.user_id}</td>
-                  <td className="mono">{r.kind}</td>
-                  <td className={"num " + (r.amount >= 0 ? "pos" : "neg")}>
-                    {r.amount >= 0 ? "+" : ""}{fmt(r.amount)}
-                  </td>
-                  <td className="num">{fmt(r.balance_after)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Panel>
     </div>
   );
 }
@@ -351,27 +247,6 @@ function HourBars({ data }: { data: { hour: number; count: number }[] }) {
         <div key={h} className="day-bar" title={`${h}:00 — ${c}`}>
           <div className="day-bar__fill" style={{ height: grown ? `${(c / max) * 100}%` : 0 }} />
           {h % 3 === 0 && <div className="day-bar__label">{h}</div>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function FlowBars({ data }: { data: { day: string; minted: number; burned: number }[] }) {
-  const grown = useGrow();
-  if (data.length === 0) return <div className="muted">No flow in this window.</div>;
-  const max = Math.max(...data.map((d) => Math.max(d.minted, Math.abs(d.burned))), 1);
-  return (
-    <div className="flow-bars">
-      {data.map((d) => (
-        <div key={d.day} className="flow-col" title={`${d.day}: +${fmt(d.minted)} / ${fmt(d.burned)}`}>
-          <div className="flow-col__up">
-            <div className="flow-col__pos" style={{ height: grown ? `${(d.minted / max) * 100}%` : 0 }} />
-          </div>
-          <div className="flow-col__down">
-            <div className="flow-col__neg" style={{ height: grown ? `${(Math.abs(d.burned) / max) * 100}%` : 0 }} />
-          </div>
-          <div className="day-bar__label">{d.day.slice(5)}</div>
         </div>
       ))}
     </div>

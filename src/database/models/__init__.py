@@ -20,7 +20,6 @@ from src.database.models.immune import ImmuneEntry
 from src.database.models.jail import JailedMember, ModerationConfig
 from src.database.models.level import ChannelMultiplier, LevelConfig, LevelReward, MemberLevel
 from src.database.models.music import MusicConfig
-from src.database.models.player import Player
 from src.database.models.poll import Poll, PollVote
 from src.database.models.reactionrole import ReactionRole
 from src.database.models.reminder import Reminder
@@ -30,14 +29,13 @@ from src.database.models.sticky import StickyMessage
 from src.database.models.tag import Tag
 from src.database.models.temprole import TempRole
 from src.database.models.timer import Timer
-from src.database.models.transaction import Transaction
 from src.database.models.vanity import VanityConfig, VanityTracker
 from src.database.models.voicemaster import VoiceMasterChannel, VoiceMasterConfig
 from src.database.models.webhook import ManagedWebhook
 from src.database.models.welcome import WelcomeConfig
 
 __all__ = [
-    "Player", "GuildConfig", "Transaction",
+    "GuildConfig",
     "ModCase", "ModerationConfig", "JailedMember", "ImmuneEntry", "TempRole",
     "ManagedWebhook", "ReactionRole", "ButtonRole", "StickyMessage", "Timer", "Reminder",
     "AutoRole", "Tag", "WelcomeConfig", "StarboardConfig", "StarboardEntry",

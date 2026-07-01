@@ -17,11 +17,6 @@ from src.core.emojis import Emojis
 # Display category -> (dropdown emoji, description, [cog class names grouped under it]).
 # Insertion order is the order options appear in the dropdown.
 CATEGORIES: dict[str, tuple[str, str, list[str]]] = {
-    "Economy": (
-        Emojis.BITS,
-        "Earn, gamble, and manage your bits.",
-        ["Economy", "Leaderboard"],
-    ),
     "Leveling": (
         Emojis.XP,
         "XP, ranks, and level rewards.",

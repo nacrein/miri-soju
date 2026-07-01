@@ -10,7 +10,7 @@ The bot's website + web control panel. Three layers, one same-origin app:
    prefix) from a browser instead of `,setup` commands in chat. Lives under
    `/dashboard`.
 3. **Staff analytics** — a bot-staff-only area (`/staff`) with global, cross-server
-   insight: economy health, command-usage charts, and the error log. Gated by the
+   insight: command-usage charts, moderation activity, and the error log. Gated by the
    same `OWNER_ID`/`STAFF_IDS` the in-Discord `,staff` commands use.
 
 It is a **standalone FastAPI + React app** that reuses the bot's own models,
@@ -41,7 +41,7 @@ adds a small, self-contained, opt-in-by-existing bot-side piece:
   Alembic migration `e2f3a4b5c6d7`),
 - a listener cog `src/modules/analytics/` that writes one row per completed
   command (best-effort; it can never break a command),
-- read-only aggregate helpers on the economy repository and `core/error_log`.
+- read-only aggregate helpers on the moderation repository and `core/error_log`.
 
 None of this changes existing command behaviour. If you don't want it, don't run
 the migration and skip the analytics cog — the rest of the dashboard is unaffected.
