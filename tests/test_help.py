@@ -231,7 +231,6 @@ async def test_known_cogs_route_to_expected_categories():
             assert cmd is not None, f"{cmd_name} not registered"
             return next(name for name, cmds in cats.items() if cmd in cmds)
 
-        assert category_of("vault") == "Economy"
         assert category_of("levels") == "Leveling"
         assert category_of("ban") == "Moderation"
         assert category_of("staff") == "Moderation"
@@ -263,12 +262,12 @@ async def test_picking_a_category_lists_its_commands_in_one_codeblock():
     try:
         cats = bot.get_cog("Help")._categories()
         menu = HelpMenu(1, cats, ",", invoker=_FAKE_AUTHOR)
-        e = menu.category_embed("Economy")
-        assert "## `Economy` commands" in e.description
+        e = menu.category_embed("Moderation")
+        assert "## `Moderation` commands" in e.description
         assert "```ansi" in e.description  # a single codeblock, not paged cards
         # footer counts the category's top-level commands and how many are groups
-        groups = sum(1 for c in cats["Economy"] if isinstance(c, commands.Group))
-        assert e.footer.text == f"{len(cats['Economy'])} commands · {groups} groups"
+        groups = sum(1 for c in cats["Moderation"] if isinstance(c, commands.Group))
+        assert e.footer.text == f"{len(cats['Moderation'])} commands · {groups} groups"
         assert e.author.name == "nacrein"  # house-style invoker row is kept
     finally:
         await _unload(bot)

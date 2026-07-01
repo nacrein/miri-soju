@@ -1,231 +1,6 @@
 {
-  "total": 306,
+  "total": 309,
   "categories": [
-    {
-      "name": "Economy",
-      "description": "Earn, gamble, and manage your bits.",
-      "commands": [
-        {
-          "name": "beg",
-          "aliases": [],
-          "description": "Beg for a few bits. Sometimes you get nothing.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "blackjack",
-          "aliases": [
-            "bj"
-          ],
-          "description": "Play blackjack against the dealer.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "blackjack 500"
-        },
-        {
-          "name": "coinflip",
-          "aliases": [
-            "cf"
-          ],
-          "description": "Bet on a coin flip. Call heads or tails.",
-          "signature": "<amount> <call>",
-          "is_group": false,
-          "example": "coinflip all heads"
-        },
-        {
-          "name": "cooldowns",
-          "aliases": [
-            "cd"
-          ],
-          "description": "Show all your cooldowns at a glance.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "crash",
-          "aliases": [],
-          "description": "Watch the multiplier climb and cash out before it crashes.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "crash 500"
-        },
-        {
-          "name": "daily",
-          "aliases": [],
-          "description": "Claim your daily bits. Keep a streak for bigger rewards.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "deposit",
-          "aliases": [
-            "dep"
-          ],
-          "description": "Move bits from your wallet into your safe vault. Use `all` to deposit everything.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "deposit all"
-        },
-        {
-          "name": "dice",
-          "aliases": [],
-          "description": "Roll under your target (2-98). Lower target, higher payout.",
-          "signature": "<amount> <target>",
-          "is_group": false,
-          "example": "dice 500 50"
-        },
-        {
-          "name": "generator",
-          "aliases": [
-            "gen"
-          ],
-          "description": "View your passive generator; claim or upgrade it with buttons.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "hilo",
-          "aliases": [],
-          "description": "Guess higher or lower. Each call climbs the multiplier; cash out before you miss.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "hilo 500"
-        },
-        {
-          "name": "ladder",
-          "aliases": [],
-          "description": "Climb the ladder for rising multipliers. Cash out before you bust.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "ladder 500"
-        },
-        {
-          "name": "leaderboard",
-          "aliases": [
-            "lb",
-            "rich",
-            "networth",
-            "net",
-            "worth"
-          ],
-          "description": "Server-wide rankings. Use the dropdown to switch board.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "limbo",
-          "aliases": [],
-          "description": "Set a target multiplier. Win if the round reaches it.",
-          "signature": "<amount> <target>",
-          "is_group": false,
-          "example": "limbo 500 2.5"
-        },
-        {
-          "name": "pay",
-          "aliases": [
-            "send"
-          ],
-          "description": "Pay bits from your wallet to another player. Confirms before sending.",
-          "signature": "<user> <amount>",
-          "is_group": false,
-          "example": "pay @user all"
-        },
-        {
-          "name": "plinko",
-          "aliases": [],
-          "description": "Drop a ball down the pegs into a multiplier bucket.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "plinko 500"
-        },
-        {
-          "name": "pray",
-          "aliases": [],
-          "description": "Pray for bits. Sometimes the heavens are generous.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "profile",
-          "aliases": [
-            "p"
-          ],
-          "description": "Your full economy card: balances, wealth rank, streak, generator, cooldowns.",
-          "signature": "[user]",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "roulette",
-          "aliases": [
-            "roul"
-          ],
-          "description": "Bet on roulette: red, black, a dozen (1/2/3), or a number (0-36).",
-          "signature": "<amount> <bet>",
-          "is_group": false,
-          "example": "roulette 500 red"
-        },
-        {
-          "name": "slots",
-          "aliases": [],
-          "description": "Spin the slot machine.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "slots 500"
-        },
-        {
-          "name": "steal",
-          "aliases": [],
-          "description": "Attempt to steal bits from someone's wallet. Confirms before the attempt.",
-          "signature": "<user>",
-          "is_group": false,
-          "example": "steal @user"
-        },
-        {
-          "name": "vault",
-          "aliases": [],
-          "description": "View your vault and upgrade its capacity with a button.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "wallet",
-          "aliases": [
-            "bal",
-            "balance"
-          ],
-          "description": "Show your bits, or someone else's.",
-          "signature": "[user]",
-          "is_group": false,
-          "example": "wallet @user"
-        },
-        {
-          "name": "withdraw",
-          "aliases": [
-            "with"
-          ],
-          "description": "Move bits from your vault back into your wallet. Use `all` to withdraw everything.",
-          "signature": "<amount>",
-          "is_group": false,
-          "example": "withdraw all"
-        },
-        {
-          "name": "work",
-          "aliases": [],
-          "description": "Work for some bits.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        }
-      ]
-    },
     {
       "name": "Leveling",
       "description": "XP, ranks, and level rewards.",
@@ -660,14 +435,6 @@
           "example": "clearwarnings @user"
         },
         {
-          "name": "give",
-          "aliases": [],
-          "description": "Mint bits straight into a user's wallet (staff faucet). Admin only.",
-          "signature": "<user> <amount>",
-          "is_group": false,
-          "example": "give @user 500"
-        },
-        {
           "name": "immune",
           "aliases": [],
           "description": "Protect a member or role from moderation actions.",
@@ -779,7 +546,7 @@
             "cases"
           ],
           "description": "Full moderation history for a member (every case type).",
-          "signature": "<member> [page]",
+          "signature": "<member>",
           "is_group": false,
           "example": null
         },
@@ -1207,24 +974,6 @@
           "example": null
         },
         {
-          "name": "staff econban",
-          "aliases": [],
-          "description": "Block a user from the economy only. Staff moderation tool.",
-          "signature": "<user> [reason]",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "staff economy",
-          "aliases": [
-            "eco"
-          ],
-          "description": "Server-wide economy totals: circulation, holdings, player count.",
-          "signature": "",
-          "is_group": false,
-          "example": null
-        },
-        {
           "name": "staff error",
           "aliases": [
             "err",
@@ -1236,39 +985,10 @@
           "example": null
         },
         {
-          "name": "staff give",
-          "aliases": [
-            "grant",
-            "add"
-          ],
-          "description": "Mint bits straight into a user's wallet (staff faucet). Admin only.",
-          "signature": "<user> <amount>",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "staff history",
-          "aliases": [],
-          "description": "A user's economy transaction history.",
-          "signature": "<user> [page]",
-          "is_group": false,
-          "example": null
-        },
-        {
           "name": "staff promote",
           "aliases": [],
           "description": "Grant a user staff, or `admin` (owner only), e.g. ,staff promote @u admin.",
           "signature": "<user> [tier]",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "staff reset",
-          "aliases": [
-            "wipe"
-          ],
-          "description": "Wipe a user's balance (wallet + vault) to zero. Staff moderation tool.",
-          "signature": "<user>",
           "is_group": false,
           "example": null
         },
@@ -1283,17 +1003,6 @@
           "example": null
         },
         {
-          "name": "staff take",
-          "aliases": [
-            "remove",
-            "deduct"
-          ],
-          "description": "Remove bits from a user (staff sink; wallet first, then vault). Admin only.",
-          "signature": "<user> <amount>",
-          "is_group": false,
-          "example": null
-        },
-        {
           "name": "staff unblacklist",
           "aliases": [
             "unbl"
@@ -1302,22 +1011,6 @@
           "signature": "<user>",
           "is_group": false,
           "example": null
-        },
-        {
-          "name": "staff uneconban",
-          "aliases": [],
-          "description": "Lift a user's economy block. Staff moderation tool.",
-          "signature": "<user>",
-          "is_group": false,
-          "example": null
-        },
-        {
-          "name": "take",
-          "aliases": [],
-          "description": "Remove bits from a user (staff sink; wallet first, then vault). Admin only.",
-          "signature": "<user> <amount>",
-          "is_group": false,
-          "example": "take @user 500"
         },
         {
           "name": "temprole",
@@ -1915,6 +1608,42 @@
           "example": "ask what's the capital of France?"
         },
         {
+          "name": "autorole",
+          "aliases": [
+            "autoroles"
+          ],
+          "description": "Roles given to members automatically when they join.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "autorole add",
+          "aliases": [],
+          "description": "Add a role to auto-assign on join.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "autorole list",
+          "aliases": [],
+          "description": "List this server's autoroles.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "autorole remove",
+          "aliases": [
+            "del"
+          ],
+          "description": "Stop auto-assigning a role.",
+          "signature": "<role>",
+          "is_group": false,
+          "example": null
+        },
+        {
           "name": "avatar",
           "aliases": [
             "av",
@@ -2026,6 +1755,95 @@
           "example": null
         },
         {
+          "name": "giveaway",
+          "aliases": [
+            "gw"
+          ],
+          "description": "Run giveaways.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "giveaway end",
+          "aliases": [],
+          "description": "End a giveaway now and draw its winners.",
+          "signature": "<message_id>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "giveaway list",
+          "aliases": [],
+          "description": "List active giveaways.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "giveaway reroll",
+          "aliases": [],
+          "description": "Reroll the winners of a giveaway.",
+          "signature": "<message_id>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "giveaway start",
+          "aliases": [],
+          "description": "Start a giveaway, e.g. `,giveaway start 1h 2 Discord Nitro`.",
+          "signature": "<duration> <winners> <prize>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "goodbye",
+          "aliases": [
+            "farewell",
+            "leave"
+          ],
+          "description": "Farewell posted when a member leaves.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "goodbye channel",
+          "aliases": [],
+          "description": "Set the goodbye channel (enables goodbyes).",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "goodbye disable",
+          "aliases": [
+            "off"
+          ],
+          "description": "Turn goodbyes off.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "goodbye message",
+          "aliases": [
+            "msg"
+          ],
+          "description": "Set the goodbye text. Placeholders: {user} {name} {server} {count}.",
+          "signature": "<message>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "goodbye test",
+          "aliases": [],
+          "description": "Preview the goodbye message on yourself.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
           "name": "inrole",
           "aliases": [],
           "description": "List the members who have a role.",
@@ -2041,6 +1859,35 @@
           ],
           "description": "Show how many members are in this server.",
           "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "poll",
+          "aliases": [],
+          "description": "Create and manage polls.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "poll create",
+          "aliases": [
+            "new",
+            "start"
+          ],
+          "description": "Create a poll: `,poll create Question? | Option A | Option B`.",
+          "signature": "<text>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "poll end",
+          "aliases": [
+            "close"
+          ],
+          "description": "Close a poll and freeze its result (poll author or Manage Messages).",
+          "signature": "<message_id>",
           "is_group": false,
           "example": null
         },
@@ -2110,6 +1957,68 @@
           "example": null
         },
         {
+          "name": "starboard",
+          "aliases": [
+            "sb"
+          ],
+          "description": "Configure the starboard.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "starboard channel",
+          "aliases": [],
+          "description": "Set the board channel (enables the starboard).",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "starboard disable",
+          "aliases": [
+            "off"
+          ],
+          "description": "Turn the starboard off.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "starboard emoji",
+          "aliases": [],
+          "description": "Set the star emoji to watch for (default ⭐).",
+          "signature": "<emoji>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "starboard selfstar",
+          "aliases": [],
+          "description": "Allow (or not) a message author's own star to count.",
+          "signature": "<allowed>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "starboard status",
+          "aliases": [],
+          "description": "Show the current starboard settings.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "starboard threshold",
+          "aliases": [
+            "count"
+          ],
+          "description": "Set how many stars a message needs to reach the board.",
+          "signature": "<threshold>",
+          "is_group": false,
+          "example": null
+        },
+        {
           "name": "sticker",
           "aliases": [],
           "description": "Custom sticker management. Bare command lists the subcommands.",
@@ -2153,6 +2062,71 @@
           "aliases": [],
           "description": "Rename a server sticker.",
           "signature": "<old_name> <new_name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "tag",
+          "aliases": [
+            "t"
+          ],
+          "description": "Show a tag by name, or list the subcommands when called bare.",
+          "signature": "[name]",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "tag create",
+          "aliases": [
+            "add"
+          ],
+          "description": "Create a tag. Quote the name if it has spaces.",
+          "signature": "<name> <content>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "tag delete",
+          "aliases": [
+            "del",
+            "remove"
+          ],
+          "description": "Delete a tag you own (or any, with Manage Server).",
+          "signature": "<name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "tag edit",
+          "aliases": [],
+          "description": "Edit a tag you own (or any, with Manage Server).",
+          "signature": "<name> <content>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "tag info",
+          "aliases": [],
+          "description": "Show who made a tag and how often it's used.",
+          "signature": "<name>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "tag list",
+          "aliases": [
+            "all"
+          ],
+          "description": "List this server's tags.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "tag raw",
+          "aliases": [],
+          "description": "Show a tag's raw source (escaped), handy before editing.",
+          "signature": "<name>",
           "is_group": false,
           "example": null
         },
@@ -2204,6 +2178,52 @@
           ],
           "description": "Show details about a user.",
           "signature": "[user]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "welcome",
+          "aliases": [
+            "greet"
+          ],
+          "description": "Greeting posted when a member joins.",
+          "signature": "",
+          "is_group": true,
+          "example": null
+        },
+        {
+          "name": "welcome channel",
+          "aliases": [],
+          "description": "Set the welcome channel (enables welcomes).",
+          "signature": "<channel>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "welcome disable",
+          "aliases": [
+            "off"
+          ],
+          "description": "Turn welcomes off.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "welcome message",
+          "aliases": [
+            "msg"
+          ],
+          "description": "Set the welcome text. Placeholders: {user} {name} {server} {count}.",
+          "signature": "<message>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "welcome test",
+          "aliases": [],
+          "description": "Preview the welcome message on yourself.",
+          "signature": "",
           "is_group": false,
           "example": null
         }

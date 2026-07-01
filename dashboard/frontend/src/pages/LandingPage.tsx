@@ -39,7 +39,7 @@ export default function LandingPage() {
             with <span className="hero__accent">warmth</span>.
           </h1>
           <p className="hero__subtitle">
-            Economy, leveling, moderation, automod, music and more — {CATALOG.total} commands
+            Leveling, moderation, automod, music and more — {CATALOG.total} commands
             across {categoryCount} categories, every one configurable from a dashboard built for
             humans, not config files.
           </p>

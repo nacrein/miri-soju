@@ -59,20 +59,12 @@ export interface CommandCatalog {
 }
 
 // ── staff analytics ──────────────────────────────────────────────────────────
-export interface EconomyTotals {
-  players: number;
-  wallet_total: number;
-  vault_total: number;
-  circulation: number;
-}
 export interface CommandTotals {
   invocations: number;
   unique_users: number;
   distinct_commands: number;
 }
 export interface StaffSummary {
-  economy: EconomyTotals;
-  ledger_rows: number;
   commands: CommandTotals;
   mod_cases: number;
   errors_24h: number;
@@ -96,39 +88,6 @@ export interface CommandAnalytics {
   top_30d: TopCommand[];
   by_day: UsageDay[];
   by_hour: UsageHour[];
-}
-export interface LedgerKind {
-  kind: string;
-  count: number;
-  net: number;
-}
-export interface TopPlayer {
-  user_id: string;
-  net_worth: number;
-  wallet: number;
-  vault: number;
-}
-export interface LedgerRow {
-  user_id: string;
-  kind: string;
-  amount: number;
-  balance_after: number;
-  created_at: string;
-}
-export interface FlowDay {
-  day: string;
-  minted: number;
-  burned: number;
-}
-export interface EconomyAnalytics {
-  totals: EconomyTotals;
-  ledger_rows: number;
-  breakdown: LedgerKind[];
-  flow: FlowDay[];
-  gambling_net: number;
-  top_net_worth: TopPlayer[];
-  top_wallet: TopPlayer[];
-  recent: LedgerRow[];
 }
 export interface ModAction {
   kind: string;

@@ -46,7 +46,6 @@ export function BotIcon({
 
 // category name → (bot emoji registry key, curated unicode fallback).
 export const CATEGORY_ICON: Record<string, { name: string; fallback: string }> = {
-  Economy: { name: "bits", fallback: "🪙" },
   Leveling: { name: "xp", fallback: "📈" },
   Moderation: { name: "shield", fallback: "🛡️" },
   "Server Setup": { name: "settings", fallback: "⚙️" },
