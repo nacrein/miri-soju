@@ -17,7 +17,7 @@ type Tab = "commands" | "moderation" | "errors";
 
 const fmt = (n: number) => n.toLocaleString();
 const when = (iso: string) => {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
 };
@@ -37,7 +37,7 @@ export default function StaffPage() {
           <span className="badge badge--primary">bot-wide</span>
         </div>
         <div className="page-header__desc">
-          Global, cross-server insight for Miri's staff — command usage, moderation, and errors.
+          Global, cross-server insight for Miri's staff, command usage, moderation, and errors.
         </div>
       </div>
 
@@ -89,7 +89,7 @@ function CommandsTab() {
         </Alert>
       )}
       <div className="grid-2">
-        <Panel title="Usage — last 14 days">
+        <Panel title="Usage, last 14 days">
           <DayBars data={d.by_day} />
         </Panel>
         <Panel title="Busiest hours (UTC)">
@@ -121,7 +121,7 @@ function ModerationTab() {
   return (
     <div className="analytics-grid">
       {d.total_cases === 0 && <Alert tone="info">No moderation cases logged yet.</Alert>}
-      <Panel title={`Actions — last 14 days (${fmt(d.total_cases)} cases all-time)`}>
+      <Panel title={`Actions, last 14 days (${fmt(d.total_cases)} cases all-time)`}>
         <DayBars data={d.by_day} />
       </Panel>
       <Panel title="By action type">
@@ -143,7 +143,7 @@ function ErrorsTab() {
 
   return (
     <div className="analytics-grid">
-      <Panel title={`Recent errors — ${fmt(d.errors_24h)} in the last 24h, ${fmt(d.errors_total)} all-time`}>
+      <Panel title={`Recent errors, ${fmt(d.errors_24h)} in the last 24h, ${fmt(d.errors_total)} all-time`}>
         {d.recent.length === 0 ? (
           <div className="muted">No errors logged. 🎉</div>
         ) : (
@@ -244,7 +244,7 @@ function HourBars({ data }: { data: { hour: number; count: number }[] }) {
   return (
     <div className="day-bars day-bars--hours">
       {counts.map((c, h) => (
-        <div key={h} className="day-bar" title={`${h}:00 — ${c}`}>
+        <div key={h} className="day-bar" title={`${h}:00, ${c}`}>
           <div className="day-bar__fill" style={{ height: grown ? `${(c / max) * 100}%` : 0 }} />
           {h % 3 === 0 && <div className="day-bar__label">{h}</div>}
         </div>

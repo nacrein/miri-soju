@@ -39,9 +39,8 @@ export default function LandingPage() {
             with <span className="hero__accent">warmth</span>.
           </h1>
           <p className="hero__subtitle">
-            Leveling, moderation, automod, music and more — {CATALOG.total} commands
-            across {categoryCount} categories, every one configurable from a dashboard built for
-            humans, not config files.
+            Leveling, moderation, automod, music and more. {CATALOG.total} commands
+            across {categoryCount} categories, every one configurable from the dashboard.
           </p>
           <div className="hero__cta">
             <a className="btn btn--primary btn--lg" href={invite}>
@@ -95,10 +94,10 @@ export default function LandingPage() {
             a save bar that never lets you lose a change.
           </p>
           <ul className="checklist">
-            <li>Leveling — XP rates, rewards, per-channel multipliers</li>
-            <li>AutoMod — filters, strike thresholds, exemptions</li>
-            <li>Server Log — pick exactly what gets logged, and where</li>
-            <li>Moderation &amp; Prefix — jail role, custom prefix</li>
+            <li>Leveling: XP rates, rewards, per-channel multipliers</li>
+            <li>AutoMod: filters, strike thresholds, exemptions</li>
+            <li>Server Log: pick exactly what gets logged, and where</li>
+            <li>Moderation &amp; Prefix: jail role, custom prefix</li>
           </ul>
           <Link className="btn btn--primary" to="/dashboard">
             Open your dashboard
@@ -160,10 +159,7 @@ export default function LandingPage() {
             Miri's cooking something up
           </h2>
           <p className="section__desc">
-            A brand-new <span className="hero__accent">economy</span> is simmering on the back
-            burner — bits to earn, a vault to stash them in, and games to (maybe) lose them at.
-            We pulled the old one apart to rebuild it faster, fairer, and a whole lot more fun.
-            Grab a seat; it won't be long.
+            A brand-new <span className="hero__accent">economy</span> is simmering on the back burner.
           </p>
         </div>
       </section>
@@ -173,7 +169,7 @@ export default function LandingPage() {
 
         <div className="cta-band__inner">
           <h2 className="section__title">Ready to bring Miri home?</h2>
-          <p className="section__desc">Add the bot, open the dashboard, and you're running in minutes.</p>
+          <p className="section__desc">Add the bot, open the dashboard, and you're set.</p>
           <div className="hero__cta">
             <a className="btn btn--primary btn--lg" href={invite}>Add to Discord</a>
             <Link className="btn btn--ghost btn--lg" to="/commands">Browse commands</Link>

@@ -1,4 +1,4 @@
-// Wire types — the TypeScript mirror of dashboard/schemas.py.
+// Wire types, the TypeScript mirror of dashboard/schemas.py.
 // Every Discord id is a string here too (64-bit; unsafe as a JS number).
 
 export interface User {
@@ -99,7 +99,7 @@ export interface ModerationAnalytics {
   by_day: UsageDay[];
 }
 
-// Bot emoji registry from GET /api/emojis — name → unicode or "<:name:id>".
+// Bot emoji registry from GET /api/emojis, name → unicode or "<:name:id>".
 export type BotEmojiMap = Record<string, string>;
 export interface ErrorRow {
   code: string;

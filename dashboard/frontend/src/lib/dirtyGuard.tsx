@@ -5,9 +5,9 @@
 //
 // Two guards, because the app uses <BrowserRouter> (not a data router, so
 // react-router's useBlocker is unavailable):
-//   1. a window 'beforeunload' listener — covers tab close, refresh, and
+//   1. a window 'beforeunload' listener, covers tab close, refresh, and
 //      navigation to an external URL;
-//   2. confirmDiscard() — an explicit window.confirm() the in-app navigators
+//   2. confirmDiscard(), an explicit window.confirm() the in-app navigators
 //      (module nav, brand link) call before routing away.
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";

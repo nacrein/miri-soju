@@ -1,11 +1,11 @@
-// REFERENCE PANEL — every other module panel follows this shape.
+// REFERENCE PANEL, every other module panel follows this shape.
 //
 // Anatomy:
 //  1. useConfigForm(): load config + a local draft of the *scalar* fields, with
 //     dirty tracking; Save does the PUT, the SaveBar shows state.
 //  2. project(): the editable scalar subset (lists are handled separately).
 //  3. useConfigAction(): immediate add/remove for server-managed lists (rewards,
-//     multipliers) — each call returns the full config and refreshes the panel.
+//     multipliers), each call returns the full config and refreshes the panel.
 //  4. meta.roles / meta.channels populate the dropdowns with the server's real
 //     roles and channels.
 import { useState } from "react";
@@ -89,7 +89,7 @@ export default function LevelingPanel({ guildId, meta }: PanelProps) {
           <div className="grid-2">
             <NumberField
               label="XP per message"
-              hint="1–1000"
+              hint="1-1000"
               min={1}
               max={1000}
               value={d.xp_per_message}
@@ -97,7 +97,7 @@ export default function LevelingPanel({ guildId, meta }: PanelProps) {
             />
             <NumberField
               label="Message cooldown (seconds)"
-              hint="0–3600 — minimum gap between XP-earning messages"
+              hint="0-3600. Minimum gap between XP-earning messages"
               min={0}
               max={3600}
               value={d.message_cooldown}
@@ -183,7 +183,7 @@ export default function LevelingPanel({ guildId, meta }: PanelProps) {
       <Card title="✖️ Channel multipliers" desc="Boost or disable XP in specific channels (0 = no XP).">
         <div className="stack">
           {multipliers.length === 0 ? (
-            <Empty>No channel multipliers set — every channel earns XP at 1×.</Empty>
+            <Empty>No channel multipliers set. Every channel earns XP at 1×.</Empty>
           ) : (
             multipliers.map((m) => (
               <div key={m.channel_id} className="list-row">

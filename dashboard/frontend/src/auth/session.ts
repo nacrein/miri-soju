@@ -1,5 +1,5 @@
 // Session state, backed by React Query. The browser never decides if you're
-// logged in — it asks /api/auth/me and trusts the cookie-backed answer.
+// logged in, it asks /api/auth/me and trusts the cookie-backed answer.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api } from "../api/client";

@@ -30,7 +30,7 @@ export default function AutorolesPanel({ guildId, meta }: PanelProps) {
       <Card title="🎭 Autoroles" desc="Roles automatically granted to every member when they join.">
         <div className="stack">
           {roles.length === 0 ? (
-            <Empty>No autoroles yet — new members get no role automatically.</Empty>
+            <Empty>No autoroles yet. New members get no role automatically.</Empty>
           ) : (
             roles.map((id) => (
               <div key={id} className="list-row">

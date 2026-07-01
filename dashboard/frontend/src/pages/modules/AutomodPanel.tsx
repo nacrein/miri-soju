@@ -1,4 +1,4 @@
-// AutoMod panel — the richest module. Scalar settings live in a single draft
+// AutoMod panel, the richest module. Scalar settings live in a single draft
 // edited via useConfigForm + saved through the SaveBar; the four server-managed
 // lists (banned words, allowed domains, exempt roles, exempt channels) mutate
 // immediately through useConfigAction, mirroring LevelingPanel's rewards list.
@@ -22,7 +22,7 @@ import type { AutomodConfig } from "../../lib/types";
 import { useConfigAction, useConfigForm } from "../../lib/useConfigForm";
 import type { PanelProps } from "./types";
 
-// All scalar fields — everything except the four server-managed list arrays.
+// All scalar fields, everything except the four server-managed list arrays.
 interface Draft {
   enabled: boolean;
   log_only: boolean;
@@ -59,7 +59,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
   const form = useConfigForm<AutomodConfig, Draft>({
     queryKey,
     path,
-    // Strip the four list arrays — they're edited through their own endpoints.
+    // Strip the four list arrays, they're edited through their own endpoints.
     project: (c) => ({
       enabled: c.enabled,
       log_only: c.log_only,
@@ -135,7 +135,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
           />
           <NumberField
             label="Strike decay window (hours)"
-            hint="1–168 — how long a strike counts toward escalation."
+            hint="1-168. How long a strike counts toward escalation."
             min={1}
             max={168}
             value={d.strike_window_hours}
@@ -163,7 +163,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
             <div className="grid-2">
               <NumberField
                 label="Messages"
-                hint="2–30"
+                hint="2-30"
                 min={2}
                 max={30}
                 value={d.spam_count}
@@ -171,7 +171,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
               />
               <NumberField
                 label="Within (seconds)"
-                hint="1–60"
+                hint="1-60"
                 min={1}
                 max={60}
                 value={d.spam_interval}
@@ -179,7 +179,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
               />
               <NumberField
                 label="Duplicate threshold"
-                hint="2–20"
+                hint="2-20"
                 min={2}
                 max={20}
                 value={d.duplicate_threshold}
@@ -197,7 +197,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
             <div className="stack">
               <NumberField
                 label="Mention limit"
-                hint="1–50"
+                hint="1-50"
                 min={1}
                 max={50}
                 value={d.mention_limit}
@@ -223,7 +223,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
             <div className="grid-2">
               <NumberField
                 label="Caps percent"
-                hint="50–100"
+                hint="50-100"
                 min={50}
                 max={100}
                 value={d.caps_percent}
@@ -231,7 +231,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
               />
               <NumberField
                 label="Minimum length"
-                hint="1–200 — ignore shorter messages."
+                hint="1-200. Ignore shorter messages."
                 min={1}
                 max={200}
                 value={d.caps_min_len}
@@ -244,7 +244,7 @@ export default function AutomodPanel({ guildId, meta }: PanelProps) {
           {d.filter_emoji && (
             <NumberField
               label="Emoji limit"
-              hint="1–50"
+              hint="1-50"
               min={1}
               max={50}
               value={d.emoji_limit}

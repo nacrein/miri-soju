@@ -1,5 +1,5 @@
-// Client mirror of src/modules/embed/script.py — the same caps, the same color
-// rules, the same "needs a title, description, or a field" check — so what the
+// Client mirror of src/modules/embed/script.py, the same caps, the same color
+// rules, the same "needs a title, description, or a field" check, so what the
 // builder previews and copies is exactly what `,ce <json>` will accept in Discord.
 import type { EmbedScript } from "./types";
 

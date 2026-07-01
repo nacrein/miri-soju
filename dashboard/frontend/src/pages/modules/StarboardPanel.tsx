@@ -60,7 +60,7 @@ export default function StarboardPanel({ guildId, meta }: PanelProps) {
           <div className="grid-2">
             <NumberField
               label="Star threshold"
-              hint="1–50 — stars needed to reach the board"
+              hint="1-50. Stars needed to reach the board"
               min={1}
               max={50}
               value={d.threshold}

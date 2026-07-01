@@ -43,7 +43,7 @@ export default function ServerlogPanel({ guildId, meta }: PanelProps) {
         <div className="stack">
           <Select
             label="Log channel"
-            placeholder="Logging is off — pick a channel…"
+            placeholder="Logging is off, pick a channel…"
             value={d.log_channel_id}
             onChange={(v) => form.set("log_channel_id", v)}
             options={channelOptions}

@@ -1,4 +1,4 @@
-// Small motion helpers — scroll-reveal + count-up — that quietly no-op when the
+// Small motion helpers, scroll-reveal + count-up, that quietly no-op when the
 // visitor prefers reduced motion.
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -80,7 +80,7 @@ export function useCountUp(target: number, ms = 1000): number {
   return value;
 }
 
-/** True shortly after mount — flip a width/height from 0 to animate bars in. */
+/** True shortly after mount, flip a width/height from 0 to animate bars in. */
 export function useGrow(delay = 60): boolean {
   const [grown, setGrown] = useState(false);
   useEffect(() => {

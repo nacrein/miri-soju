@@ -26,7 +26,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       const data = await res.json();
       if (typeof data?.detail === "string") detail = data.detail;
     } catch {
-      /* non-JSON error body — keep statusText */
+      /* non-JSON error body, keep statusText */
     }
     throw new ApiError(res.status, detail);
   }

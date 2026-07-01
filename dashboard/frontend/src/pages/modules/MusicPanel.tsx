@@ -50,7 +50,7 @@ export default function MusicPanel({ guildId, meta }: PanelProps) {
           />
           <NumberField
             label="Default volume"
-            hint="0–150 — the volume new players start at"
+            hint="0-150. The volume new players start at"
             min={0}
             max={150}
             value={d.default_volume}

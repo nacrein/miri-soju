@@ -36,7 +36,7 @@ export default function EmbedBuilderPage() {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {
-      /* clipboard blocked — the JSON is still visible to select manually */
+      /* clipboard blocked; the JSON is still visible to select manually */
     }
   };
 
@@ -67,7 +67,7 @@ export default function EmbedBuilderPage() {
                 className="textarea"
                 value={s.description ?? ""}
                 maxLength={CAPS.description}
-                placeholder="Body text — newlines and **markdown** work."
+                placeholder="Body text. Newlines and **markdown** work."
                 onChange={(e) => set("description", e.target.value)}
                 style={{ minHeight: 120 }}
               />
@@ -209,7 +209,7 @@ export default function EmbedBuilderPage() {
             </div>
             <pre className="embed-output__code mono">{json}</pre>
             <div className="faint" style={{ marginTop: 8 }}>
-              Paste into <span className="mono">,ce</span> — e.g.{" "}
+              Paste into <span className="mono">,ce</span>, e.g.{" "}
               <span className="mono">,ce {json.replace(/\s+/g, " ").slice(0, 40)}…</span>
             </div>
           </div>

@@ -68,7 +68,7 @@ export function NumberField({ label, hint, error, value, onChange, min, max, ste
           if (raw === "") return onChange(min ?? 0);
           const n = Number(raw);
           // Clamp to [min, max] so out-of-range values can't round-trip and surface
-          // as an opaque backend 422 — the backend bounds mirror these min/max props.
+          // as an opaque backend 422, the backend bounds mirror these min/max props.
           onChange(clamp(Number.isFinite(n) ? n : (min ?? 0), min, max));
         }}
       />

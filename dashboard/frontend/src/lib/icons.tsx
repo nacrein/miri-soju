@@ -1,7 +1,7 @@
 // Brand icons. Icons resolve against the bot's own emoji registry
 // (src/core/emojis.py, served at /api/emojis): the moment you upload custom art
 // and set its id there, the whole site swaps from the unicode fallback to your
-// real emoji — no frontend change. Until then, the curated fallbacks below show.
+// real emoji, no frontend change. Until then, the curated fallbacks below show.
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../api/client";

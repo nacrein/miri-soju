@@ -32,7 +32,7 @@ export default function CommandsPage() {
       <div className="page-header">
         <div className="page-header__title">Commands</div>
         <div className="page-header__desc">
-          Every command Miri knows — {CATALOG.total} across {CATALOG.categories.length} categories.
+          Every command Miri knows. {CATALOG.total} across {CATALOG.categories.length} categories.
           The default prefix is <span className="mono">,</span>.
         </div>
       </div>

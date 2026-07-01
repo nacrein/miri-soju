@@ -38,7 +38,7 @@ export default function ModerationPanel({ guildId, meta }: PanelProps) {
         <div className="stack">
           <Select
             label="Jail role"
-            placeholder="No jail role set — pick one…"
+            placeholder="No jail role set, pick one…"
             value={d.jail_role_id}
             onChange={(v) => form.set("jail_role_id", v)}
             options={roleOptions}

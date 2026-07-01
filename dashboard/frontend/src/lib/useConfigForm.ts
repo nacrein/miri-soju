@@ -4,7 +4,7 @@
 // `project` maps the fetched config to the editable subset that the PUT accepts.
 // For modules whose GET also returns server-managed lists (leveling rewards,
 // automod word lists), project() strips them so editing a scalar never fights
-// with a list mutation — the lists are read straight from `config` and changed
+// with a list mutation, the lists are read straight from `config` and changed
 // through their own endpoints via useConfigAction().
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";

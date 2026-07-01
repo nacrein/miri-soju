@@ -1,4 +1,4 @@
-// Shared motion vocabulary — one place for the dashboard's easing, springs, and
+// Shared motion vocabulary, one place for the dashboard's easing, springs, and
 // entrance choreography, so every surface moves with the same intent. Framer
 // Motion is the only animation dependency; all *visual* values still come from
 // tokens.css. Keep this restrained: soft, decelerating, no wobble (the
@@ -6,7 +6,7 @@
 // (enforced globally via <MotionConfig reducedMotion="user"> in App).
 import type { Transition, Variants } from "framer-motion";
 
-// A soft, decelerating curve (easeOutQuint-ish) — the default for entrances.
+// A soft, decelerating curve (easeOutQuint-ish), the default for entrances.
 export const easeSmooth: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 // Springs: "soft" for large surfaces (panels, the nav indicator, the save bar),

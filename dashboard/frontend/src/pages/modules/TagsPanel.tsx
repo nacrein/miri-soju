@@ -52,7 +52,7 @@ export default function TagsPanel({ guildId }: PanelProps) {
 
   return (
     <div className="stack">
-      <Card title="🏷️ Tags" desc="Custom commands — members run ,tag <name> to post the saved text.">
+      <Card title="🏷️ Tags" desc="Custom commands. Members run ,tag <name> to post the saved text.">
         <div className="stack">
           {tags.length === 0 ? (
             <Empty>No tags yet.</Empty>

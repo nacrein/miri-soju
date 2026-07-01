@@ -1,4 +1,4 @@
-/* Design tokens — the single source of the dashboard's look.
+/* Design tokens, the single source of the dashboard's look.
  *
  * Everything else styles via these CSS custom properties, so a re-theme happens
  * here and nowhere else. This is also the natural seed of a real design system

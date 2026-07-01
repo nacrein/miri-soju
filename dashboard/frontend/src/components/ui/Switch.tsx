@@ -32,7 +32,7 @@ interface ToggleRowProps {
   disabled?: boolean;
 }
 
-/** A labelled switch laid out as a full-width row — the workhorse for booleans. */
+/** A labelled switch laid out as a full-width row, the workhorse for booleans. */
 export function ToggleRow({ label, hint, checked, onChange, disabled }: ToggleRowProps) {
   return (
     <div className="switch-row">

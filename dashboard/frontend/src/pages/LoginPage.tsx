@@ -14,7 +14,7 @@ export default function LoginPage() {
         </div>
         <h1 className="page-header__title">Log in to Miri</h1>
         <p className="muted" style={{ marginTop: 8, marginBottom: 24 }}>
-          Sign in with Discord to manage the servers you administrate — leveling, automod, logging,
+          Sign in with Discord to manage the servers you administrate: leveling, automod, logging,
           moderation and more.
         </p>
         {error && (
