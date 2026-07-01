@@ -1,8 +1,17 @@
 # Miri Dashboard
 
-A web control panel for the bot: server admins log in with Discord and configure
-the bot's per-guild settings (leveling, automod, server logging, moderation,
-prefix) from a browser instead of `,setup` commands in chat.
+The bot's website + web control panel. Three layers, one same-origin app:
+
+1. **Public marketing site** — a landing page, a searchable **Commands** catalog
+   (all ~300 commands, generated from the bot's own source), and a live **Embed
+   Builder**. No login required.
+2. **Server dashboard** — server admins log in with Discord and configure the
+   bot's per-guild settings (leveling, automod, server logging, moderation,
+   prefix) from a browser instead of `,setup` commands in chat. Lives under
+   `/dashboard`.
+3. **Staff analytics** — a bot-staff-only area (`/staff`) with global, cross-server
+   insight: economy health, command-usage charts, and the error log. Gated by the
+   same `OWNER_ID`/`STAFF_IDS` the in-Discord `,staff` commands use.
 
 It is a **standalone FastAPI + React app** that reuses the bot's own models,
 async engine, and module repositories from `src/`. It runs as its **own process**
@@ -18,13 +27,24 @@ Browser (React/Vite)  ──/api──▶  FastAPI (dashboard/)  ──asyncpg�
 
 ## Does this affect the bot?
 
-No, except through the shared database — by design. The dashboard:
-- adds **only** the `dashboard/` folder; it edits no existing bot file.
+Config-wise, no — only through the shared database, by design. The dashboard:
 - runs as a **separate process** (its own DB connection pool).
 - uses the bot token **only for read-only** Discord REST calls (a guild's roles/
   channels for the dropdowns) — it does not connect to the gateway or send messages.
 - keeps its web dependencies in `dashboard/requirements.txt`, **not** in the bot's
   `pyproject.toml`.
+
+**One deliberate exception — command-usage tracking (for staff analytics).** The
+staff area's command-usage charts need data nothing recorded before, so this feature
+adds a small, self-contained, opt-in-by-existing bot-side piece:
+- a new `command_usage` table (model `src/database/models/command_usage.py` +
+  Alembic migration `e2f3a4b5c6d7`),
+- a listener cog `src/modules/analytics/` that writes one row per completed
+  command (best-effort; it can never break a command),
+- read-only aggregate helpers on the economy repository and `core/error_log`.
+
+None of this changes existing command behaviour. If you don't want it, don't run
+the migration and skip the analytics cog — the rest of the dashboard is unaffected.
 
 A config change only reaches the bot when someone clicks **Save** (it writes the
 same tables the bot reads). The bot picks it up immediately, or within its config
@@ -121,11 +141,14 @@ run behind HTTPS (e.g. `uvicorn dashboard.app:app --host 0.0.0.0 --port 8000`).
 | `discord_api.py` | Async Discord REST client (OAuth exchange; bot-auth roles/channels/guilds, cached). |
 | `deps.py` | `get_current_user`, `require_guild` (the auth gate). |
 | `schemas.py` | The wire contract. Snowflakes are strings; validation ranges are imported from the bot's own config modules so web + commands can't drift. |
-| `routers/` | One router per module; each reuses that module's existing repository/service. `leveling.py` is the reference shape. |
-| `app.py` | App factory: session middleware, mounts `/api/*`, serves the built SPA. |
+| `routers/` | One router per module; each reuses that module's existing repository/service. `leveling.py` is the reference shape. `staff.py` is the bot-wide analytics router (gated by `require_staff`). |
+| `deps.py` | `get_current_user`, `require_guild` (guild gate), `require_staff` (owner/staff gate — reuses the bot's `OWNER_ID`/`STAFF_IDS`). |
+| `app.py` | App factory: session middleware, mounts `/api/*`, `/api/meta` (public invite link), serves the built SPA. |
 | `frontend/src/components/ui/` | The design-system component library (tokens in `styles/tokens.css`). |
 | `frontend/src/lib/useConfigForm.ts` | The shared load→edit→save hook every panel uses. |
+| `frontend/src/pages/` | `LandingPage`, `CommandsPage`, `EmbedBuilderPage` (public); `GuildPickerPage`/`GuildDashboardPage` (dashboard); `StaffPage` (staff). |
 | `frontend/src/pages/modules/` | One panel per module + `registry.ts` (the nav). `LevelingPanel.tsx` is the reference. |
+| `frontend/src/data/commands.json` | The command catalog powering the Commands page. **Generated** by `scripts/dump_commands.py` — re-run it when commands change (it parses the cogs; no bot/DB needed). |
 
 ## Adding a module
 

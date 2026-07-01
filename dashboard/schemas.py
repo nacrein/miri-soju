@@ -67,6 +67,7 @@ class GuildMetaOut(BaseModel):
 class SessionOut(BaseModel):
     user: UserOut
     guilds: list[GuildOut]
+    is_staff: bool = False  # true for the bot's owner/staff — unlocks the staff area
 
 
 # ── leveling ─────────────────────────────────────────────────────────────────
@@ -230,6 +231,95 @@ class AutomodConfigIn(BaseModel):
     timeout2_minutes: int = Field(..., ge=am.MINUTES_MIN, le=am.MINUTES_MAX)
     kick_at: int = Field(..., ge=am.STRIKE_MIN, le=am.STRIKE_MAX)
     ban_at: int = Field(..., ge=am.STRIKE_MIN, le=am.STRIKE_MAX)
+
+
+# ── staff analytics (bot owner/staff only) ───────────────────────────────────
+
+
+class EconomyTotalsOut(BaseModel):
+    players: int
+    wallet_total: int
+    vault_total: int
+    circulation: int
+
+
+class CommandTotalsOut(BaseModel):
+    invocations: int
+    unique_users: int
+    distinct_commands: int
+
+
+class StaffSummaryOut(BaseModel):
+    """The headline cards at the top of the staff area."""
+
+    economy: EconomyTotalsOut
+    ledger_rows: int
+    commands: CommandTotalsOut
+    errors_24h: int
+    errors_total: int
+
+
+class TopCommandOut(BaseModel):
+    command: str
+    count: int
+
+
+class UsageDayOut(BaseModel):
+    day: str
+    count: int
+
+
+class CommandAnalyticsOut(BaseModel):
+    totals: CommandTotalsOut
+    top: list[TopCommandOut]
+    top_30d: list[TopCommandOut]
+    by_day: list[UsageDayOut]
+
+
+class LedgerKindOut(BaseModel):
+    kind: str
+    count: int
+    net: int  # signed sum: faucets positive, sinks negative
+
+
+class TopPlayerOut(BaseModel):
+    user_id: str
+    net_worth: int
+    wallet: int
+    vault: int
+
+
+class LedgerRowOut(BaseModel):
+    user_id: str
+    kind: str
+    amount: int
+    balance_after: int
+    created_at: str
+
+
+class EconomyAnalyticsOut(BaseModel):
+    totals: EconomyTotalsOut
+    ledger_rows: int
+    breakdown: list[LedgerKindOut]
+    top_net_worth: list[TopPlayerOut]
+    top_wallet: list[TopPlayerOut]
+    recent: list[LedgerRowOut]
+
+
+class ErrorRowOut(BaseModel):
+    code: str
+    context: str
+    exc_type: str
+    message: str
+    guild_id: str | None = None
+    user_id: str | None = None
+    created_at: str
+
+
+class ErrorAnalyticsOut(BaseModel):
+    errors_24h: int
+    errors_total: int
+    recent: list[ErrorRowOut]
 
 
 class StringItemIn(BaseModel):

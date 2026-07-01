@@ -19,8 +19,8 @@ export default function GuildDashboardPage() {
     enabled: !!guildId,
   });
 
-  if (!guildId) return <Navigate to="/" replace />;
-  if (!moduleKey) return <Navigate to={`/guilds/${guildId}/${defaultModuleKey}`} replace />;
+  if (!guildId) return <Navigate to="/dashboard" replace />;
+  if (!moduleKey) return <Navigate to={`/dashboard/guilds/${guildId}/${defaultModuleKey}`} replace />;
   if (isLoading) return <CenteredSpinner />;
   if (isError || !meta) {
     return (
@@ -51,7 +51,7 @@ export default function GuildDashboardPage() {
               className={"modnav__item" + (m.key === active.key ? " modnav__item--active" : "")}
               onClick={() => {
                 if (m.key === active.key) return;
-                if (confirmDiscard()) navigate(`/guilds/${guildId}/${m.key}`);
+                if (confirmDiscard()) navigate(`/dashboard/guilds/${guildId}/${m.key}`);
               }}
             >
               <span className="modnav__icon">{m.icon}</span> {m.label}

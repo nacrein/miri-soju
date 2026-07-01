@@ -18,7 +18,16 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from dashboard.config import get_dashboard_settings
-from dashboard.routers import auth, automod, guilds, leveling, moderation, prefix, serverlog
+from dashboard.routers import (
+    auth,
+    automod,
+    guilds,
+    leveling,
+    moderation,
+    prefix,
+    serverlog,
+    staff,
+)
 from src.core.cache_sync import publish_guild_changed
 
 _FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
@@ -83,6 +92,7 @@ def create_app() -> FastAPI:
         prefix.router,
         moderation.router,
         automod.router,
+        staff.router,
     )
     for router in api_routers:
         app.include_router(router, prefix="/api")
@@ -90,6 +100,19 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     async def health() -> dict:
         return {"status": "ok"}
+
+    @app.get("/api/meta")
+    async def meta() -> dict:
+        """Public bot metadata for the landing page (the OAuth app / invite link).
+
+        The client id is the bot's application id, so we can build a real
+        "Add to Discord" invite without shipping it into the bundle at build time."""
+        client_id = settings.discord_client_id
+        invite_url = (
+            f"https://discord.com/oauth2/authorize?client_id={client_id}"
+            "&permissions=8&scope=bot+applications.commands"
+        )
+        return {"client_id": client_id, "invite_url": invite_url}
 
     _mount_frontend(app)
     return app

@@ -131,6 +131,49 @@ class EconomyRepository:
         result = await self.session.execute(stmt)
         return int(result.scalar_one())
 
+    # ── staff-wide ledger aggregates (dashboard analytics) ───────────────────
+
+    async def total_transactions(self) -> int:
+        """Count of every ledger row ever written (staff view)."""
+        from sqlalchemy import func
+
+        from src.database.models.transaction import Transaction
+
+        stmt = select(func.count()).select_from(Transaction)
+        return int((await self.session.execute(stmt)).scalar_one())
+
+    async def transaction_breakdown(self) -> list[tuple[str, int, int]]:
+        """Per-kind [(kind, count, net_amount), ...], busiest kinds first.
+
+        ``net_amount`` is the signed sum, so faucets read positive and sinks
+        negative — a quick read on where bits enter and leave the economy."""
+        from sqlalchemy import func
+
+        from src.database.models.transaction import Transaction
+
+        stmt = (
+            select(
+                Transaction.kind,
+                func.count(Transaction.id),
+                func.coalesce(func.sum(Transaction.amount), 0),
+            )
+            .group_by(Transaction.kind)
+            .order_by(func.count(Transaction.id).desc())
+        )
+        rows = (await self.session.execute(stmt)).all()
+        return [(k, int(c), int(s)) for k, c, s in rows]
+
+    async def recent_transactions_all(self, limit: int = 25):
+        """Newest ledger rows across every user — a live economy feed for staff."""
+        from src.database.models.transaction import Transaction
+
+        stmt = (
+            select(Transaction)
+            .order_by(Transaction.created_at.desc(), Transaction.id.desc())
+            .limit(limit)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def game_session_resolved(self, session_id: str) -> bool:
         """True if this game session already has a resolution row.
 

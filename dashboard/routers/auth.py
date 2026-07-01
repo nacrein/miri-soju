@@ -17,7 +17,12 @@ from fastapi.responses import RedirectResponse
 
 from dashboard import discord_api
 from dashboard.config import get_dashboard_settings
-from dashboard.deps import SESSION_GUILDS_KEY, SESSION_USER_KEY, get_current_user
+from dashboard.deps import (
+    SESSION_GUILDS_KEY,
+    SESSION_USER_KEY,
+    get_current_user,
+    is_staff_user,
+)
 from dashboard.schemas import GuildOut, SessionOut, UserOut
 
 log = logging.getLogger(__name__)
@@ -41,7 +46,7 @@ async def callback(request: Request, code: str = "", state: str = "") -> Redirec
     settings = get_dashboard_settings()
     expected = request.session.pop(_STATE_KEY, None)
     if not code or not state or state != expected:
-        return RedirectResponse(f"{settings.frontend_url}/?error=auth")
+        return RedirectResponse(f"{settings.frontend_url}/dashboard?error=auth")
 
     try:
         token = await discord_api.exchange_code(code)
@@ -51,7 +56,7 @@ async def callback(request: Request, code: str = "", state: str = "") -> Redirec
         bot_guild_ids = await discord_api.fetch_bot_guild_ids()
     except Exception:  # network / Discord error — don't leak details to the browser
         log.exception("OAuth callback failed")
-        return RedirectResponse(f"{settings.frontend_url}/?error=discord")
+        return RedirectResponse(f"{settings.frontend_url}/dashboard?error=discord")
 
     # Guilds the user may manage AND the bot is actually in.
     manageable: dict[str, dict] = {}
@@ -66,7 +71,7 @@ async def callback(request: Request, code: str = "", state: str = "") -> Redirec
         "avatar": user.get("avatar"),
     }
     request.session[SESSION_GUILDS_KEY] = manageable
-    return RedirectResponse(settings.frontend_url)
+    return RedirectResponse(f"{settings.frontend_url}/dashboard")
 
 
 @router.get("/me", response_model=SessionOut)
@@ -80,6 +85,7 @@ async def me(request: Request) -> SessionOut:
             GuildOut(id=gid, name=g["name"], icon=g.get("icon"))
             for gid, g in guilds.items()
         ],
+        is_staff=is_staff_user(user["id"]),
     )
 
 
