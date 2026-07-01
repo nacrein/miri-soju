@@ -1,5 +1,5 @@
 {
-  "total": 309,
+  "total": 311,
   "categories": [
     {
       "name": "Leveling",
@@ -164,6 +164,18 @@
             "levels_top"
           ],
           "description": "This server's level leaderboard (levels are per-server).",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "voicetop",
+          "aliases": [
+            "vtop",
+            "topvoice",
+            "voiceleaderboard"
+          ],
+          "description": "Global voice-time leaderboard — top talkers across every server Miri is in.",
           "signature": "",
           "is_group": false,
           "example": null
@@ -539,6 +551,17 @@
           "signature": "[user_ids...]",
           "is_group": false,
           "example": "massban 123 456 789"
+        },
+        {
+          "name": "messages",
+          "aliases": [
+            "msgs",
+            "seen"
+          ],
+          "description": "Where a user is active: their message count in every server Miri shares with them.",
+          "signature": "<user>",
+          "is_group": false,
+          "example": null
         },
         {
           "name": "modlogs",

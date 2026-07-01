@@ -29,6 +29,7 @@ from src.database.models.sticky import StickyMessage
 from src.database.models.tag import Tag
 from src.database.models.temprole import TempRole
 from src.database.models.timer import Timer
+from src.database.models.user_message_count import UserMessageCount
 from src.database.models.vanity import VanityConfig, VanityTracker
 from src.database.models.voicemaster import VoiceMasterChannel, VoiceMasterConfig
 from src.database.models.webhook import ManagedWebhook
@@ -50,4 +51,5 @@ __all__ = [
     "CommandUsage",
     "StaffMember",
     "Blacklist",
+    "UserMessageCount",
 ]

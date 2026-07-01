@@ -25,7 +25,7 @@ CATEGORIES: dict[str, tuple[str, str, list[str]]] = {
     "Moderation": (
         Emojis.SHIELD,
         "Keep your server safe and tidy.",
-        ["Moderation", "Staff", "ServerLog", "Automod"],
+        ["Moderation", "Staff", "ServerLog", "Automod", "MsgCounter"],
     ),
     "Server Setup": (
         Emojis.SETTINGS,

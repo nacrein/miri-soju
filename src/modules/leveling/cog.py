@@ -126,6 +126,17 @@ class Leveling(commands.Cog):
             empty="No ranked members yet.",
         ))
 
+    @commands.hybrid_command(name="voicetop", aliases=["vtop", "topvoice", "voiceleaderboard"])
+    @commands.guild_only()
+    async def voicetop(self, ctx) -> None:
+        """Global voice-time leaderboard — top talkers across every server Miri is in."""
+        entries = await service.leaderboard_voice_global(10)
+        await ctx.send(embed=rankings.ranked_list(
+            ctx.guild, entries, "Voice Time", author=ctx.author,
+            footer="Global · across every server",
+            empty="No voice time tracked yet.",
+        ))
+
     # ── admin config (manage_guild on every subcommand) ────────────────────────
 
     @commands.group(name="levels", invoke_without_command=True)
