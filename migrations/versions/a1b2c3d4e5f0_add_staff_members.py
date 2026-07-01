@@ -1,7 +1,7 @@
 """add staff_members (runtime admin/staff permission tiers)
 
 Revision ID: a1b2c3d4e5f0
-Revises: e2f3a4b5c6d7
+Revises: e15584a04a9d
 Create Date: 2026-07-01 00:00:00.000000
 """
 from __future__ import annotations
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = 'a1b2c3d4e5f0'
-down_revision: str | None = 'e2f3a4b5c6d7'
+down_revision: str | None = 'e15584a04a9d'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
