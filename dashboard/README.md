@@ -47,27 +47,55 @@ None of this changes existing command behaviour. If you don't want it, don't run
 the migration and skip the analytics cog — the rest of the dashboard is unaffected.
 
 A config change only reaches the bot when someone clicks **Save** (it writes the
-same tables the bot reads). The bot picks it up immediately, or within its config
-cache TTL (see Known limitations).
+same tables the bot reads). The bot picks it up near-instantly on Postgres (see
+[How a save reaches the running bot](#how-a-save-reaches-the-running-bot-cache-invalidation)).
+
+## How a save reaches the running bot (cache invalidation)
+
+**Config changes take effect near-instantly on Postgres.** The bot serves each
+module's config from an in-process `TTLCache` (300 s TTL). To keep a dashboard write
+from staying invisible until that TTL lapses, the two processes are wired over
+Postgres `LISTEN`/`NOTIFY` (`src/core/cache_sync.py`):
+
+1. After a successful config write the dashboard `pg_notify`s the guild id
+   (`app.py`'s post-write middleware → `publish_guild_changed`).
+2. The bot `LISTEN`s on that channel (started in `Bot.setup_hook`) and calls
+   `cache.invalidate_guild`, dropping that guild from **every** registered cache.
+
+So a **Save** propagates to the live bot in milliseconds. The 300 s TTL now only
+acts as a backstop — if the listener is momentarily reconnecting, or you're running
+on **SQLite** (dev), where `LISTEN`/`NOTIFY` is a no-op and staleness is bounded by
+the TTL instead. Production (Postgres) does not have the old ~5-minute lag.
 
 ## Known limitations
 
-These are deliberate trade-offs for keeping the dashboard a separate, additive
-process that never modifies the bot. Both have clean fixes that require a small
-**bot-side** change — left for a later phase.
-
-- **Config changes can lag up to ~5 minutes.** The bot caches each module's config
-  in-process (a 300 s TTL) and only invalidates that cache from its own command
-  handlers. The dashboard writes the database directly (correct data), but can't
-  reach into the running bot's memory to invalidate it — so a change may take up
-  to the TTL to take effect live (most visible for the command prefix). *Fix when
-  ready:* have the dashboard `NOTIFY` a Postgres channel after each save and the
-  bot `LISTEN` and invalidate the matching cache (instant, ~30 lines bot-side).
 - **Dashboard access is re-checked at login, not continuously.** Who-can-manage-what
   is computed once at login (the user's admin guilds ∩ the bot's guilds) and trusted
-  for the session (**8 hours**). Revoking someone's Manage Server in Discord removes
-  their dashboard access at their next login / within 8 h, not instantly. Shorten
-  `max_age` in `app.py` to tighten the window.
+  for the session. Revoking someone's Manage Server in Discord removes their dashboard
+  access at their next login / within the session window, not instantly. The window is
+  **8 hours by default**; set `DASHBOARD_SESSION_MAX_AGE` (seconds) to shorten it —
+  `7200` (2h) is a good tighter default. Because admins can only edit bot config (not
+  perform destructive server actions), a short stale window is usually an acceptable
+  trade-off; shorten it if that blast radius matters to you.
+
+## Deploying & schema migrations
+
+The dashboard and the bot are **two processes that share one database and import the
+same models from `src/`**, so they must run the **same code revision** — a mismatch
+(e.g. the dashboard on new models while a migration hasn't run) throws against the
+old schema. When a change includes an Alembic migration, deploy in this order:
+
+1. **Additive migrations** (new table/column — the common case, e.g. this release's
+   `command_usage`) are backward-compatible: existing code ignores the new shape. Safe
+   order: apply the migration, then roll both processes onto the new code. Old code
+   keeps working against the pre-migration shape in between.
+2. **Destructive migrations** (drop/rename/retype a column both processes read) are
+   **not** backward-compatible. Take a short maintenance window: stop the dashboard,
+   `alembic upgrade head`, deploy the new code to **both** the bot and the dashboard,
+   then start them. Don't leave one process on old code against the migrated schema.
+
+Run migrations **once** (they're global, not per-process). Keep the bot and dashboard
+pinned to the same commit so their model definitions never disagree with the DB.
 
 ## One-time setup
 

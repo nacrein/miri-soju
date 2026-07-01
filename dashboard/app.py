@@ -53,8 +53,9 @@ def create_app() -> FastAPI:
         same_site="lax",
         https_only=https_only,
         # Authorization (the manageable-guild set) is snapshotted at login, so cap
-        # how long a stale snapshot can live — a re-login re-checks Discord. 8 hours.
-        max_age=8 * 3600,
+        # how long a stale snapshot can live — a re-login re-checks Discord. Tunable
+        # via DASHBOARD_SESSION_MAX_AGE (default 8h); shorten to tighten revocation.
+        max_age=settings.session_max_age,
     )
 
     # Only needed if the frontend is served from a *different* origin than this API
