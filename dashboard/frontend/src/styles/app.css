@@ -442,21 +442,3 @@ button { font-family: inherit; }
 /* ── busiest-hours heatmap (tighter day-bars) ─────────────────────────────── */
 .day-bars--hours { gap: 3px; height: 150px; }
 .day-bars--hours .day-bar__fill { background: linear-gradient(180deg, var(--warning), var(--primary)); }
-
-/* ── economy: minted/burned diverging chart ───────────────────────────────── */
-.flow-bars { display: flex; align-items: stretch; gap: 6px; height: 180px; padding-top: var(--space-2); }
-.flow-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
-.flow-col__up { flex: 1; width: 100%; display: flex; align-items: flex-end; }
-.flow-col__down { flex: 1; width: 100%; display: flex; align-items: flex-start; }
-.flow-col__pos { width: 100%; min-height: 2px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: linear-gradient(180deg, #7bab5a, #5f8a45); }
-.flow-col__neg { width: 100%; min-height: 2px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: linear-gradient(180deg, var(--danger), var(--danger-hover)); }
-.flow-col .day-bar__label { margin-top: 6px; font-size: 10px; color: var(--text-faint); }
-.flow-legend { display: flex; gap: var(--space-4); margin-top: var(--space-3); font-size: var(--text-xs); }
-.flow-legend .dot { width: 9px; height: 9px; box-shadow: none; }
-.flow-legend .dot--pos { background: var(--success); }
-.flow-legend .dot--neg { background: var(--danger); }
-.flow-legend i { display: inline-block; margin-right: 5px; border-radius: 50%; }
-
-/* ── casino ledger card ───────────────────────────────────────────────────── */
-.casino { display: flex; flex-direction: column; gap: var(--space-2); }
-.casino__row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); font-variant-numeric: tabular-nums; }
