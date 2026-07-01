@@ -5,30 +5,33 @@
  * (the kind claude.ai/design could later sync against). Dark, Discord-adjacent. */
 
 :root {
-  /* ── color: surfaces ── */
-  --bg: #0f1014;
-  --surface-1: #17181f;
-  --surface-2: #1e2029;
-  --surface-3: #262936;
-  --border: #2c2f3a;
-  --border-strong: #3a3e4d;
+  /* ── color: surfaces ──
+     Warm "sushi bar at night": lacquered-wood charcoal instead of cold blue-gray,
+     so Miri's salmon accent reads like nigiri on a dark counter, not a tech UI. */
+  --bg: #14100e;
+  --surface-1: #1c1613;
+  --surface-2: #241d19;
+  --surface-3: #2f251f;
+  --border: #362a23;
+  --border-strong: #48382d;
 
-  /* ── color: text ── */
-  --text: #e7e9ee;
-  --text-muted: #9aa0ad;
-  --text-faint: #6b7280;
+  /* ── color: text (warm rice cream, not cold white) ── */
+  --text: #f2ebe3;
+  --text-muted: #b6a89b;
+  --text-faint: #7c6d61;
 
-  /* ── color: brand + status ── */
-  --primary: #c56b5c;
-  --primary-hover: #d4806f;
-  --primary-soft: rgba(197, 107, 92, 0.16);
-  --success: #6ea05e;
-  --success-soft: rgba(110, 160, 94, 0.16);
-  --danger: #c25560;
-  --danger-hover: #d06773;
-  --danger-soft: rgba(194, 85, 96, 0.14);
-  --warning: #d49a3f;
-  --warning-soft: rgba(212, 154, 63, 0.15);
+  /* ── color: brand + status ──
+     primary = salmon nigiri · success = wasabi · warning = ginger/soy · danger = tuna */
+  --primary: #d1725f;
+  --primary-hover: #e28b76;
+  --primary-soft: rgba(209, 114, 95, 0.16);
+  --success: #7bab5a;
+  --success-soft: rgba(123, 171, 90, 0.16);
+  --danger: #cf5b57;
+  --danger-hover: #dd7370;
+  --danger-soft: rgba(207, 91, 87, 0.14);
+  --warning: #d99a3a;
+  --warning-soft: rgba(217, 154, 58, 0.15);
 
   /* ── radius ── */
   --radius-sm: 6px;

@@ -174,6 +174,44 @@ class EconomyRepository:
         )
         return list((await self.session.execute(stmt)).scalars().all())
 
+    async def economy_flow_by_day(self, days: int = 14) -> list[tuple[str, int, int]]:
+        """Per-day (day, minted, burned): sum of positive vs negative ledger moves.
+
+        ``minted - burned`` is a plain-language inflation signal — is the economy
+        net-adding bits (faucets/wins outrunning sinks/losses) or net-removing them?"""
+        from datetime import UTC, datetime, timedelta
+
+        from sqlalchemy import case, func
+
+        from src.database.models.transaction import Transaction
+
+        since = datetime.now(UTC) - timedelta(days=days)
+        day = func.date(Transaction.created_at)
+        pos = case((Transaction.amount > 0, Transaction.amount), else_=0)
+        neg = case((Transaction.amount < 0, Transaction.amount), else_=0)
+        minted = func.coalesce(func.sum(pos), 0)
+        burned = func.coalesce(func.sum(neg), 0)
+        stmt = (
+            select(day.label("day"), minted, burned)
+            .where(Transaction.created_at >= since)
+            .group_by(day)
+            .order_by(day)
+        )
+        return [(str(d), int(m), int(b)) for d, m, b in (await self.session.execute(stmt)).all()]
+
+    async def gambling_net(self) -> int:
+        """Players' net profit/loss across all games (negative = the house is ahead)."""
+        from sqlalchemy import func
+
+        from src.database.models.transaction import Transaction
+
+        kinds = ("gamble_win", "gamble_loss", "game_stake", "game_payout",
+                 "game_forfeit", "game_refund")
+        stmt = select(func.coalesce(func.sum(Transaction.amount), 0)).where(
+            Transaction.kind.in_(kinds)
+        )
+        return int((await self.session.execute(stmt)).scalar_one())
+
     async def game_session_resolved(self, session_id: str) -> bool:
         """True if this game session already has a resolution row.
 

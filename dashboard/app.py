@@ -114,6 +114,22 @@ def create_app() -> FastAPI:
         )
         return {"client_id": client_id, "invite_url": invite_url}
 
+    @app.get("/api/emojis")
+    async def emojis() -> dict:
+        """The bot's emoji registry, so the website uses Miri's real brand art.
+
+        Returns ``{name: token}`` where token is either a unicode fallback or a
+        custom-emoji mention like ``<:bits:123…>``. The frontend renders the custom
+        image when an id is present — so uploading art and setting the id in
+        ``src/core/emojis.py`` updates the site with no frontend change."""
+        from src.core.emojis import Emojis
+
+        return {
+            name.lower(): value
+            for name, value in vars(Emojis).items()
+            if name.isupper() and isinstance(value, str)
+        }
+
     _mount_frontend(app)
     return app
 

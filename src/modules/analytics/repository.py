@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models.command_usage import CommandUsage
@@ -59,3 +59,12 @@ class AnalyticsRepository:
             .order_by(day)
         )
         return [(str(d), int(n)) for d, n in (await self.session.execute(stmt)).all()]
+
+    async def usage_by_hour(self) -> list[tuple[int, int]]:
+        """Invocations bucketed by hour-of-day (0..23) across all history.
+
+        ``extract('hour', ...)`` is dialect-portable — EXTRACT on Postgres,
+        STRFTIME on SQLite — so this reads the same on dev and prod."""
+        hour = extract("hour", CommandUsage.created_at)
+        stmt = select(hour.label("h"), func.count(CommandUsage.id)).group_by(hour).order_by(hour)
+        return [(int(h), int(n)) for h, n in (await self.session.execute(stmt)).all()]

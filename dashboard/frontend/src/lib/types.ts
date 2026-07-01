@@ -73,6 +73,7 @@ export interface StaffSummary {
   economy: EconomyTotals;
   ledger_rows: number;
   commands: CommandTotals;
+  mod_cases: number;
   errors_24h: number;
   errors_total: number;
 }
@@ -84,11 +85,16 @@ export interface UsageDay {
   day: string;
   count: number;
 }
+export interface UsageHour {
+  hour: number;
+  count: number;
+}
 export interface CommandAnalytics {
   totals: CommandTotals;
   top: TopCommand[];
   top_30d: TopCommand[];
   by_day: UsageDay[];
+  by_hour: UsageHour[];
 }
 export interface LedgerKind {
   kind: string;
@@ -108,14 +114,33 @@ export interface LedgerRow {
   balance_after: number;
   created_at: string;
 }
+export interface FlowDay {
+  day: string;
+  minted: number;
+  burned: number;
+}
 export interface EconomyAnalytics {
   totals: EconomyTotals;
   ledger_rows: number;
   breakdown: LedgerKind[];
+  flow: FlowDay[];
+  gambling_net: number;
   top_net_worth: TopPlayer[];
   top_wallet: TopPlayer[];
   recent: LedgerRow[];
 }
+export interface ModAction {
+  kind: string;
+  count: number;
+}
+export interface ModerationAnalytics {
+  total_cases: number;
+  breakdown: ModAction[];
+  by_day: UsageDay[];
+}
+
+// Bot emoji registry from GET /api/emojis — name → unicode or "<:name:id>".
+export type BotEmojiMap = Record<string, string>;
 export interface ErrorRow {
   code: string;
   context: string;

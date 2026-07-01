@@ -5,21 +5,11 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { useSession } from "../auth/session";
 import catalog from "../data/commands.json";
+import { CategoryIcon } from "../lib/icons";
+import { Reveal, useCountUp } from "../lib/reveal";
 import type { BotMeta, CommandCatalog } from "../lib/types";
 
 const CATALOG = catalog as CommandCatalog;
-
-// One glyph per category, keyed by the names in help/categories.py.
-const CATEGORY_ICON: Record<string, string> = {
-  Economy: "🪙",
-  Leveling: "📈",
-  Moderation: "🛡️",
-  "Server Setup": "⚙️",
-  Utility: "🧰",
-  Music: "🎵",
-  Fun: "🎉",
-  Bot: "👑",
-};
 
 function useInviteUrl(): string {
   const { data } = useQuery<BotMeta>({
@@ -62,8 +52,8 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="hero__stats">
-            <Stat value={CATALOG.total.toString()} label="Commands" />
-            <Stat value={categoryCount.toString()} label="Categories" />
+            <CountStat value={CATALOG.total} label="Commands" />
+            <CountStat value={categoryCount} label="Categories" />
             <Stat value="Browser" label="No config files" />
           </div>
         </div>
@@ -79,13 +69,17 @@ export default function LandingPage() {
           </p>
         </div>
         <div className="feature-grid">
-          {CATALOG.categories.map((cat) => (
-            <Link key={cat.name} to="/commands" className="feature-card">
-              <div className="feature-card__icon">{CATEGORY_ICON[cat.name] ?? "✨"}</div>
-              <div className="feature-card__title">{cat.name}</div>
-              <p className="feature-card__desc">{cat.description}</p>
-              <div className="feature-card__meta">{cat.commands.length} commands →</div>
-            </Link>
+          {CATALOG.categories.map((cat, i) => (
+            <Reveal key={cat.name} delay={(i % 4) * 70}>
+              <Link to="/commands" className="feature-card">
+                <div className="feature-card__icon">
+                  <CategoryIcon category={cat.name} />
+                </div>
+                <div className="feature-card__title">{cat.name}</div>
+                <p className="feature-card__desc">{cat.description}</p>
+                <div className="feature-card__meta">{cat.commands.length} commands →</div>
+              </Link>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -180,4 +174,9 @@ function Stat({ value, label }: { value: string; label: string }) {
       <div className="stat__label">{label}</div>
     </div>
   );
+}
+
+function CountStat({ value, label }: { value: number; label: string }) {
+  const n = useCountUp(value, 1100);
+  return <Stat value={n.toLocaleString()} label={label} />;
 }

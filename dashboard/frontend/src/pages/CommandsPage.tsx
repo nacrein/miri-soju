@@ -1,20 +1,11 @@
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import catalog from "../data/commands.json";
+import { CategoryIcon } from "../lib/icons";
 import type { CommandCatalog, CommandEntry } from "../lib/types";
 
 const CATALOG = catalog as CommandCatalog;
-
-const CATEGORY_ICON: Record<string, string> = {
-  Economy: "🪙",
-  Leveling: "📈",
-  Moderation: "🛡️",
-  "Server Setup": "⚙️",
-  Utility: "🧰",
-  Music: "🎵",
-  Fun: "🎉",
-  Bot: "👑",
-};
 
 function matches(cmd: CommandEntry, q: string): boolean {
   if (!q) return true;
@@ -61,7 +52,7 @@ export default function CommandsPage() {
         {CATALOG.categories.map((cat) => (
           <Chip
             key={cat.name}
-            label={`${CATEGORY_ICON[cat.name] ?? ""} ${cat.name}`.trim()}
+            label={<><CategoryIcon category={cat.name} /> {cat.name}</>}
             active={active === cat.name}
             onClick={() => setActive(cat.name)}
           />
@@ -76,7 +67,7 @@ export default function CommandsPage() {
         filtered.map((cat) => (
           <section key={cat.name} className="cmd-section">
             <div className="cmd-section__head">
-              <span className="cmd-section__icon">{CATEGORY_ICON[cat.name] ?? "✨"}</span>
+              <span className="cmd-section__icon"><CategoryIcon category={cat.name} /></span>
               <h2 className="cmd-section__title">{cat.name}</h2>
               <span className="badge">{cat.commands.length}</span>
               <span className="muted cmd-section__desc">{cat.description}</span>
@@ -116,7 +107,7 @@ function CommandRow({ cmd }: { cmd: CommandEntry }) {
   );
 }
 
-function Chip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function Chip({ label, active, onClick }: { label: ReactNode; active: boolean; onClick: () => void }) {
   return (
     <button className={"cmd-chip" + (active ? " cmd-chip--active" : "")} onClick={onClick}>
       {label}

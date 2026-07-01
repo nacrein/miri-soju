@@ -19,17 +19,22 @@ from dashboard.schemas import (
     EconomyTotalsOut,
     ErrorAnalyticsOut,
     ErrorRowOut,
+    FlowDayOut,
     LedgerKindOut,
     LedgerRowOut,
+    ModActionOut,
+    ModerationAnalyticsOut,
     StaffSummaryOut,
     TopCommandOut,
     TopPlayerOut,
     UsageDayOut,
+    UsageHourOut,
 )
 from src.core import error_log
 from src.database.session import get_session
 from src.modules.analytics.repository import AnalyticsRepository
 from src.modules.economy.repository import EconomyRepository
+from src.modules.moderation.repository import ModerationRepository
 
 router = APIRouter(prefix="/staff", tags=["staff"], dependencies=[Depends(require_staff)])
 
@@ -47,12 +52,14 @@ async def summary() -> StaffSummaryOut:
         totals = await econ.economy_totals()
         ledger_rows = await econ.total_transactions()
         cmd_totals = await AnalyticsRepository(session).totals()
+        mod_cases = await ModerationRepository(session).total_cases()
     errors_24h = await error_log.count_errors_since(1)
     errors_total = await error_log.count_errors_since(3650)  # ~all
     return StaffSummaryOut(
         economy=EconomyTotalsOut(**totals),
         ledger_rows=ledger_rows,
         commands=CommandTotalsOut(**cmd_totals),
+        mod_cases=mod_cases,
         errors_24h=errors_24h,
         errors_total=errors_total,
     )
@@ -67,11 +74,13 @@ async def commands() -> CommandAnalyticsOut:
         top = await repo.top_commands(limit=15)
         top_30d = await repo.top_commands(limit=15, days=30)
         by_day = await repo.usage_by_day(days=14)
+        by_hour = await repo.usage_by_hour()
     return CommandAnalyticsOut(
         totals=CommandTotalsOut(**totals),
         top=[TopCommandOut(command=c, count=n) for c, n in top],
         top_30d=[TopCommandOut(command=c, count=n) for c, n in top_30d],
         by_day=[UsageDayOut(day=d, count=n) for d, n in by_day],
+        by_hour=[UsageHourOut(hour=h, count=n) for h, n in by_hour],
     )
 
 
@@ -83,6 +92,8 @@ async def economy() -> EconomyAnalyticsOut:
         totals = await repo.economy_totals()
         ledger_rows = await repo.total_transactions()
         breakdown = await repo.transaction_breakdown()
+        flow = await repo.economy_flow_by_day(days=14)
+        gambling_net = await repo.gambling_net()
         top_net = await repo.top_by_net_worth(limit=10)
         top_wallet = await repo.top_by_wallet(limit=10)
         recent = await repo.recent_transactions_all(limit=25)
@@ -100,6 +111,8 @@ async def economy() -> EconomyAnalyticsOut:
         totals=EconomyTotalsOut(**totals),
         ledger_rows=ledger_rows,
         breakdown=[LedgerKindOut(kind=k, count=c, net=n) for k, c, n in breakdown],
+        flow=[FlowDayOut(day=d, minted=m, burned=b) for d, m, b in flow],
+        gambling_net=gambling_net,
         top_net_worth=[
             TopPlayerOut(
                 user_id=str(p.discord_id),
@@ -119,6 +132,21 @@ async def economy() -> EconomyAnalyticsOut:
             for p in top_wallet
         ],
         recent=recent_rows,
+    )
+
+
+@router.get("/moderation", response_model=ModerationAnalyticsOut)
+async def moderation() -> ModerationAnalyticsOut:
+    """Moderation-action analytics across all guilds (from the case log)."""
+    async with get_session() as session:
+        repo = ModerationRepository(session)
+        total = await repo.total_cases()
+        breakdown = await repo.action_breakdown()
+        by_day = await repo.actions_by_day(days=14)
+    return ModerationAnalyticsOut(
+        total_cases=total,
+        breakdown=[ModActionOut(kind=k, count=n) for k, n in breakdown],
+        by_day=[UsageDayOut(day=d, count=n) for d, n in by_day],
     )
 
 

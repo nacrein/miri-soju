@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import { GuildIcon } from "../components/GuildIcon";
 import { Alert, CenteredSpinner } from "../components/ui";
 import { useDirtyGuardContext } from "../lib/dirtyGuard";
+import { BotIcon } from "../lib/icons";
 import type { GuildMeta } from "../lib/types";
 import { MODULES, defaultModuleKey } from "./modules/registry";
 
@@ -54,7 +55,10 @@ export default function GuildDashboardPage() {
                 if (confirmDiscard()) navigate(`/dashboard/guilds/${guildId}/${m.key}`);
               }}
             >
-              <span className="modnav__icon">{m.icon}</span> {m.label}
+              <span className="modnav__icon">
+                <BotIcon name={m.emojiName} fallback={m.icon} />
+              </span>{" "}
+              {m.label}
             </div>
           ))}
         </nav>

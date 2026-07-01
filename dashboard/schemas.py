@@ -255,6 +255,7 @@ class StaffSummaryOut(BaseModel):
     economy: EconomyTotalsOut
     ledger_rows: int
     commands: CommandTotalsOut
+    mod_cases: int
     errors_24h: int
     errors_total: int
 
@@ -269,11 +270,17 @@ class UsageDayOut(BaseModel):
     count: int
 
 
+class UsageHourOut(BaseModel):
+    hour: int  # 0..23
+    count: int
+
+
 class CommandAnalyticsOut(BaseModel):
     totals: CommandTotalsOut
     top: list[TopCommandOut]
     top_30d: list[TopCommandOut]
     by_day: list[UsageDayOut]
+    by_hour: list[UsageHourOut]
 
 
 class LedgerKindOut(BaseModel):
@@ -297,13 +304,32 @@ class LedgerRowOut(BaseModel):
     created_at: str
 
 
+class FlowDayOut(BaseModel):
+    day: str
+    minted: int  # sum of positive ledger moves that day
+    burned: int  # sum of negative moves that day (<= 0)
+
+
 class EconomyAnalyticsOut(BaseModel):
     totals: EconomyTotalsOut
     ledger_rows: int
     breakdown: list[LedgerKindOut]
+    flow: list[FlowDayOut]
+    gambling_net: int  # players' net P/L across all games (negative = house ahead)
     top_net_worth: list[TopPlayerOut]
     top_wallet: list[TopPlayerOut]
     recent: list[LedgerRowOut]
+
+
+class ModActionOut(BaseModel):
+    kind: str
+    count: int
+
+
+class ModerationAnalyticsOut(BaseModel):
+    total_cases: int
+    breakdown: list[ModActionOut]
+    by_day: list[UsageDayOut]
 
 
 class ErrorRowOut(BaseModel):

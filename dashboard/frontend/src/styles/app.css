@@ -372,9 +372,8 @@ button { font-family: inherit; }
 .embed-preview__footer { font-size: var(--text-xs); color: #b5bac1; margin-top: 10px; }
 
 /* ── staff analytics ──────────────────────────────────────────────────────── */
-.stat-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
-@media (max-width: 900px) { .stat-cards { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 520px) { .stat-cards { grid-template-columns: 1fr; } }
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: var(--space-3); }
+@media (max-width: 520px) { .stat-cards { grid-template-columns: repeat(2, 1fr); } }
 .stat-card { padding: var(--space-4); background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .stat-card--accent { border-color: rgba(197, 107, 92, 0.4); background: linear-gradient(160deg, var(--primary-soft), var(--surface-1)); }
 .stat-card__label { color: var(--text-faint); font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -405,3 +404,59 @@ button { font-family: inherit; }
 .day-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; }
 .day-bar__fill { width: 100%; min-height: 3px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: linear-gradient(180deg, var(--primary-hover), var(--primary)); transition: height var(--transition); }
 .day-bar__label { font-size: 10px; color: var(--text-faint); white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOTION + BRAND ICONS + EXTRA STAFF CHARTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── custom brand emoji rendered as images ────────────────────────────────── */
+.emoji-img { width: 1em; height: 1em; vertical-align: -0.15em; object-fit: contain; display: inline-block; }
+.feature-card__icon .emoji-img { width: 1.1em; height: 1.1em; }
+
+/* ── scroll reveal ────────────────────────────────────────────────────────── */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal--in { opacity: 1; transform: none; }
+
+/* animate the staff bars/day-columns from 0 (the JS flips the size on mount) */
+.bar-row__fill { transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.day-bar__fill,
+.flow-col__pos,
+.flow-col__neg { transition: height 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* ── hero entrance + drifting glow (motion-safe only) ─────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+  @keyframes glowDrift {
+    0%   { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+    50%  { transform: translateX(-50%) translateY(18px) scale(1.06); opacity: 0.85; }
+    100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+  }
+  .hero__glow { animation: glowDrift 11s ease-in-out infinite; }
+  .hero .eyebrow { animation: fadeUp 0.6s ease both; }
+  .hero__title { animation: fadeUp 0.7s ease 0.06s both; }
+  .hero__subtitle { animation: fadeUp 0.7s ease 0.14s both; }
+  .hero__cta { animation: fadeUp 0.7s ease 0.22s both; }
+  .hero__stats { animation: fadeUp 0.7s ease 0.3s both; }
+}
+
+/* ── busiest-hours heatmap (tighter day-bars) ─────────────────────────────── */
+.day-bars--hours { gap: 3px; height: 150px; }
+.day-bars--hours .day-bar__fill { background: linear-gradient(180deg, var(--warning), var(--primary)); }
+
+/* ── economy: minted/burned diverging chart ───────────────────────────────── */
+.flow-bars { display: flex; align-items: stretch; gap: 6px; height: 180px; padding-top: var(--space-2); }
+.flow-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.flow-col__up { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.flow-col__down { flex: 1; width: 100%; display: flex; align-items: flex-start; }
+.flow-col__pos { width: 100%; min-height: 2px; border-radius: var(--radius-sm) var(--radius-sm) 0 0; background: linear-gradient(180deg, #7bab5a, #5f8a45); }
+.flow-col__neg { width: 100%; min-height: 2px; border-radius: 0 0 var(--radius-sm) var(--radius-sm); background: linear-gradient(180deg, var(--danger), var(--danger-hover)); }
+.flow-col .day-bar__label { margin-top: 6px; font-size: 10px; color: var(--text-faint); }
+.flow-legend { display: flex; gap: var(--space-4); margin-top: var(--space-3); font-size: var(--text-xs); }
+.flow-legend .dot { width: 9px; height: 9px; box-shadow: none; }
+.flow-legend .dot--pos { background: var(--success); }
+.flow-legend .dot--neg { background: var(--danger); }
+.flow-legend i { display: inline-block; margin-right: 5px; border-radius: 50%; }
+
+/* ── casino ledger card ───────────────────────────────────────────────────── */
+.casino { display: flex; flex-direction: column; gap: var(--space-2); }
+.casino__row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); font-variant-numeric: tabular-nums; }
