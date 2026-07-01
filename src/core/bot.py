@@ -12,9 +12,9 @@ import discord
 from discord.ext import commands
 
 from config.settings import get_settings
-from src.core import cache_sync
+from src.core import blacklist, cache_sync
 from src.core.embeds import apply_author
-from src.core.errors import setup_error_handling
+from src.core.errors import BlacklistedError, setup_error_handling
 
 try:  # the dict discord.py uses for case-insensitive command lookup
     from discord.ext.commands.core import _CaseInsensitiveDict
@@ -108,6 +108,17 @@ class Bot(commands.Bot):
             owner_id=owner_id,  # if None, discord.py derives it from the app
             case_insensitive=True,  # ,Setup == ,setup (top-level; groups handled in add_command)
         )
+        # A blacklisted user is blocked from every command, silently.
+        self.add_check(self._not_blacklisted)
+
+    async def _not_blacklisted(self, ctx: commands.Context) -> bool:
+        """Global check: bot-blacklisted users can run nothing. The owner is exempt so
+        a bad blacklist can always be lifted."""
+        if await self.is_owner(ctx.author):
+            return True
+        if await blacklist.is_blacklisted(ctx.author.id, "bot"):
+            raise BlacklistedError()
+        return True
 
     def add_command(self, command: commands.Command) -> None:
         # Every group becomes case-insensitive as it's registered, so subcommands

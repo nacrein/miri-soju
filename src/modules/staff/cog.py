@@ -4,9 +4,11 @@ Permission tiers (see ``src/core/checks.py``): owner > admin > staff.
   * The serious economy powers — minting (,give) and removing (,take) bits — are
     admin-gated. They exist both as top-level commands (the everyday spelling) and
     as ,staff give / ,staff take (the grouped spelling).
-  * Roster management (,staff promote / demote) is admin-gated.
-  * Everyday moderation — resetting a rule-breaker's balance (,staff reset) and
-    read-only inspection (,staff history / economy / error) — is staff-gated.
+  * Roster management (,staff promote / demote) and the bot-wide blacklist
+    (,staff blacklist / unblacklist) are admin-gated.
+  * Everyday moderation is staff-gated: resetting a rule-breaker's balance
+    (,staff reset), the economy blacklist (,staff econban / uneconban), and
+    read-only inspection (,staff history / economy / error).
 """
 
 from __future__ import annotations
@@ -14,7 +16,7 @@ from __future__ import annotations
 import discord
 from discord.ext import commands
 
-from src.core import checks, embeds, staff_roster
+from src.core import blacklist, checks, embeds, staff_roster
 from src.core.checks import is_admin, is_staff
 from src.core.emojis import Emojis
 from src.core.error_log import get_error
@@ -127,6 +129,58 @@ class Staff(commands.Cog):
             f"Reset {user.mention}'s balance — cleared {Emojis.BITS} **{_fmt(total)}** "
             f"({' + '.join(parts)})."
         ))
+
+    # ── blacklists: bot-wide (admin) and economy-only (staff) ────────────────────
+
+    @staff.command(name="blacklist", aliases=["bl"])
+    @is_admin()
+    async def staff_blacklist(
+        self, ctx: commands.Context, user: discord.User, *, reason: str | None = None
+    ) -> None:
+        """Block a user from the entire bot. Admin only."""
+        if user.bot:
+            raise commands.BadArgument("Bots aren't users.")
+        if user.id == ctx.author.id or await ctx.bot.is_owner(user):
+            raise BotError("You can't blacklist yourself or the owner.")
+        await blacklist.add(user.id, "bot", reason, ctx.author.id)
+        suffix = f" Reason: {reason}" if reason else ""
+        await ctx.send(embed=embeds.success(
+            f"{Emojis.LOCK} Blacklisted {user.mention} from the bot.{suffix}"
+        ))
+
+    @staff.command(name="unblacklist", aliases=["unbl"])
+    @is_admin()
+    async def staff_unblacklist(self, ctx: commands.Context, user: discord.User) -> None:
+        """Lift a user's bot-wide blacklist. Admin only."""
+        if await blacklist.remove(user.id, "bot"):
+            await ctx.send(embed=embeds.success(f"{user.mention} can use the bot again."))
+        else:
+            await ctx.send(embed=embeds.info(f"{user.mention} isn't blacklisted from the bot."))
+
+    @staff.command(name="econban")
+    @is_staff()
+    async def staff_econban(
+        self, ctx: commands.Context, user: discord.User, *, reason: str | None = None
+    ) -> None:
+        """Block a user from the economy only. Staff moderation tool."""
+        if user.bot:
+            raise commands.BadArgument("Bots don't use the economy.")
+        if await ctx.bot.is_owner(user):
+            raise BotError("You can't econban the owner.")
+        await blacklist.add(user.id, "economy", reason, ctx.author.id)
+        suffix = f" Reason: {reason}" if reason else ""
+        await ctx.send(embed=embeds.success(
+            f"{Emojis.LOCK} Blocked {user.mention} from the economy.{suffix}"
+        ))
+
+    @staff.command(name="uneconban")
+    @is_staff()
+    async def staff_uneconban(self, ctx: commands.Context, user: discord.User) -> None:
+        """Lift a user's economy block. Staff moderation tool."""
+        if await blacklist.remove(user.id, "economy"):
+            await ctx.send(embed=embeds.success(f"{user.mention} can use the economy again."))
+        else:
+            await ctx.send(embed=embeds.info(f"{user.mention} isn't blocked from the economy."))
 
     @staff.command(name="promote")
     @is_admin()

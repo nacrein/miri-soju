@@ -1,5 +1,5 @@
 {
-  "total": 302,
+  "total": 306,
   "categories": [
     {
       "name": "Economy",
@@ -1189,10 +1189,28 @@
           "example": null
         },
         {
+          "name": "staff blacklist",
+          "aliases": [
+            "bl"
+          ],
+          "description": "Block a user from the entire bot. Admin only.",
+          "signature": "<user> [reason]",
+          "is_group": false,
+          "example": null
+        },
+        {
           "name": "staff demote",
           "aliases": [],
           "description": "Revoke a user's staff/admin tier (demoting an admin is owner only).",
           "signature": "<user>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff econban",
+          "aliases": [],
+          "description": "Block a user from the economy only. Staff moderation tool.",
+          "signature": "<user> [reason]",
           "is_group": false,
           "example": null
         },
@@ -1272,6 +1290,24 @@
           ],
           "description": "Remove bits from a user (staff sink; wallet first, then vault). Admin only.",
           "signature": "<user> <amount>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff unblacklist",
+          "aliases": [
+            "unbl"
+          ],
+          "description": "Lift a user's bot-wide blacklist. Admin only.",
+          "signature": "<user>",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff uneconban",
+          "aliases": [],
+          "description": "Lift a user's economy block. Staff moderation tool.",
+          "signature": "<user>",
           "is_group": false,
           "example": null
         },

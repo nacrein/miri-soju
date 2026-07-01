@@ -7,6 +7,7 @@ from src.database.models.automod import (
     AutomodExemptRole,
     AutomodWord,
 )
+from src.database.models.blacklist import Blacklist
 from src.database.models.boosterrole import BoosterRole, BoosterRoleConfig
 from src.database.models.buttonrole import ButtonRole
 from src.database.models.case import ModCase
@@ -42,4 +43,5 @@ __all__ = [
     "ErrorLog",
     "CommandUsage",
     "StaffMember",
+    "Blacklist",
 ]

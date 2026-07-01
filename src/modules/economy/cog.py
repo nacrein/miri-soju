@@ -13,9 +13,9 @@ import logging
 import discord
 from discord.ext import commands
 
-from src.core import embeds
+from src.core import blacklist, embeds
 from src.core.emojis import Emojis
-from src.core.errors import SilentError
+from src.core.errors import BotError, SilentError
 from src.modules.economy import config, service
 from src.modules.economy import views as econ_views
 from src.modules.economy.agreement import AgreementView, agreement_embed
@@ -50,6 +50,8 @@ class Economy(commands.Cog):
         would open a view/modal never starts until the user has agreed — no half-opened
         state. ``SilentError`` aborts cleanly after the prompt is posted (the error
         handler swallows it, so the prompt is the only message)."""
+        if await blacklist.is_blacklisted(ctx.author.id, "economy"):
+            raise BotError("You're blocked from using the economy.")
         if await service.has_agreed(ctx.author.id):
             return True
         view = AgreementView(ctx.author.id, invoker=ctx.author)

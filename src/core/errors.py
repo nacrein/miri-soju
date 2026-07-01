@@ -25,6 +25,11 @@ class SilentError(commands.CheckFailure):
     its own embed). The error handler swallows it, so no second message is sent."""
 
 
+class BlacklistedError(commands.CheckFailure):
+    """Raised by the global check when a bot-blacklisted user runs any command. The
+    error handler swallows it, so a blocked user gets silence, not a wall of denials."""
+
+
 def _new_error_id() -> str:
     """Short uppercase ID, e.g. 'A4F9C2'."""
     return uuid.uuid4().hex[:6].upper()
@@ -80,8 +85,8 @@ def setup_error_handling(bot: commands.Bot) -> None:
 
         if isinstance(exc, commands.CommandNotFound):
             return  # ignore unknown prefix commands silently
-        if isinstance(exc, SilentError):
-            return  # a gate already replied; don't send a second message
+        if isinstance(exc, (SilentError, BlacklistedError)):
+            return  # a gate already replied, or the user is blacklisted; stay silent
         if isinstance(exc, BotError):
             await ctx.send(embed=embeds.error(str(exc)))
             return
