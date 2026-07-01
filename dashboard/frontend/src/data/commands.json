@@ -1,5 +1,5 @@
 {
-  "total": 296,
+  "total": 301,
   "categories": [
     {
       "name": "Economy",
@@ -88,14 +88,6 @@
           "example": null
         },
         {
-          "name": "give",
-          "aliases": [],
-          "description": "Give bits from your wallet to another player. Confirms before sending.",
-          "signature": "<user> <amount>",
-          "is_group": false,
-          "example": "give @user all"
-        },
-        {
           "name": "hilo",
           "aliases": [],
           "description": "Guess higher or lower. Each call climbs the multiplier; cash out before you miss.",
@@ -132,6 +124,16 @@
           "signature": "<amount> <target>",
           "is_group": false,
           "example": "limbo 500 2.5"
+        },
+        {
+          "name": "pay",
+          "aliases": [
+            "send"
+          ],
+          "description": "Pay bits from your wallet to another player. Confirms before sending.",
+          "signature": "<user> <amount>",
+          "is_group": false,
+          "example": "pay @user all"
         },
         {
           "name": "plinko",
@@ -658,6 +660,14 @@
           "example": "clearwarnings @user"
         },
         {
+          "name": "give",
+          "aliases": [],
+          "description": "Mint bits straight into a user's wallet (staff faucet). Admin only.",
+          "signature": "<user> <amount>",
+          "is_group": false,
+          "example": "give @user 500"
+        },
+        {
           "name": "immune",
           "aliases": [],
           "description": "Protect a member or role from moderation actions.",
@@ -1179,6 +1189,14 @@
           "example": null
         },
         {
+          "name": "staff demote",
+          "aliases": [],
+          "description": "Revoke a user's staff/admin tier (demoting an admin is owner only).",
+          "signature": "<user>",
+          "is_group": false,
+          "example": null
+        },
+        {
           "name": "staff economy",
           "aliases": [
             "eco"
@@ -1205,7 +1223,7 @@
             "grant",
             "add"
           ],
-          "description": "Mint bits straight into a user's wallet (staff faucet).",
+          "description": "Mint bits straight into a user's wallet (staff faucet). Admin only.",
           "signature": "<user> <amount>",
           "is_group": false,
           "example": null
@@ -1219,15 +1237,41 @@
           "example": null
         },
         {
+          "name": "staff promote",
+          "aliases": [],
+          "description": "Grant a user staff, or `admin` (owner only), e.g. ,staff promote @u admin.",
+          "signature": "<user> [tier]",
+          "is_group": false,
+          "example": null
+        },
+        {
+          "name": "staff roster",
+          "aliases": [
+            "list"
+          ],
+          "description": "Show the current admins and staff.",
+          "signature": "",
+          "is_group": false,
+          "example": null
+        },
+        {
           "name": "staff take",
           "aliases": [
             "remove",
             "deduct"
           ],
-          "description": "Remove bits from a user (staff sink; takes wallet first, then vault).",
+          "description": "Remove bits from a user (staff sink; wallet first, then vault). Admin only.",
           "signature": "<user> <amount>",
           "is_group": false,
           "example": null
+        },
+        {
+          "name": "take",
+          "aliases": [],
+          "description": "Remove bits from a user (staff sink; wallet first, then vault). Admin only.",
+          "signature": "<user> <amount>",
+          "is_group": false,
+          "example": "take @user 500"
         },
         {
           "name": "temprole",

@@ -122,7 +122,7 @@ class Bot(commands.Bot):
 
     async def setup_hook(self) -> None:
         setup_error_handling(self)
-        await self.load_extension("jishaku")
+        await self._load_jishaku()
         await self._load_all_cogs()
         await self._sync_app_commands()
         # Hear config writes made by the dashboard (a separate process) and drop the
@@ -152,6 +152,23 @@ class Bot(commands.Bot):
         self.tree.copy_global_to(guild=guild)
         synced = await self.tree.sync(guild=guild)
         log.info("Synced %d app command(s) to dev guild %s", len(synced), guild_id)
+
+    async def _load_jishaku(self) -> None:
+        """Load our themed jishaku (an on-brand ,jsk overview over stock jishaku).
+
+        Falls back to stock jishaku if the themed cog fails to load, so a jishaku
+        API change can degrade the theming but never block startup. Loaded here,
+        before _load_all_cogs, so the auto-discovery walker just sees it as already
+        loaded (it swallows ExtensionAlreadyLoaded)."""
+        try:
+            await self.load_extension("src.modules.owner.jsk")
+            return
+        except Exception:
+            log.exception("Themed jsk failed to load; falling back to stock jishaku")
+        try:
+            await self.load_extension("jishaku")
+        except Exception:
+            log.exception("Stock jishaku also failed to load; dev tools unavailable")
 
     async def _load_all_cogs(self) -> None:
         """Load every submodule of src.modules that exposes setup()."""

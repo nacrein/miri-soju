@@ -20,6 +20,7 @@ from src.database.models.music import MusicConfig
 from src.database.models.player import Player
 from src.database.models.reactionrole import ReactionRole
 from src.database.models.reminder import Reminder
+from src.database.models.staff import StaffMember
 from src.database.models.sticky import StickyMessage
 from src.database.models.temprole import TempRole
 from src.database.models.timer import Timer
@@ -40,4 +41,5 @@ __all__ = [
     "VanityConfig", "VanityTracker",
     "ErrorLog",
     "CommandUsage",
+    "StaffMember",
 ]
